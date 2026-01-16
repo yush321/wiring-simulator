@@ -1,11 +1,490 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>테스트 페이지</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>전기기능사 실기 시뮬레이터 (최종)</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            margin: 0;
+            overscroll-behavior: none;
+        }
+        h2 { margin: 10px 0; font-size: 1.2rem; text-align: center; }
+       
+        .controls {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        select { padding: 5px; font-size: 14px; }
+        button {
+            padding: 8px 12px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .btn-reset { background-color: #6c757d; color: white; }
+        .btn-check { background-color: #28a745; color: white; }
+        .btn-check.active { background-color: #dc3545; }
+        .btn-dev { background-color: #007bff; color: white; } /* 개발자 모드 버튼 스타일 추가 */
+        canvas {
+            background-color: #fff;
+            border: 2px solid #555;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            touch-action: none;
+            max-width: 100%;
+            height: auto;
+        }
+        .legend { font-size: 12px; color: #555; margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;}
+        .legend span { display: flex; align-items: center; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    </style>
 </head>
 <body>
-    <h1>와이어링 시뮬레이터 페이지입니다</h1>
-    <p>지금은 테스트 중입니다.</p>
+    <h2>전기기능사 실기 시뮬레이터</h2>
+   
+    <div class="controls">
+        <label for="layoutSelect">도면:</label>
+        <select id="layoutSelect" onchange="changeLayout()">
+            <option value="layout1">공개문제 1번</option>
+        </select>
+       
+        <button class="btn-reset" onclick="resetWires()">초기화</button>
+        <button id="btnCheck" class="btn-check" onclick="toggleGrading()">채점 (ON/OFF)</button>
+        <button id="btnDev" class="btn-dev" onclick="toggleDevMode()">개발자 모드 (OFF)</button> <!-- 개발자 모드 버튼 추가 -->
+       
+        <span id="statusMsg" style="font-weight:bold; color:#333; font-size:14px;">대기 중</span>
+    </div>
+    <div class="legend">
+        <span><i class="dot" style="background:#e6b800"></i>일반</span>
+        <span><i class="dot" style="background:#28a745"></i>정답</span>
+        <span><i class="dot" style="background:#fd7e14"></i>누락</span>
+        <span><i class="dot" style="background:#dc3545"></i>오답</span>
+    </div>
+   
+    <canvas id="simCanvas" width="700" height="720"></canvas>
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusMsg = document.getElementById('statusMsg');
+    const btnCheck = document.getElementById('btnCheck');
+    const btnDev = document.getElementById('btnDev'); // 개발자 모드 버튼
+    // ==========================================
+    // 1. 데이터 정의
+    // ==========================================
+    const DUCTS = { TOP: 100, MID: 320, BOT: 550, LEFT_X: 30, RIGHT_X: 670 };
+    const GRID_H = 20;
+    // ★ 정답 데이터 (Netlist) - 각 그룹에 색상 추가
+    const GROUP_COLORS = ['#28a745', '#007bff', '#fd7e14', '#6f42c1', '#e83e8c', '#20c997']; // 그룹별 색상 팔레트 (정답 그룹별로 할당)
+    const ANSWER_KEY = {
+        "layout1": [
+            // [그룹 1] 상단 9번(갈) <-> MCCB 1번
+            ['TB_Top_L_9', 'MCCB_1'],
+            // [그룹 2] 상단 10번(흑) <-> MCCB 2번
+            ['TB_Top_L_10', 'MCCB_2'],
+            // [그룹 3] 상단 11번(회) <-> MCCB 3번 (오른쪽 단자대 첫번째)
+            ['TB_Top_R_11', 'MCCB_3'],
+            // [그룹 4] MCCB 2차측 <-> EOCR 1차측 (각 상 분리) - 여기서 3개를 하나의 그룹으로 취급하거나 분리
+            ['MCCB_7', 'EOCR_1'], // R상
+            ['MCCB_8', 'EOCR_2'], // S상
+            ['MCCB_9', 'EOCR_3'], // T상
+            // 추가 그룹 예시 (실제 도면에 맞게 더 추가하세요)
+            // 예: ['FUSE_+1', 'X_7'], // 제어전원 그룹 등
+        ]
+    };
+    const layouts = {
+        "layout1": [
+            {
+                id: 'TB_Top_L', label: '', x: 50, y: 30, w: 280, h: 50, type: 'terminal', startNum: 1,
+                pins: [ {n:'C', g:'PB01'}, {n:'N', g:'PB01'}, {n:'O', g:'PB01'}, {n:'M', g:'SS'}, {n:'C', g:'SS'}, {n:'A', g:'SS'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB1'}, {n:'흑', g:'TB1'} ]
+            },
+            {
+                id: 'TB_Top_R', label: '', x: 370, y: 30, w: 280, h: 50, type: 'terminal', startNum: 11,
+                pins: [ {n:'회', g:'TB1'}, {n:'녹', g:'TB1'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'+', g:'RLGL'}, {n:'-', g:'RLGL'}, {n:'+', g:'RLGL'} ]
+            },
+            {
+                id: 'FUSE', label: 'FUSE', x: 50, y: 160, w: 60, h: 110, type: 'fuse',
+                topArr: [ {n:'+1', l:''}, {n:'-1', l:''} ],
+                botArr: [ {n:'+2', l:''}, {n:'-2', l:''} ]
+            },
+            {
+                id: 'EOCR', label: 'EOCR', x: 130, y: 160, w: 90, h: 110, type: 'custom',
+                topArr: [ {n:'1',l:'a'}, {n:'2',l:'a'}, {n:'3',l:'a'}, {n:'4',l:'b'}, {n:'5',l:'a'}, {n:'6',l:'전'} ],
+                botArr: [ {n:'7',l:'a'}, {n:'8',l:'a'}, {n:'9',l:'a'}, {n:'10',l:'c'}, {n:'$',l:'$'}, {n:'12',l:'원'} ]
+            },
+            {
+                id: 'MCCB', label: 'MCCB', x: 240, y: 160, w: 80, h: 110, type: 'custom',
+                topArr: [ {n:'1',l:''}, {n:'2',l:''}, {n:'3',l:''} ],
+                botArr: [ {n:'7',l:''}, {n:'8',l:''}, {n:'9',l:''} ]
+            },
+            {
+                id: 'X', label: 'X (8P)', x: 340, y: 160, w: 90, h: 110, type: 'custom',
+                topArr: [ {n:'6',l:'A'}, {n:'5',l:'B'}, {n:'4',l:'b'}, {n:'3',l:'a'} ],
+                botArr: [ {n:'7',l:'전'}, {n:'8',l:'C'}, {n:'1',l:'C'}, {n:'2',l:'원'} ]
+            },
+            {
+                id: 'FR', label: 'FR (8P)', x: 450, y: 160, w: 90, h: 110, type: 'custom',
+                topArr: [ {n:'6',l:'a'}, {n:'5',l:'b'}, {n:'$',l:'$'}, {n:'$',l:'$'} ],
+                botArr: [ {n:'7',l:'전'}, {n:'8',l:'C'}, {n:'$',l:'$'}, {n:'2',l:'원'} ]
+            },
+            {
+                id: 'T', label: 'Timer', x: 80, y: 390, w: 90, h: 110, type: 'custom',
+                topArr: [ {n:'6',l:'A'}, {n:'5',l:'B'}, {n:'$',l:'$'}, {n:'3',l:'a'} ],
+                botArr: [ {n:'7',l:'전'}, {n:'8',l:'C'}, {n:'1',l:'a'}, {n:'2',l:'원'} ]
+            },
+            {
+                id: 'FLS', label: 'FLS', x: 190, y: 390, w: 90, h: 110, type: 'custom',
+                topArr: [ {n:'6',l:'전'}, {n:'5',l:'C'}, {n:'4',l:'a'}, {n:'3',l:'원'} ],
+                botArr: [ {n:'7',l:'E1'}, {n:'8',l:'E2'}, {n:'1',l:'E3'}, {n:'2',l:'b'} ]
+            },
+            {
+                id: 'MC1', label: 'MC1', x: 300, y: 390, w: 100, h: 110, type: 'custom',
+                topArr: [ {n:'1',l:'a'}, {n:'2',l:'a'}, {n:'3',l:'a'}, {n:'4',l:'a'}, {n:'5',l:'b'}, {n:'6',l:'전'} ],
+                botArr: [ {n:'7',l:'a'}, {n:'8',l:'a'}, {n:'9',l:'a'}, {n:'10',l:'a'}, {n:'11',l:'b'}, {n:'12',l:'원'} ]
+            },
+            {
+                id: 'MC2', label: 'MC2', x: 420, y: 390, w: 100, h: 110, type: 'custom',
+                topArr: [ {n:'1',l:'a'}, {n:'2',l:'a'}, {n:'3',l:'a'}, {n:'4',l:'a'}, {n:'5',l:'b'}, {n:'6',l:'전'} ],
+                botArr: [ {n:'7',l:'a'}, {n:'8',l:'a'}, {n:'9',l:'a'}, {n:'10',l:'a'}, {n:'11',l:'b'}, {n:'12',l:'원'} ]
+            },
+            {
+                id: 'TB_Bot_L', label: '', x: 50, y: 600, w: 280, h: 50, type: 'terminal', startNum: 1,
+                pins: [ {n:'Y', g:'YLBZ'}, {n:'C', g:'YLBZ'}, {n:'B', g:'YLBZ'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB3'}, {n:'흑', g:'TB3'}, {n:'회', g:'TB3'}, {n:'녹', g:'TB3'} ]
+            },
+            {
+                id: 'TB_Bot_R', label: '', x: 370, y: 600, w: 280, h: 50, type: 'terminal', startNum: 11,
+                pins: [ {n:'E1', g:'TB4'}, {n:'E2', g:'TB4'}, {n:'E3', g:'TB4'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB2'}, {n:'흑', g:'TB2'}, {n:'회', g:'TB2'}, {n:'녹', g:'TB2'} ]
+            },
+        ]
+    };
+    let currentComponents = [];
+    let allPins = [];
+    let wires = [];
+    let selectedPin = null;
+    let isGradingMode = false;
+    let isDevMode = false; // 개발자 모드 플래그 추가
+    // ==========================================
+    // 2. 초기화 및 핀 생성
+    // ==========================================
+    function init() { changeLayout(); }
+    function changeLayout() {
+        const select = document.getElementById('layoutSelect');
+        currentComponents = JSON.parse(JSON.stringify(layouts[select.value]));
+        wires = []; selectedPin = null; isGradingMode = false;
+        updateUI();
+        allPins = [];
+        currentComponents.forEach(comp => generatePins(comp));
+        draw();
+    }
+    function generatePins(comp) {
+        const topY = comp.y; const botY = comp.y + comp.h;
+        if (comp.type === 'terminal') {
+            const gap = comp.w / 10;
+            comp.pins.forEach((p, i) => {
+                if (p.n !== '$') {
+                    let pinY = (comp.y < 300) ? botY : topY;
+                    addPin(comp, comp.startNum + i, p.n, comp.x + gap/2 + i*gap, pinY);
+                }
+            });
+        } else {
+            if(comp.topArr) {
+                const gap = comp.w / comp.topArr.length;
+                comp.topArr.forEach((item, idx) => { if(item.n !== '$') addPin(comp, item.n, item.l, comp.x + gap/2 + idx*gap, topY); });
+            }
+            if(comp.botArr) {
+                const gap = comp.w / comp.botArr.length;
+                comp.botArr.forEach((item, idx) => { if(item.n !== '$') addPin(comp, item.n, item.l, comp.x + gap/2 + idx*gap, botY); });
+            }
+        }
+    }
+    function addPin(comp, pinNum, label, x, y) {
+        allPins.push({
+            id: `${comp.id}_${pinNum}`,
+            parentId: comp.id,
+            num: pinNum,
+            label: label,
+            x: x, y: y,
+            connections: 0,
+            gradingStatus: 'none',
+            groupIndex: -1 // 그룹 인덱스 추가 (채점 시 할당)
+        });
+    }
+    // ==========================================
+    // 3. 그리기 로직
+    // ==========================================
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+       
+        // 덕트 그리기
+        ctx.beginPath(); ctx.strokeStyle = '#eee'; ctx.lineWidth = 10;
+        [DUCTS.TOP, DUCTS.MID, DUCTS.BOT].forEach(y => { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); });
+        ctx.moveTo(DUCTS.LEFT_X, 0); ctx.lineTo(DUCTS.LEFT_X, canvas.height);
+        ctx.moveTo(DUCTS.RIGHT_X, 0); ctx.lineTo(DUCTS.RIGHT_X, canvas.height);
+        ctx.stroke();
+        // 부품 그리기
+        currentComponents.forEach(c => {
+            ctx.fillStyle = '#fff'; ctx.fillRect(c.x, c.y, c.w, c.h);
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.strokeRect(c.x, c.y, c.w, c.h);
+            if (c.type === 'terminal') {
+                const gap = c.w / 10;
+                ctx.beginPath(); ctx.moveTo(c.x, c.y + c.h/2); ctx.lineTo(c.x + c.w, c.y + c.h/2); ctx.stroke();
+                c.pins.forEach((p, i) => {
+                    const cellX = c.x + i*gap;
+                    if (i > 0) { ctx.beginPath(); ctx.moveTo(cellX, c.y); ctx.lineTo(cellX, c.y + c.h); ctx.stroke(); }
+                    if (p.n !== '$') {
+                        ctx.fillStyle = '#d9534f'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(p.g, cellX + gap/2, c.y + c.h/4);
+                        ctx.fillStyle = '#000'; ctx.font = 'bold 11px Arial';
+                        ctx.fillText(p.n, cellX + gap/2, c.y + (c.h*3)/4);
+                        ctx.fillStyle = '#007bff'; ctx.font = '10px Arial';
+                        if (c.y < 300) ctx.fillText(c.startNum + i, cellX + gap/2, c.y - 8);
+                        else ctx.fillText(c.startNum + i, cellX + gap/2, c.y + c.h + 10);
+                    }
+                });
+            } else {
+                ctx.fillStyle = '#000'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(c.label, c.x + c.w/2, c.y + c.h/2);
+                ctx.lineWidth = 1; ctx.strokeStyle = '#999';
+                if(c.topArr) {
+                    ctx.beginPath(); ctx.moveTo(c.x, c.y + GRID_H); ctx.lineTo(c.x + c.w, c.y + GRID_H);
+                    ctx.moveTo(c.x, c.y + GRID_H*2); ctx.lineTo(c.x + c.w, c.y + GRID_H*2); ctx.stroke();
+                    const gap = c.w / c.topArr.length;
+                    c.topArr.forEach((item, i) => {
+                        const cellX = c.x + gap * i;
+                        if (i > 0) { ctx.beginPath(); ctx.moveTo(cellX, c.y); ctx.lineTo(cellX, c.y + GRID_H*2); ctx.stroke(); }
+                        if (item.n !== '$') {
+                            ctx.fillStyle = '#000'; ctx.font = 'bold 12px Arial'; ctx.fillText(item.n, cellX + gap/2, c.y + GRID_H/2);
+                            if(item.l) { ctx.fillStyle = 'blue'; ctx.font = '11px Arial'; ctx.fillText(item.l, cellX + gap/2, c.y + GRID_H*1.5); }
+                        }
+                    });
+                }
+                if(c.botArr) {
+                    const yBase = c.y + c.h;
+                    ctx.beginPath(); ctx.moveTo(c.x, yBase - GRID_H); ctx.lineTo(c.x + c.w, yBase - GRID_H);
+                    ctx.moveTo(c.x, yBase - GRID_H*2); ctx.lineTo(c.x + c.w, yBase - GRID_H*2); ctx.stroke();
+                    const gap = c.w / c.botArr.length;
+                    c.botArr.forEach((item, i) => {
+                        const cellX = c.x + gap * i;
+                        if (i > 0) { ctx.beginPath(); ctx.moveTo(cellX, yBase - GRID_H*2); ctx.lineTo(cellX, yBase); ctx.stroke(); }
+                        if (item.n !== '$') {
+                            ctx.fillStyle = '#000'; ctx.font = 'bold 12px Arial'; ctx.fillText(item.n, cellX + gap/2, yBase - GRID_H/2);
+                            if(item.l) { ctx.fillStyle = 'blue'; ctx.font = '11px Arial'; ctx.fillText(item.l, cellX + gap/2, yBase - GRID_H*1.5); }
+                        }
+                    });
+                }
+            }
+        });
+        // 전선 그리기
+        wires.forEach(w => {
+            let color = '#e6b800';
+            if (isGradingMode) {
+                const startGroup = w.start.groupIndex;
+                const endGroup = w.end.groupIndex;
+                if (startGroup === endGroup && startGroup !== -1) {
+                    color = GROUP_COLORS[startGroup % GROUP_COLORS.length]; // 그룹별 색상 적용
+                } else if (w.start.gradingStatus === 'wrong' || w.end.gradingStatus === 'wrong') {
+                    color = '#dc3545';
+                } else if (w.start.gradingStatus === 'missing' || w.end.gradingStatus === 'missing') {
+                    color = '#fd7e14';
+                }
+            }
+            drawDuctWire(w.start, w.end, w.offset, color, 3);
+        });
+        // 핀 그리기
+        allPins.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
+            let fill = '#fff', stroke = '#007bff';
+           
+            if (isGradingMode) {
+                if (p.groupIndex !== -1 && p.gradingStatus === 'correct') {
+                    fill = GROUP_COLORS[p.groupIndex % GROUP_COLORS.length]; // 그룹별 색상
+                    stroke = fill;
+                } else if (p.gradingStatus === 'missing') {
+                    fill = '#fd7e14'; stroke = '#fd7e14';
+                } else if (p.gradingStatus === 'wrong') {
+                    fill = '#dc3545'; stroke = '#dc3545';
+                } else if (p.connections > 0) {
+                    fill = '#999'; stroke = '#999';
+                }
+            } else {
+                if (p === selectedPin) { fill = '#ff0000'; stroke = '#fff'; }
+                else if (p.connections >= 2) { fill = '#333'; stroke = '#fff'; }
+            }
+            ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 2;
+            ctx.fill(); ctx.stroke();
+        });
+    }
+    function drawDuctWire(start, end, offset, color, width) {
+        ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round';
+        const startDuctY = getNearestDuctY(start.y); const endDuctY = getNearestDuctY(end.y);
+        const sy = startDuctY + offset; const ey = endDuctY + offset;
+        ctx.moveTo(start.x, start.y);
+        if (startDuctY === endDuctY) { ctx.lineTo(start.x, sy); ctx.lineTo(end.x, sy); ctx.lineTo(end.x, end.y); }
+        else {
+            const midX = (start.x + end.x) / 2;
+            const sideX = (midX < 350) ? DUCTS.LEFT_X : DUCTS.RIGHT_X;
+            const sx = sideX + (sideX === DUCTS.LEFT_X ? -offset : offset);
+            ctx.lineTo(start.x, sy); ctx.lineTo(sx, sy); ctx.lineTo(sx, ey); ctx.lineTo(end.x, ey); ctx.lineTo(end.x, end.y);
+        }
+        ctx.stroke();
+    }
+   
+    function getNearestDuctY(y) {
+        const dists = [ { val: DUCTS.TOP, dist: Math.abs(y - DUCTS.TOP) }, { val: DUCTS.MID, dist: Math.abs(y - DUCTS.MID) }, { val: DUCTS.BOT, dist: Math.abs(y - DUCTS.BOT) } ];
+        dists.sort((a, b) => a.dist - b.dist);
+        return dists[0].val;
+    }
+    // ==========================================
+    // 4. 이벤트 핸들러 (PC & Mobile 통합)
+    // ==========================================
+    function handleInput(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (clientX - rect.left) * scaleX;
+        const y = (clientY - rect.top) * scaleY;
+        if (isGradingMode) return;
+        let clickedPin = null;
+        for(let p of allPins) { if (Math.sqrt((x - p.x)**2 + (y - p.y)**2) < 20) { clickedPin = p; break; } }
+        if (!clickedPin) { selectedPin = null; statusMsg.textContent = "선택 취소"; draw(); return; }
+        if (selectedPin === null) {
+            if (clickedPin.connections >= 2) { alert("2선 초과 불가"); return; }
+            selectedPin = clickedPin; statusMsg.textContent = "연결할 목표 지점 선택"; statusMsg.style.color = "red"; draw();
+        } else {
+            if (selectedPin === clickedPin) { selectedPin = null; statusMsg.textContent = "취소"; draw(); return; }
+            if (clickedPin.connections >= 2) { alert("목표 지점 꽉 참"); return; }
+            wires.push({ start: selectedPin, end: clickedPin, offset: (Math.random() * 20) - 10 });
+            selectedPin.connections++; clickedPin.connections++; selectedPin = null;
+            statusMsg.textContent = "연결 완료!"; statusMsg.style.color = "#007bff"; draw();
+        }
+    }
+    canvas.addEventListener('mousedown', (e) => { handleInput(e.clientX, e.clientY); });
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        handleInput(touch.clientX, touch.clientY);
+    }, { passive: false });
+    // ==========================================
+    // 5. 채점 로직 (그룹별 채점 강화)
+    // ==========================================
+    function toggleGrading() {
+        if (!isDevMode) { alert("개발자 모드에서만 채점 가능합니다."); return; } // 개발자 모드에서만 채점 허용
+        isGradingMode = !isGradingMode;
+        if (isGradingMode) {
+            runGrading();
+            statusMsg.textContent = "채점 결과 확인 (그룹별 색상 적용)";
+            btnCheck.textContent = "채점 종료";
+            btnCheck.classList.add('active');
+        } else {
+            statusMsg.textContent = "작업 모드";
+            btnCheck.textContent = "채점 하기";
+            btnCheck.classList.remove('active');
+        }
+        draw();
+    }
+   
+    function updateUI() {
+        btnCheck.classList.remove('active');
+        statusMsg.textContent = "대기 중";
+        btnCheck.textContent = "채점 하기";
+    }
+    function runGrading() {
+        allPins.forEach(p => { p.gradingStatus = 'none'; p.groupIndex = -1; });
+        const userGroups = getUserConnectedGroups();
+        const answers = ANSWER_KEY["layout1"];
+        answers.forEach((answerNet, groupIdx) => {
+            const foundGroups = [];
+            let missingPins = [];
+           
+            answerNet.forEach(pinId => {
+                const group = userGroups.find(g => g.has(pinId));
+                if (group) { if (!foundGroups.includes(group)) foundGroups.push(group); }
+                else { missingPins.push(pinId); }
+            });
+            if (foundGroups.length === 1 && missingPins.length === 0) {
+                const group = foundGroups[0];
+                const isPure = Array.from(group).every(pID => answerNet.includes(pID));
+                group.forEach(pID => {
+                    const pin = allPins.find(p => p.id === pID);
+                    if(pin) {
+                        pin.gradingStatus = isPure ? 'correct' : 'wrong';
+                        if (isPure) pin.groupIndex = groupIdx; // 정답 그룹 인덱스 할당
+                    }
+                });
+            } else {
+                foundGroups.forEach(group => {
+                    group.forEach(pID => {
+                        const pin = allPins.find(p => p.id === pID);
+                        if(pin) pin.gradingStatus = 'missing';
+                    });
+                });
+            }
+        });
+    }
+    function getUserConnectedGroups() {
+        const groups = [];
+        const visited = new Set();
+        const adj = {};
+        allPins.forEach(p => adj[p.id] = []);
+        wires.forEach(w => {
+            adj[w.start.id].push(w.end.id);
+            adj[w.end.id].push(w.start.id);
+        });
+        allPins.forEach(pin => {
+            if (!visited.has(pin.id) && pin.connections > 0) {
+                const group = new Set();
+                const queue = [pin.id];
+                visited.add(pin.id);
+                group.add(pin.id);
+                while(queue.length > 0) {
+                    const curr = queue.shift();
+                    adj[curr].forEach(neighbor => {
+                        if (!visited.has(neighbor)) {
+                            visited.add(neighbor);
+                            group.add(neighbor);
+                            queue.push(neighbor);
+                        }
+                    });
+                }
+                groups.push(group);
+            }
+        });
+        return groups;
+    }
+    function resetWires() {
+        wires = [];
+        allPins.forEach(p => p.connections = 0);
+        selectedPin = null;
+        isGradingMode = false;
+        updateUI();
+        draw();
+    }
+    // ==========================================
+    // 6. 개발자 모드 토글 추가
+    // ==========================================
+    function toggleDevMode() {
+        isDevMode = !isDevMode;
+        btnDev.textContent = isDevMode ? "개발자 모드 (ON)" : "개발자 모드 (OFF)";
+        btnDev.style.backgroundColor = isDevMode ? "#28a745" : "#007bff";
+        statusMsg.textContent = isDevMode ? "개발자 모드 활성화: 채점 가능" : "개발자 모드 비활성화";
+    }
+    init();
+</script>
 </body>
 </html>
