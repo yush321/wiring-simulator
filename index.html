@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>전기기능사 마스터 (최종)</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #333; color: white;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 10px; margin: 0; overscroll-behavior: none; user-select: none;
+        }
+        h2 { margin: 10px 0; font-size: 1.2rem; text-align: center; color: #fff; }
+        
+        .controls { 
+            margin-bottom: 10px; padding: 10px; background: #444;
+            border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center;
+        }
+        select { padding: 8px; font-weight: bold; border-radius: 4px; border: none; }
+        button { 
+            padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; 
+            font-weight: bold; font-size: 14px; color: white; transition: 0.2s;
+        }
+        button:hover { filter: brightness(1.2); }
+        .btn-reset { background-color: #6c757d; }
+        .btn-check { background-color: #28a745; }
+        .btn-undo { background-color: #ffc107; color: black; }
+        .btn-check.active { background-color: #dc3545; }
+        .btn-info { background-color: #17a2b8; }
+        .btn-admin { background-color: #007bff; border: 1px solid #0056b3; }
+        .btn-delete-all { background-color: #dc3545; border: 1px solid #a71d2a; font-size: 12px;}
+
+        /* 모달 (설명 및 성공) */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #fff; color: #333; width: 90%; max-width: 500px;
+            padding: 25px; border-radius: 12px; position: relative;
+            max-height: 85vh; overflow-y: auto; text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .modal-header { font-size: 20px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .modal-body img { max-width: 100%; height: auto; border: 1px solid #ccc; margin: 10px 0; border-radius: 5px;}
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 28px; cursor: pointer; font-weight: bold; color: #666; }
+        
+        /* 성공 메시지 스타일 */
+        .success-icon { font-size: 50px; margin-bottom: 10px; display: block; }
+
+        #adminInfo { display: none; width: 90%; max-width: 700px; background: #222; border: 1px solid #555; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; }
+        .info-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; }
+        .key-badge { background: #555; padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #fff; border: 1px solid #777; font-family: monospace; font-size: 16px; margin-right: 5px;}
+        .mode-desc { display: flex; align-items: center; margin-bottom: 8px; }
+        input[type="number"] { width: 50px; padding: 4px; text-align: center; background: #333; color: white; border: 1px solid #666; font-weight: bold; }
+        #exportArea { width: 100%; height: 80px; margin-top: 10px; font-family: monospace; font-size: 12px; display: none; background: #111; color: #0f0; border: 1px solid #444; }
+
+        canvas { background-color: #fff; border: 2px solid #555; box-shadow: 0 0 15px rgba(0,0,0,0.5); touch-action: none; max-width: 100%; height: auto; }
+        .legend { font-size: 12px; color: #ccc; margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;}
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        #statusMsg { font-weight: bold; color: #fff; font-size: 14px; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="infoModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('infoModal')">&times;</span>
+            <div class="modal-header" id="modalTitle">학습 안내</div>
+            <div class="modal-body" id="modalBody"></div>
+            <button style="width:100%; margin-top:15px; background:#007bff; color:white; padding:12px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:16px;" onclick="closeModal('infoModal')">시작하기</button>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal-overlay">
+        <div class="modal-content" style="border-top: 5px solid #28a745;">
+            <span class="close-btn" onclick="closeModal('successModal')">&times;</span>
+            <div class="modal-body">
+                <span class="success-icon">🎉</span>
+                <h2 style="color:#28a745; margin:0;">정답입니다!</h2>
+                <p style="margin-top:10px; font-size:16px;">완벽하게 결선하셨습니다.</p>
+            </div>
+            <button style="width:100%; margin-top:15px; background:#28a745; color:white; padding:12px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:16px;" onclick="closeModal('successModal')">계속하기</button>
+        </div>
+    </div>
+
+    <h2>전기기능사 마스터</h2>
+    
+    <div class="controls">
+        <select id="layoutSelect" onchange="changeLayout()"></select>
+        <button class="btn-info" onclick="openModal()">📖 설명</button>
+        <button class="btn-undo" onclick="undoLastAction()">↩ (Ctrl+Z)</button>
+        <button class="btn-reset" onclick="resetWires()">초기화</button>
+        <button id="btnCheck" class="btn-check" onclick="toggleGrading()">채점 하기</button>
+        <div style="width: 1px; height: 20px; background: #666; margin: 0 5px;"></div>
+        <button class="btn-admin" onclick="toggleAdminMode()">🔧 관리자</button>
+    </div>
+
+    <div id="adminInfo">
+        <div class="info-header">
+            <span style="color:#00ffff;"><b>[관리자: <span id="currentLayoutNum">1</span>번]</b></span>
+            <div>
+                <label>공통 시작:</label> <input type="number" id="groupIndexInput" value="1" min="1">
+                <button class="btn-delete-all" onclick="clearCurrentLayoutData()">🗑️ 삭제</button>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="mode-desc" style="color: #ff6b6b;">
+                <span class="key-badge">T</span> <div><b>정밀 채점</b><br><small>입력 후 T (빨강)</small></div>
+            </div>
+            <div class="mode-desc" style="color: #4ecdc4;">
+                <span class="key-badge">F</span> <div><b>공통 채점</b><br><small>입력 후 F (그룹색)</small></div>
+            </div>
+        </div>
+        <div style="margin-top: 10px; padding-top:10px; border-top: 1px solid #444;">
+             <button style="width:100%; background:#444;" onclick="exportAllData()">📋 전체 데이터 생성</button>
+        </div>
+        <textarea id="exportArea" readonly></textarea>
+        <div id="saveStatus" style="color: yellow; margin-top: 5px; height: 20px;"></div>
+    </div>
+
+    <div class="legend">
+        <span><i class="dot" style="background:#e6b800"></i>작업선</span>
+        <span><i class="dot" style="background:#28a745"></i>정답</span>
+        <span><i class="dot" style="background:#dc3545"></i>오답</span>
+    </div>
+    <span id="statusMsg">대기 중</span>
+    
+    <canvas id="simCanvas" width="700" height="720"></canvas>
+
+<script>
+    const DUCTS = { TOP: 100, MID: 320, BOT: 550, LEFT_X: 30, RIGHT_X: 670 };
+    const GRID_H = 20;
+    const PALETTE = ["#007bff", "#28a745", "#fd7e14", "#8B4513", "#6f42c1", "#17a2b8"];
+
+    // ==========================================
+    // 1. 기초 튜토리얼 설정
+    // ==========================================
+    const TUTORIAL_CONFIG = {
+        "t1": {
+            title: "기초 1. 주전원 입/출력",
+            desc: "단자대(TB)에서 차단기(MCCB) 1차측으로 전원을 연결하는 가장 기초적인 작업입니다.<br>회로도의 R, S, T상을 확인하고 연결하세요.",
+            img: "data:image/png;base64,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", 
+            targetIds: ["FUSE", "EOCR"] 
+        },
+        "t2": {
+            title: "기초 2. 제어회로 전원 공급",
+            desc: "MCCB에서 퓨즈(FUSE)를 거쳐 EOCR의 전원부(6, 12번)까지 연결하는 과정입니다.",
+            img: "https://via.placeholder.com/400x200?text=Control+Power+Diagram",
+            targetIds: ["MCCB", "TB_Top_L", "EOCR"]
+        },
+        "t3": {
+            title: "기초 3. 릴레이와 타이머",
+            desc: "8핀 릴레이(X)와 타이머(T)의 전원부(2, 7번)를 연결해 봅니다.",
+            img: "", targetIds: ["X", "T", "FUSE"]
+        }
+    };
+
+    const PUBLIC_LAYOUT_BASE = [
+        { id: 'TB_Top_L', label: '', x: 50, y: 30, w: 280, h: 50, type: 'terminal', startNum: 1, pins: [ {n:'C', g:'PB01'}, {n:'N', g:'PB01'}, {n:'O', g:'PB01'}, {n:'M', g:'SS'}, {n:'C', g:'SS'}, {n:'A', g:'SS'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB1'}, {n:'흑', g:'TB1'} ] },
+        { id: 'TB_Top_R', label: '', x: 370, y: 30, w: 280, h: 50, type: 'terminal', startNum: 11, pins: [ {n:'회', g:'TB1'}, {n:'녹', g:'TB1'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'+', g:'RLGL'}, {n:'-', g:'RLGL'}, {n:'+', g:'RLGL'} ] },
+        { id: 'FUSE', label: 'FUSE', x: 50, y: 160, w: 60, h: 110, type: 'fuse', topArr: [ {n:'+1', l:''}, {n:'-1', l:''} ], botArr: [ {n:'+2', l:''}, {n:'-2', l:''} ] },
+        { id: 'EOCR', label: 'EOCR', x: 130, y: 160, w: 90, h: 110, type: 'custom', topArr: [ {n:'1',l:'a'}, {n:'2',l:'a'}, {n:'3',l:'a'}, {n:'4',l:'b'}, {n:'5',l:'a'}, {n:'6',l:'전'} ], botArr: [ {n:'7',l:'a'}, {n:'8',l:'a'}, {n:'9',l:'a'}, {n:'10',l:'c'}, {n:'$',l:'$'}, {n:'12',l:'원'} ] },
+        { id: 'MCCB', label: 'MCCB', x: 240, y: 160, w: 80, h: 110, type: 'custom', topArr: [ {n:'1',l:''}, {n:'2',l:''}, {n:'3',l:''} ], botArr: [ {n:'7',l:''}, {n:'8',l:''}, {n:'9',l:''} ] },
+        { id: 'X', label: 'X (8P)', x: 340, y: 160, w: 90, h: 110, type: 'custom', topArr: [ {n:'6',l:'A'}, {n:'5',l:'B'}, {n:'4',l:'b'}, {n:'3',l:'a'} ], botArr: [ {n:'7',l:'전'}, {n:'8',l:'C'}, {n:'1',l:'C'}, {n:'2',l:'원'} ] },
+        { id: 'FR', label: 'FR (8P)', x: 450, y: 160, w: 90, h: 110, type: 'custom', topArr: [ {n:'6',l:'a'}, {n:'5',l:'b'}, {n:'$',l:'$'}, {n:'$',l:'$'} ], botArr: [ {n:'7',l:'전'}, {n:'8',l:'C'}, {n:'$',l:'$'}, {n:'2',l:'원'} ] },
+        { id: 'T', label: 'Timer', x: 80, y: 390, w: 90, h: 110, type: 'custom', topArr: [ {n:'6',l:'A'}, {n:'5',l:'B'}, {n:'$',l:'$'}, {n:'3',l:'a'} ], botArr: [ {n:'7',l:'전'}, {n:'8',l:'C'}, {n:'1',l:'a'}, {n:'2',l:'원'} ] },
+        { id: 'FLS', label: 'FLS', x: 190, y: 390, w: 90, h: 110, type: 'custom', topArr: [ {n:'6',l:'전'}, {n:'5',l:'C'}, {n:'4',l:'a'}, {n:'3',l:'원'} ], botArr: [ {n:'7',l:'E1'}, {n:'8',l:'E2'}, {n:'1',l:'E3'}, {n:'2',l:'b'} ] },
+        { id: 'MC1', label: 'MC1', x: 300, y: 390, w: 100, h: 110, type: 'custom', topArr: [ {n:'1',l:'a'}, {n:'2',l:'a'}, {n:'3',l:'a'}, {n:'4',l:'a'}, {n:'5',l:'b'}, {n:'6',l:'전'} ], botArr: [ {n:'7',l:'a'}, {n:'8',l:'a'}, {n:'9',l:'a'}, {n:'10',l:'a'}, {n:'11',l:'b'}, {n:'12',l:'원'} ] },
+        { id: 'MC2', label: 'MC2', x: 420, y: 390, w: 100, h: 110, type: 'custom', topArr: [ {n:'1',l:'a'}, {n:'2',l:'a'}, {n:'3',l:'a'}, {n:'4',l:'a'}, {n:'5',l:'b'}, {n:'6',l:'전'} ], botArr: [ {n:'7',l:'a'}, {n:'8',l:'a'}, {n:'9',l:'a'}, {n:'10',l:'a'}, {n:'11',l:'b'}, {n:'12',l:'원'} ] },
+        { id: 'TB_Bot_L', label: '', x: 50, y: 600, w: 280, h: 50, type: 'terminal', startNum: 1, pins: [ {n:'Y', g:'YLBZ'}, {n:'C', g:'YLBZ'}, {n:'B', g:'YLBZ'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB3'}, {n:'흑', g:'TB3'}, {n:'회', g:'TB3'}, {n:'녹', g:'TB3'} ] },
+        { id: 'TB_Bot_R', label: '', x: 370, y: 600, w: 280, h: 50, type: 'terminal', startNum: 11, pins: [ {n:'E1', g:'TB4'}, {n:'E2', g:'TB4'}, {n:'E3', g:'TB4'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB2'}, {n:'흑', g:'TB2'}, {n:'회', g:'TB2'}, {n:'녹', g:'TB2'} ] }
+    ];
+
+    // ==========================================
+    // 2. 정답 데이터 (덮어씌우는 곳)
+    // ==========================================
+    let DB_ANSWERS = {}; 
+
+    function initData() {
+        for(let i=1; i<=18; i++) { if(!DB_ANSWERS[i]) DB_ANSWERS[i] = { targets: [], commons: [] }; }
+        for(let k in TUTORIAL_CONFIG) { if(!DB_ANSWERS[k]) DB_ANSWERS[k] = { targets: [], commons: [] }; }
+    }
+    initData();
+
+    // ==========================================
+    // 3. 변수 및 초기화
+    // ==========================================
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusMsg = document.getElementById('statusMsg');
+    const btnCheck = document.getElementById('btnCheck');
+    const adminInfo = document.getElementById('adminInfo');
+    const saveStatus = document.getElementById('saveStatus');
+    const groupIndexInput = document.getElementById('groupIndexInput');
+    const exportArea = document.getElementById('exportArea');
+    const layoutSelect = document.getElementById('layoutSelect');
+    const currentLayoutNumSpan = document.getElementById('currentLayoutNum');
+    
+    const infoModal = document.getElementById('infoModal');
+    const successModal = document.getElementById('successModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    let currentLayoutId = "t1"; 
+    let currentComponents = [];
+    let allPins = [], wires = [], historyStack = [];
+    let selectedPin = null; 
+    let isGradingMode = false;
+    let isAdminMode = false; 
+    let focusedGroup = null; 
+
+    function init() {
+        const grp1 = document.createElement('optgroup'); grp1.label = "--- 기초 튜토리얼 ---";
+        for(let k in TUTORIAL_CONFIG) {
+            const opt = document.createElement('option'); opt.value = k; opt.innerText = TUTORIAL_CONFIG[k].title;
+            grp1.appendChild(opt);
+        }
+        layoutSelect.appendChild(grp1);
+
+        const grp2 = document.createElement('optgroup'); grp2.label = "--- 실전 연습 ---";
+        for(let i=1; i<=18; i++) {
+            const opt = document.createElement('option'); opt.value = i; opt.innerText = `공개도면 ${i}번`;
+            grp2.appendChild(opt);
+        }
+        layoutSelect.appendChild(grp2);
+
+        document.addEventListener('keydown', handleKeyInput);
+        canvas.addEventListener('mousedown', (e) => handleInput(e.clientX, e.clientY));
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+        
+        changeLayout();
+    }
+
+    function changeLayout() {
+        currentLayoutId = layoutSelect.value;
+        currentLayoutNumSpan.innerText = currentLayoutId;
+        
+        if (TUTORIAL_CONFIG[currentLayoutId]) {
+            const targetIds = TUTORIAL_CONFIG[currentLayoutId].targetIds;
+            currentComponents = PUBLIC_LAYOUT_BASE.filter(comp => targetIds.includes(comp.id));
+            currentComponents = JSON.parse(JSON.stringify(currentComponents));
+            openModal();
+        } else {
+            currentComponents = JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
+        }
+        
+        allPins = [];
+        currentComponents.forEach(comp => generatePins(comp));
+        resetWires();
+        statusMsg.textContent = `${currentLayoutId} 준비완료`;
+    }
+
+    function openModal() {
+        if(TUTORIAL_CONFIG[currentLayoutId]) {
+            const data = TUTORIAL_CONFIG[currentLayoutId];
+            modalTitle.innerText = data.title;
+            let html = `<p>${data.desc}</p>`;
+            if(data.img) html += `<img src="${data.img}" alt="참고 이미지">`;
+            modalBody.innerHTML = html;
+            infoModal.style.display = "flex";
+        } else {
+            modalTitle.innerText = `공개도면 ${currentLayoutId}번`;
+            modalBody.innerHTML = `<p>실전 문제입니다. 전체 회로를 구성하세요.</p>`;
+            infoModal.style.display = "flex";
+        }
+    }
+    function closeModal(id) { document.getElementById(id).style.display = "none"; }
+
+    function generatePins(comp) {
+        const topY = comp.y; const botY = comp.y + comp.h;
+        if (comp.type === 'terminal') {
+            const gap = comp.w / 10;
+            comp.pins.forEach((p, i) => {
+                if (p.n !== '$') {
+                    let pinY = (comp.y < 300) ? botY : topY;
+                    addPin(comp, comp.startNum + i, p.n, comp.x + gap/2 + i*gap, pinY);
+                }
+            });
+        } else {
+            if(comp.topArr) {
+                const gap = comp.w / comp.topArr.length;
+                comp.topArr.forEach((item, idx) => { if(item.n !== '$') addPin(comp, item.n, item.l, comp.x + gap/2 + idx*gap, topY); });
+            }
+            if(comp.botArr) {
+                const gap = comp.w / comp.botArr.length;
+                comp.botArr.forEach((item, idx) => { if(item.n !== '$') addPin(comp, item.n, item.l, comp.x + gap/2 + idx*gap, botY); });
+            }
+        }
+    }
+
+    function addPin(comp, pinNum, label, x, y) {
+        allPins.push({ id: `${comp.id}_${pinNum}`, parentId: comp.id, num: pinNum, label: label, x: x, y: y, connections: 0 });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (!TUTORIAL_CONFIG[currentLayoutId]) {
+            ctx.beginPath(); ctx.strokeStyle = '#eee'; ctx.lineWidth = 10;
+            [DUCTS.TOP, DUCTS.MID, DUCTS.BOT].forEach(y => { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); });
+            ctx.moveTo(DUCTS.LEFT_X, 0); ctx.lineTo(DUCTS.LEFT_X, canvas.height);
+            ctx.moveTo(DUCTS.RIGHT_X, 0); ctx.lineTo(DUCTS.RIGHT_X, canvas.height);
+            ctx.stroke();
+        }
+
+        const ans = DB_ANSWERS[currentLayoutId];
+
+        if (isAdminMode && ans) {
+            ans.targets.forEach(info => {
+                const s = allPins.find(p => p.id === info[0]); const e = allPins.find(p => p.id === info[1]);
+                if (s && e) drawDuctWire(s, e, info[2], '#dc3545', 2);
+            });
+            ans.commons.forEach(group => {
+                if (group.visuals) {
+                    group.visuals.forEach(info => {
+                        const s = allPins.find(p => p.id === info[0]); const e = allPins.find(p => p.id === info[1]);
+                        if (s && e) drawDuctWire(s, e, info[2], group.color, 2);
+                    });
+                }
+            });
+        }
+
+        if (isGradingMode && focusedGroup) {
+            if (focusedGroup.type === 'target') {
+                const s = allPins.find(p => p.id === focusedGroup.data[0]);
+                const e = allPins.find(p => p.id === focusedGroup.data[1]);
+                if(s && e) { ctx.setLineDash([5, 5]); drawDuctWire(s, e, focusedGroup.data[2], '#00ff00', 2); ctx.setLineDash([]); }
+            } 
+            else if (focusedGroup.type === 'common') {
+                if(focusedGroup.data.visuals) {
+                    ctx.setLineDash([5, 5]);
+                    focusedGroup.data.visuals.forEach(v => {
+                        const s = allPins.find(p => p.id === v[0]); const e = allPins.find(p => p.id === v[1]);
+                        if(s && e) drawDuctWire(s, e, v[2], focusedGroup.data.color, 2);
+                    });
+                    ctx.setLineDash([]);
+                }
+            }
+        }
+
+        wires.forEach(w => {
+            let color = '#e6b800'; 
+            let alpha = 1.0;
+            if (isGradingMode) {
+                if (focusedGroup) {
+                    if (w.matchedGroup !== focusedGroup.data) { alpha = 0.1; color = '#ccc'; } 
+                    else { color = w.gradingColor; }
+                } else { if (w.gradingColor) color = w.gradingColor; }
+            }
+            ctx.globalAlpha = alpha;
+            drawDuctWire(w.start, w.end, w.offset, color, 3);
+            ctx.globalAlpha = 1.0;
+        });
+
+        currentComponents.forEach(c => {
+            ctx.fillStyle = '#fff'; ctx.fillRect(c.x, c.y, c.w, c.h);
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.strokeRect(c.x, c.y, c.w, c.h);
+            ctx.fillStyle = '#000'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            if (c.type !== 'terminal') ctx.fillText(c.label, c.x + c.w/2, c.y + c.h/2);
+
+            if (c.type === 'terminal') {
+                const gap = c.w / 10;
+                ctx.beginPath(); ctx.moveTo(c.x, c.y + c.h/2); ctx.lineTo(c.x + c.w, c.y + c.h/2); ctx.stroke();
+                c.pins.forEach((p, i) => {
+                    const cellX = c.x + i*gap;
+                    if (i > 0) { ctx.beginPath(); ctx.moveTo(cellX, c.y); ctx.lineTo(cellX, c.y + c.h); ctx.stroke(); }
+                    if (p.n !== '$') {
+                        ctx.fillStyle='#d9534f'; ctx.font='10px Arial'; ctx.fillText(p.g, cellX+gap/2, c.y+c.h/4);
+                        ctx.fillStyle='#000'; ctx.font='11px Arial'; ctx.fillText(p.n, cellX+gap/2, c.y+(c.h*3)/4);
+                        ctx.fillStyle='#007bff'; ctx.font='10px Arial'; 
+                        if(c.y<300) ctx.fillText(c.startNum+i, cellX+gap/2, c.y-8); else ctx.fillText(c.startNum+i, cellX+gap/2, c.y+c.h+10);
+                    }
+                });
+            } else {
+                if(c.topArr) {
+                    const gap = c.w / c.topArr.length;
+                    c.topArr.forEach((item, i) => {
+                        const cellX = c.x + gap * i;
+                        ctx.beginPath(); ctx.rect(cellX, c.y, gap, GRID_H*2); ctx.stroke();
+                        if(item.n!=='$') { ctx.fillStyle='#000'; ctx.font='12px Arial'; ctx.fillText(item.n, cellX+gap/2, c.y+GRID_H/2); if(item.l) { ctx.fillStyle='blue'; ctx.font='11px Arial'; ctx.fillText(item.l, cellX+gap/2, c.y+GRID_H*1.5); } }
+                    });
+                }
+                if(c.botArr) {
+                    const yBase = c.y + c.h;
+                    const gap = c.w / c.botArr.length;
+                    c.botArr.forEach((item, i) => {
+                        const cellX = c.x + gap * i;
+                        ctx.beginPath(); ctx.rect(cellX, yBase-GRID_H*2, gap, GRID_H*2); ctx.stroke();
+                        if(item.n!=='$') { ctx.fillStyle='#000'; ctx.font='12px Arial'; ctx.fillText(item.n, cellX+gap/2, yBase-GRID_H/2); if(item.l) { ctx.fillStyle='blue'; ctx.font='11px Arial'; ctx.fillText(item.l, cellX+gap/2, yBase-GRID_H*1.5); } }
+                    });
+                }
+            }
+        });
+
+        allPins.forEach(p => {
+            ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
+            let fill = (p === selectedPin) ? '#ff0000' : (p.connections>=2 ? '#333' : '#fff');
+            if (isAdminMode && ans) { ans.commons.forEach(g => { if (g.pins.includes(p.id)) fill = g.color; }); }
+            ctx.fillStyle = fill; ctx.strokeStyle = '#007bff'; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+        });
+    }
+
+    function drawDuctWire(start, end, offset, color, width) {
+        ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round';
+        let startDuctY = getNearestDuctY(start.y); let endDuctY = getNearestDuctY(end.y);
+        
+        // 튜토리얼이면 단순 연결 (옵션)
+        if(TUTORIAL_CONFIG[currentLayoutId]) {
+             // 필요시 덕트 무시 로직 추가
+        }
+
+        const sy = startDuctY + offset; const ey = endDuctY + offset;
+        ctx.moveTo(start.x, start.y);
+        if (startDuctY === endDuctY) { ctx.lineTo(start.x, sy); ctx.lineTo(end.x, sy); ctx.lineTo(end.x, end.y); } 
+        else {
+            const midX = (start.x + end.x) / 2;
+            const sideX = (midX < 350) ? DUCTS.LEFT_X : DUCTS.RIGHT_X;
+            const sx = sideX + (sideX === DUCTS.LEFT_X ? -offset : offset); 
+            ctx.lineTo(start.x, sy); ctx.lineTo(sx, sy); ctx.lineTo(sx, ey); ctx.lineTo(end.x, ey); ctx.lineTo(end.x, end.y);
+        }
+        ctx.stroke();
+    }
+    
+    function getNearestDuctY(y) {
+        const dists = [ { val: DUCTS.TOP, dist: Math.abs(y - DUCTS.TOP) }, { val: DUCTS.MID, dist: Math.abs(y - DUCTS.MID) }, { val: DUCTS.BOT, dist: Math.abs(y - DUCTS.BOT) } ];
+        dists.sort((a, b) => a.dist - b.dist);
+        return dists[0].val;
+    }
+
+    // ==========================================
+    // 관리자, 입력, 채점 로직
+    // ==========================================
+    function toggleAdminMode() {
+        isAdminMode = !isAdminMode;
+        if(isAdminMode) {
+            adminInfo.style.display = 'block';
+            statusMsg.textContent = `[관리자] ${currentLayoutId} 작업 중`;
+            statusMsg.style.color = "#007bff";
+            wires = []; draw();
+        } else {
+            adminInfo.style.display = 'none';
+            statusMsg.textContent = "대기 중";
+            statusMsg.style.color = "#fff";
+            wires = []; draw();
+        }
+    }
+
+    function handleKeyInput(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undoLastAction(); return; }
+        if (isAdminMode) {
+            const key = e.key.toLowerCase();
+            const currentAnswers = DB_ANSWERS[currentLayoutId]; 
+            if (key === 't') {
+                if (wires.length === 0) return alert("선 없음");
+                wires.forEach(w => currentAnswers.targets.push([w.start.id, w.end.id, w.offset]));
+                showSaveStatus(`${currentLayoutId}: 정밀(빨강) 저장됨!`); wires = []; draw(); 
+            }
+            else if (key === 'f') {
+                if (wires.length === 0) return alert("선 없음");
+                const pinSet = new Set(); const visualWires = []; 
+                wires.forEach(w => { pinSet.add(w.start.id); pinSet.add(w.end.id); visualWires.push([w.start.id, w.end.id, w.offset]); });
+                const groupNum = parseInt(groupIndexInput.value);
+                const color = PALETTE[(groupNum - 1) % PALETTE.length]; 
+                currentAnswers.commons.push({ name: groupNum.toString(), color: color, pins: Array.from(pinSet), visuals: visualWires });
+                showSaveStatus(`${currentLayoutId}: 공통 ${groupNum}번 저장됨!`);
+                groupIndexInput.value = groupNum + 1; wires = []; draw(); 
+            }
+        }
+    }
+
+    function calculateGrading() {
+        wires.forEach(w => { w.gradingColor = null; w.matchedGroup = null; });
+        const userGroups = getUserConnectedGroups();
+        const ans = DB_ANSWERS[currentLayoutId]; 
+        
+        // 정답 체크 카운터
+        let correctTargetCount = 0;
+        let correctCommonCount = 0;
+        let wrongWireCount = 0;
+
+        if(ans) {
+            ans.targets.forEach(info => {
+                const foundWire = wires.find(w => (w.start.id === info[0] && w.end.id === info[1]) || (w.start.id === info[1] && w.end.id === info[0]));
+                if (foundWire) { 
+                    foundWire.gradingColor = '#28a745'; 
+                    foundWire.matchedGroup = info;
+                    correctTargetCount++;
+                }
+            });
+            ans.commons.forEach(commonGroup => {
+                const targetSet = new Set(commonGroup.pins);
+                const matchedUserGroup = userGroups.find(userSet => {
+                    for (let p of targetSet) if (userSet.has(p)) return true; return false;
+                });
+                if (matchedUserGroup) {
+                    const isMissing = !commonGroup.pins.every(p => matchedUserGroup.has(p));
+                    const isExtra = !Array.from(matchedUserGroup).every(p => targetSet.has(p));
+                    if (!isMissing && !isExtra) {
+                        correctCommonCount++;
+                        wires.forEach(w => {
+                            if (matchedUserGroup.has(w.start.id) && matchedUserGroup.has(w.end.id)) {
+                                w.gradingColor = commonGroup.color; w.matchedGroup = commonGroup;
+                            }
+                        });
+                    }
+                }
+            });
+        }
+        
+        wires.forEach(w => { 
+            if (!w.gradingColor) { 
+                w.gradingColor = '#ff0000'; 
+                wrongWireCount++;
+            } 
+        });
+
+        // ★ 성공 체크 로직
+        if(ans) {
+            const totalTargets = ans.targets.length;
+            const totalCommons = ans.commons.length;
+            
+            // 모든 정답을 맞추고, 오답(빨간줄)이 하나도 없으면 성공
+            if (correctTargetCount === totalTargets && correctCommonCount === totalCommons && wrongWireCount === 0) {
+                // 약간의 딜레이 후 팝업
+                setTimeout(() => { successModal.style.display = "flex"; }, 300);
+            }
+        }
+    }
+
+    function getUserConnectedGroups() {
+        const groups = []; const visited = new Set(); const adj = {};
+        allPins.forEach(p => adj[p.id] = []);
+        wires.forEach(w => { adj[w.start.id].push(w.end.id); adj[w.end.id].push(w.start.id); });
+        allPins.forEach(pin => {
+            if (!visited.has(pin.id) && pin.connections > 0) {
+                const group = new Set(); const queue = [pin.id]; visited.add(pin.id); group.add(pin.id);
+                while(queue.length > 0) {
+                    const curr = queue.shift();
+                    adj[curr].forEach(neighbor => { if (!visited.has(neighbor)) { visited.add(neighbor); group.add(neighbor); queue.push(neighbor); } });
+                }
+                groups.push(group);
+            }
+        });
+        return groups;
+    }
+
+    function handleInput(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+        const x = (clientX - rect.left) * scaleX; const y = (clientY - rect.top) * scaleY;
+        if (isGradingMode) {
+            let clickedPin = null;
+            for(let p of allPins) { if (Math.sqrt((x - p.x)**2 + (y - p.y)**2) < 20) { clickedPin = p; break; } }
+            if (clickedPin) {
+                const wire = wires.find(w => w.start === clickedPin || w.end === clickedPin);
+                if (wire && wire.matchedGroup) {
+                    focusedGroup = { type: wire.matchedGroup.visuals ? 'common' : 'target', data: wire.matchedGroup };
+                    statusMsg.textContent = "집중 모드";
+                } else {
+                    const ans = DB_ANSWERS[currentLayoutId];
+                    if (ans) {
+                        const common = ans.commons.find(g => g.pins.includes(clickedPin.id));
+                        if(common) focusedGroup = { type: 'common', data: common };
+                        else {
+                            const target = ans.targets.find(t => t[0] === clickedPin.id || t[1] === clickedPin.id);
+                            if(target) focusedGroup = { type: 'target', data: target };
+                        }
+                    }
+                }
+                draw(); return;
+            } else { focusedGroup = null; statusMsg.textContent = "채점 완료"; draw(); return; }
+        }
+        if (isAdminMode) { } else { if(isGradingMode) return; }
+        let clickedPin = null;
+        for(let p of allPins) { if (Math.sqrt((x - p.x)**2 + (y - p.y)**2) < 20) { clickedPin = p; break; } }
+        if (!clickedPin) { selectedPin = null; statusMsg.textContent = "취소"; draw(); return; }
+        if (selectedPin === null) {
+            if (clickedPin.connections >= 2) { alert("2선 초과"); return; }
+            selectedPin = clickedPin; statusMsg.textContent = "목표 선택"; statusMsg.style.color = "red"; draw();
+        } else {
+            if (selectedPin === clickedPin) { selectedPin = null; statusMsg.textContent = "취소"; draw(); return; }
+            if (clickedPin.connections >= 2) { alert("연결 불가"); return; }
+            saveHistory();
+            wires.push({ start: selectedPin, end: clickedPin, offset: (Math.random() * 30) - 15 });
+            selectedPin.connections++; clickedPin.connections++; selectedPin = null; 
+            statusMsg.textContent = "완료"; statusMsg.style.color = "#007bff"; draw();
+        }
+    }
+
+    function saveHistory() { historyStack.push(wires.map(w => ({ s: w.start.id, e: w.end.id, o: w.offset }))); if(historyStack.length > 50) historyStack.shift(); }
+    function undoLastAction() {
+        if(historyStack.length === 0) return statusMsg.innerText = "취소할 작업 없음";
+        const prev = historyStack.pop();
+        wires = []; allPins.forEach(p => p.connections = 0);
+        prev.forEach(item => { const s = allPins.find(p => p.id === item.s); const e = allPins.find(p => p.id === item.e); if(s && e) { wires.push({ start: s, end: e, offset: item.o }); s.connections++; e.connections++; } });
+        selectedPin = null; draw();
+    }
+    function resetWires() { wires = []; historyStack = []; allPins.forEach(p => p.connections = 0); selectedPin = null; isGradingMode = false; focusedGroup = null; if(!isAdminMode) updateUI(); draw(); }
+    function toggleGrading() {
+        if(isAdminMode) { alert("관리자 모드를 끄세요."); return; }
+        if(wires.length === 0) { alert("결선 내용 없음"); return; }
+        isGradingMode = !isGradingMode;
+        if(isGradingMode) { calculateGrading(); statusMsg.textContent = "채점 완료"; btnCheck.textContent = "편집"; btnCheck.classList.add('active'); } 
+        else { updateUI(); }
+        draw();
+    }
+    function updateUI() { btnCheck.classList.remove('active'); statusMsg.textContent = "대기 중"; btnCheck.textContent = "채점 하기"; }
+    function clearCurrentLayoutData() {
+        if(confirm("현재 도면 정답 삭제?")) { DB_ANSWERS[currentLayoutId] = { targets: [], commons: [] }; wires = []; groupIndexInput.value = 1; draw(); showSaveStatus("삭제됨"); }
+    }
+    function exportAllData() {
+        const json = JSON.stringify(DB_ANSWERS, null, 4);
+        exportArea.style.display = 'block'; exportArea.value = "let DB_ANSWERS = " + json + ";"; exportArea.select(); document.execCommand('copy'); alert("복사됨");
+    }
+    function showSaveStatus(msg) { saveStatus.textContent = msg; setTimeout(() => { saveStatus.textContent = ""; }, 3000); }
+
+    init();
+</script>
+</body>
+</html>
