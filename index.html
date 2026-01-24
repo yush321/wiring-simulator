@@ -80,7 +80,60 @@
     .btn-page:disabled { background: #ccc; cursor: not-allowed; }
     .btn-start { background: #007bff; }
     #pageIndicator { font-size: 14px; font-weight: bold; color: #666; }
-    </style>
+    
+        /* 튜토리얼 팝업 내 버튼 스타일 */
+    .modal-footer button {
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        transition: background 0.3s;
+        margin: 0 5px;
+    }
+
+    /* [이전] 버튼: 조금 더 선명한 회색 계열 */
+    #prevBtn {
+        background-color: #6c757d;
+        color: white;
+    }
+    #prevBtn:hover {
+        background-color: #5a6268;
+    }
+
+    /* [다음] 버튼: 신뢰감을 주는 파란색 (가장 잘 보임) */
+    #nextBtn {
+        background-color: #007bff;
+        color: white;
+    }
+    #nextBtn:hover {
+        background-color: #0069d9;
+    }
+
+    /* [실습 시작] 버튼: 긍정적인 초록색 */
+    #startBtn {
+        background-color: #28a745;
+        color: white;
+    }
+    #startBtn:hover {
+        background-color: #218838;
+    }
+
+    /* 버튼이 비활성화(disabled) 되었을 때 스타일 */
+    button:disabled {
+        background-color: #e9ecef !important;
+        color: #adb5bd !important;
+        cursor: not-allowed;
+    }
+
+    /* 페이지 표시 숫자 (1/2) 스타일 */
+    #pageIndicator {
+        font-weight: bold;
+        margin: 0 15px;
+        color: #333;
+    }
+</style>
 </head>
 <body>
 
@@ -91,9 +144,9 @@
             <div id="modalBody" class="modal-body"></div>
             
             <div class="modal-footer">
-                <button id="prevBtn" class="btn-page" onclick="changePage(-1)">이전</button>
-                <span id="pageIndicator">1 / 2</span>
-                <button id="nextBtn" class="btn-page" onclick="changePage(1)">다음</button>
+                <button id="prevBtn" onclick="changePage(-1)">이전</button>
+                <span id="pageIndicator">1 / 1</span>
+                <button id="nextBtn" onclick="changePage(1)">다음</button>
                 <button id="startBtn" class="btn-page btn-start" onclick="closeModal('infoModal')" style="display:none;">실습 시작</button>
             </div>
         </div>
@@ -184,46 +237,34 @@
             img: "./images/images1.png",
             targetIds: ["FR", "EOCR"]
         },
-"t4": {
+        "t4": {
             title: "기초 4. 릴레이와 타이머",
             desc: [
                 // --- 1페이지 시작 ---
                 "💡 <b>[릴레이 접점 구조 확인]</b><br>" +
                 "현재 사용된 8핀 릴레이는 <b>공통 접점이 두 개</b>인 내부 구조를 가지고 있습니다.<br>" +
                 "지금 보이는 회로는 릴레이 두 개가 연결되어 있어 <b>공통을 하나로 씁니다.</b><br><br>" +
-
                 "🔵 <b>[릴레이 연결]</b><br>" +
                 "• <b style='color:#007bff;'>1번 (공통)</b> 단자를 기준으로 연결합니다.<br>" +
                 "• <b>A접점</b> 사용 시: <b style='color:#28a745;'>3번</b> 연결<br>" +
                 "• <b>B접점</b> 사용 시: <b style='color:#dc3545;'>4번</b> 연결<br><br>" +
-
                 "⏱️ <b>[타이머 연결]</b><br>" +
                 "• <b>순시 A접점</b>: <b style='color:#007bff;'>1번 - 3번</b> 사용<br>" +
-                "• <b>한시 A접점</b>: <b style='color:#dc3545;'>8번 - 6번</b> 사용 (설정 시간 후 동작)", // <-- 이 쉼표가 따옴표 밖에 정확히 있어야 합니다!
+                "• <b>한시 A접점</b>: <b style='color:#dc3545;'>8번 - 6번</b> 사용", // <-- 1. 따옴표 닫고 2. 쉼표 찍기!
 
-                // --- 2페이지 시작 ---
+                // --- 2페이지 시작 (쉼표 뒤에 새로 시작!) ---
                 "🔄 <b>[회로 동작 순서]</b><br>" +
-                "1️⃣ <b>PB1</b> 버튼을 누르면 <b>타이머</b>와 <b style='background:#dc3545; color:white; padding:2px 5px; border-radius:4px;'>MC1</b>이 작동합니다.<br>" +
-                "2️⃣ 설정된 시간이 지나면 <b style='background:#dc3545; color:white; padding:2px 5px; border-radius:4px;'>MC1</b>은 정지하고, <b style='background:#007bff; color:white; padding:2px 5px; border-radius:4px;'>MC2</b>가 동작합니다.<br><br>" +
-                
+                "1️⃣ <b>PB1</b> 버튼을 누르면 <b>타이머</b>와 <b>MC1</b>이 작동합니다.<br>" +
+                "2️⃣ 설정된 시간이 지나면 <b>MC1</b>은 정지하고, <b>MC2</b>가 동작합니다.<br><br>" +
                 "<div style='border: 2px dashed #007bff; background-color: #f8f9fa; padding: 15px; border-radius: 10px;'>" +
-                "   <b style='color:#0056b3;'>📍 [실습] 아래 단자들을 연결하세요!</b><br>" +
-                "   <p style='margin: 10px 0 0 0; font-weight: bold; font-size: 15px; line-height: 1.6;'>" +
-                "   릴레이 1번, PB1 O(open), 타이머 1번, MC1 6번, 타이머 8번" +
-                "   </p>" +
-                "   <div style='display: flex; gap: 10px; margin: 10px 0;'>" + 
-                "       <div style='flex: 1; text-align: center;'>" +
-                "           <img src='./images/images1.png' style='width: 100%; border-radius: 5px;'>" +
-                "           <small>릴레이 핀맵</small>" +
-                "       </div>" +
-                "       <div style='flex: 1; text-align: center;'>" +
-                "           <img src='./images/images2.png' style='width: 100%; border-radius: 5px;'>" +
-                "           <small>타이머 핀맵</small>" +
-                "       </div>" +
-                "   </div>" + // flex 박스 닫기
-                "</div>" // 실습 미션 박스 닫기
+                "   <b>📍 [실습] 아래 단자들을 연결하세요!</b><br>" +
+                "   릴레이 1번, PB1 O(open), 타이머 1번, MC1 6번, 타이머 8번<br>" +
+                "   <div style='display: flex; gap: 10px; margin-top: 10px;'>" + 
+                "       <img src='./images/images1.png' style='width: 48%;'>" +
+                "       <img src='./images/images2.png' style='width: 48%;'>" +
+                "   </div>" +
+                "</div>"
             ],
-             
             targetIds: ["X", "T", "MC1", "TB_Top_L"]
         }
     }
@@ -231,95 +272,73 @@
     let currentModalPage = 0;
 
     function openModal() {
-    currentModalPage = 0; // 1. 무조건 0번(1페이지)부터 시작하도록 초기화
-    
-    // 2. 현재 선택된 레이아웃의 데이터를 가져옴
-    const data = TUTORIAL_CONFIG[currentLayoutId];
-    
-    if (data) {
-        // 3. 팝업을 열자마자 바로 내용을 1페이지로 강제 업데이트 (지연 방지)
+        currentModalPage = 0; // 시작할 때 무조건 0번 페이지로 리셋
         updateModalContent();
-        infoModal.style.display = "flex";
-    } else {
-        // 실전 도면일 경우 (데이터가 없을 때)
-        modalTitle.innerText = `공개도면 ${currentLayoutId}번`;
-        modalBody.innerHTML = `<p>실전 문제입니다. 전체 회로를 구성하세요.</p>`;
-        
-        // 페이지 제어 버튼들 숨기기
-        document.getElementById('prevBtn').style.display = "none";
-        document.getElementById('nextBtn').style.display = "none";
-        document.getElementById('pageIndicator').style.display = "none";
-        document.getElementById('startBtn').style.display = "inline-block";
-        
-        infoModal.style.display = "flex";
+        document.getElementById('infoModal').style.display = "flex";
     }
-}
 
     function updateModalContent() {
-    const data = TUTORIAL_CONFIG[currentLayoutId];
-    if (!data) return;
+        const data = TUTORIAL_CONFIG[currentLayoutId];
+        if (!data) return;
 
-    // 1. 데이터가 배열이면 그대로 쓰고, 아니면 배열로 감싸기
-    const pages = Array.isArray(data.desc) ? data.desc : [data.desc];
-    
-    // 2. 현재 페이지가 전체 페이지 범위를 넘지 않도록 안전장치
-    if (currentModalPage >= pages.length) currentModalPage = 0;
+        // [중요] desc가 배열이 아니면 배열로 만들어서 무조건 '리스트'로 취급함
+        const pages = Array.isArray(data.desc) ? data.desc : [data.desc];
 
-    // 3. 제목 및 본문 내용 교체
-    modalTitle.innerText = `${data.title}`; 
-    modalBody.innerHTML = pages[currentModalPage];
-    
-    // 4. 하단 페이지 표시 (여기가 핵심!)
-    const indicator = document.getElementById('pageIndicator');
-    if (pages.length > 1) {
-        indicator.style.display = "inline-block";
-        indicator.innerText = `${currentModalPage + 1} / ${pages.length}`;
-    } else {
-        // 페이지가 1개뿐이면 표시하지 않음
-        indicator.style.display = "none";
-    }
-    
-    // 5. 버튼 상태 업데이트
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const startBtn = document.getElementById('startBtn');
+        // 현재 페이지 내용 출력
+        const modalBody = document.getElementById('modalBody');
+        modalBody.innerHTML = pages[currentModalPage];
 
-    if (pages.length <= 1) {
-        // 페이지가 1개일 때: 시작 버튼만 보임
-        prevBtn.style.display = "none";
-        nextBtn.style.display = "none";
-        startBtn.style.display = "inline-block";
-    } else {
-        // 페이지가 여러 개일 때: 이전/다음 버튼 보임
-        prevBtn.style.display = "inline-block";
-        prevBtn.disabled = (currentModalPage === 0);
+        // 제목 및 페이지 번호 표시 (1/3 등)
+        const modalTitle = document.getElementById('modalTitle');
+        const indicator = document.getElementById('pageIndicator');
         
-        if (currentModalPage === pages.length - 1) {
+        if (pages.length > 1) {
+            modalTitle.innerText = `${data.title} (${currentModalPage + 1}/${pages.length})`;
+            indicator.innerText = `${currentModalPage + 1} / ${pages.length}`;
+            indicator.style.display = "inline-block";
+        } else {
+            modalTitle.innerText = data.title;
+            indicator.style.display = "none";
+        }
+
+        // 버튼 제어 로직 (페이지 수에 따라 자동 조절)
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const startBtn = document.getElementById('startBtn');
+
+        // 1페이지뿐일 때
+        if (pages.length <= 1) {
+            prevBtn.style.display = "none";
             nextBtn.style.display = "none";
             startBtn.style.display = "inline-block";
         } else {
-            nextBtn.style.display = "inline-block";
-            startBtn.style.display = "none";
+            // 다중 페이지일 때
+            prevBtn.style.display = (currentModalPage === 0) ? "none" : "inline-block";
+            prevBtn.disabled = (currentModalPage === 0);
+
+            if (currentModalPage === pages.length - 1) {
+                nextBtn.style.display = "none";
+                startBtn.style.display = "inline-block";
+            } else {
+                nextBtn.style.display = "inline-block";
+                startBtn.style.display = "none";
+            }
         }
     }
-}
-    // [다음] 또는 [이전] 버튼을 누를 때 실행되는 함수
-        function changePage(direction) {
-            const data = TUTORIAL_CONFIG[currentLayoutId];
-            if (!data) return;
 
-            const pages = Array.isArray(data.desc) ? data.desc : [data.desc];
+    // 이전/다음 버튼 공용 함수
+    function changePage(direction) {
+        const data = TUTORIAL_CONFIG[currentLayoutId];
+        const pages = Array.isArray(data.desc) ? data.desc : [data.desc];
+        
+        currentModalPage += direction;
+        
+        // 범위를 벗어나지 않게 체크
+        if (currentModalPage < 0) currentModalPage = 0;
+        if (currentModalPage >= pages.length) currentModalPage = pages.length - 1;
 
-            // 1. 페이지 번호 변경
-            currentModalPage += direction;
-
-            // 2. 범위를 벗어나지 않게 안전장치
-            if (currentModalPage < 0) currentModalPage = 0;
-            if (currentModalPage >= pages.length) currentModalPage = pages.length - 1;
-
-            // 3. [핵심] 바뀐 페이지 번호에 맞춰 화면을 다시 그리기!
-            updateModalContent();
-        }
+        updateModalContent();
+    }
     const PUBLIC_LAYOUT_BASE = [
         { id: 'TB_Top_L', label: '', x: 50, y: 30, w: 280, h: 50, type: 'terminal', startNum: 1, pins: [ {n:'C', g:'PB01'}, {n:'N', g:'PB01'}, {n:'O', g:'PB01'}, {n:'M', g:'SS'}, {n:'C', g:'SS'}, {n:'A', g:'SS'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB1'}, {n:'흑', g:'TB1'} ] },
         { id: 'TB_Top_R', label: '', x: 370, y: 30, w: 280, h: 50, type: 'terminal', startNum: 11, pins: [ {n:'회', g:'TB1'}, {n:'녹', g:'TB1'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'+', g:'RLGL'}, {n:'-', g:'RLGL'}, {n:'+', g:'RLGL'} ] },
@@ -561,19 +580,32 @@ let DB_ANSWERS = {
     }
 
     function openModal() {
-        if(TUTORIAL_CONFIG[currentLayoutId]) {
-            const data = TUTORIAL_CONFIG[currentLayoutId];
-            modalTitle.innerText = data.title;
-            let html = `<p>${data.desc}</p>`;
-            if(data.img) html += `<img src="${data.img}" alt="참고 이미지">`;
-            modalBody.innerHTML = html;
-            infoModal.style.display = "flex";
-        } else {
-            modalTitle.innerText = `공개도면 ${currentLayoutId}번`;
-            modalBody.innerHTML = `<p>실전 문제입니다. 전체 회로를 구성하세요.</p>`;
-            infoModal.style.display = "flex";
-        }
+    // 1. 현재 화면에 표시된 레이아웃 ID를 다시 한 번 정확히 가져옵니다.
+    // (보통 왼쪽 메뉴나 설정에서 선택된 레이아웃 번호)
+    currentLayoutId = document.getElementById('layoutSelect')?.value || currentLayoutId;
+
+    // 2. 페이지 번호를 0(1페이지)으로 초기화합니다.
+    currentModalPage = 0; 
+    
+    // 3. 데이터를 가져와서 화면을 그립니다.
+    const data = TUTORIAL_CONFIG[currentLayoutId];
+    
+    if (data) {
+        // [중요] 내용을 그리기 전에 기존에 남았던 흔적을 깨끗이 비웁니다.
+        document.getElementById('modalBody').innerHTML = ""; 
+        updateModalContent();
+        document.getElementById('infoModal').style.display = "flex";
+    } else {
+        // 실전 모드 처리...
+        modalTitle.innerText = `공개도면 ${currentLayoutId}번`;
+        modalBody.innerHTML = `<p>실전 문제입니다. 전체 회로를 구성하세요.</p>`;
+        document.getElementById('prevBtn').style.display = "none";
+        document.getElementById('nextBtn').style.display = "none";
+        document.getElementById('pageIndicator').style.display = "none";
+        document.getElementById('startBtn').style.display = "inline-block";
+        document.getElementById('infoModal').style.display = "flex";
     }
+}
     function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
     function generatePins(comp) {
