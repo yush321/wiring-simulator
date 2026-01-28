@@ -278,70 +278,143 @@
             targetIds: ["X", "T", "MC1", "TB_Top_L"]
         },
         "t5": {
-            title: "기초 5. 제어 회로 공통선(Line) 결선",
-            desc: [
-                // --- 1페이지: 이론 및 경로 설명 ---
-                "💡 <b>[효율적인 결선 경로 찾기]</b><br>" +
-                "퓨즈(+)에서 시작된 전원은 <b>EOCR 10번(공통)</b>을 거쳐 제어 회로 전체로 공급됩니다.<br><br>" +
-                "📍 <b>결선 핵심 원리:</b><br>" +
-                "1️⃣ <b>EOCR 4번</b>부터 시작하여 모든 부품의 공통 단자를 연결합니다.<br>" +
-                "2️⃣ 한 단자에 <b>최대 2선</b>까지 삽입 가능하므로, 부품 간의 거리가 가장 가까운 경로를 찾아 전선을 최소화하세요.<br><br>" +
-                "⚠️ <b>주의:</b> 복잡해 보이지만 결국 모든 단자가 하나의 '선'으로 이어지면 됩니다.",
+        title: "기초 5. 제어 회로 공통선(+) 결선",
+        desc: [
+            // --- 1페이지: 이론 및 개념 설명 ---
+            "💡 <b>공통선이란?</b><br><br>" +
+            "공통선은 여러 부품이 <b>같은 전원을 공유</b>하도록 연결하는 선입니다.<br>" +
+            "마치 나무의 줄기처럼, 하나의 전원에서 여러 가지로 뻗어나간다고 생각하면 쉽습니다.<br><br>" +
+            
+            "<b>📍 전원의 흐름</b><br>" +
+            "<div style='background: #f8f9fa; padding: 12px; border-radius: 8px; margin: 10px 0;'>" +
+            "퓨즈(+) → EOCR 10번 → <b>EOCR 4번에서 분기</b> → 각 부품의 전원 단자로 공급" +
+            "</div><br>" +
+            
+            "<b>🔧 결선 요령</b><br>" +
+            "• 한 단자에 전선 2개까지 삽입 가능합니다<br>" +
+            "• 가까운 부품부터 순서대로 연결하면 전선이 꼬이지 않습니다<br>" +
+            "• 전선 길이를 최소화하면 깔끔한 작업이 됩니다<br><br>" +
+            
+            "<small style='color: #666;'>💬 Tip: 복잡해 보여도 결국 모든 부품을 하나의 '+선'으로 이으면 됩니다</small>",
 
-                // --- 2페이지: 실습 미션 및 참고 이미지 ---
-                "<div style='border: 2px dashed #28a745; background-color: #f8f9fa; padding: 15px; border-radius: 10px;'>" +
-                "   <b style='color:#1e7e34;'>📍 [실습] 아래 단자들을 최단 거리로 연결하세요!</b><br>" +
-                "   <p style='margin: 10px 0; font-weight: bold; font-size: 15px; line-height: 1.6; color: #333;'>" +
-                "   퓨즈(2차측) → EOCR 10번 → EOCR 4번 → SS(C) → 릴레이 1(3번) → MC1(4번) → MC2(4번)" +
-                "   </p>" +
-                "   <div style='display: flex; gap: 10px; margin-top: 10px;'>" + 
-                "       <div style='flex: 1; text-align: center;'>" +
-                "           <img src='./images/fuse_eocr.png' style='width: 100%; border-radius: 5px;'>" +
-                "           <small>퓨즈-EOCR 연결</small>" +
-                "       </div>" +
-                "       <div style='flex: 1; text-align: center;'>" +
-                "           <img src='./images/ss_relay_mc.png' style='width: 100%; border-radius: 5px;'>" +
-                "           <small>부품간 공통선 연결</small>" +
-                "       </div>" +
-                "   </div>" +
-                "</div>"
-            ],
-            targetIds: ["FUSE", "EOCR", "TB_Top_L", "X", "MC1", "MC2"]
-        },
-        "t6": {
-            title: "기초 6. 제어 회로 마이너스(-) 공통선 및 FLS 결선",
-            desc: [
-                // --- 1페이지: 전체 공통선 설명 및 벨테스터 강조 ---
-                "💡 <b>[제어 회로의 완성: 마이너스 공통선]</b><br>" +
-                "회로의 전원이 원활하게 흐르도록 모든 부품의 마이너스(-) 단자를 연결하는 과정입니다.<br><br>" +
-                "📍 <b>작업 핵심:</b><br>" +
-                "1️⃣ <b>꼼꼼한 확인:</b> 연결할 부품이 가장 많으므로 하나라도 빠뜨리면 회로가 동작하지 않습니다.<br>" +
-                "2️⃣ <b>벨테스터 점검:</b> 실제 작업에서는 결선 후 <b>퓨즈(-) 단자</b>와 <b>각 부품의 전원부</b>를 하나씩 찍어보며 소리를 확인해야 합니다.<br><br>" +
-                "⚠️ <b>연결 대상:</b> EOCR(6), FR(7), FLS(6), X(7), T(7), MC1(12), MC2(12) 및 각종 램프/부저의 (-) 단자",
+            // --- 2페이지: 실습 미션 ---
+            "<div style='background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%); padding: 20px; border-radius: 12px; border-left: 4px solid #28a745;'>" +
+            "   <b style='color: #1e7e34; font-size: 16px;'>📍 실습 미션</b><br>" +
+            "   <p style='color: #2d2d2d; margin: 12px 0 16px 0; line-height: 1.8;'>" +
+            "   아래 순서대로 공통선(+)을 연결하세요<br>" +
+            "   <small style='color: #666;'>※ 가장 가까운 부품끼리 먼저 연결하면 쉽습니다</small>" +
+            "   </p>" +
+            "   <div style='background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>" +
+            "       <p style='margin: 0; font-weight: 600; font-size: 15px; line-height: 2; color: #333;'>" +
+            "       ① 퓨즈 2차측(+)<br>" +
+            "       ↓<br>" +
+            "       ② EOCR 10번<br>" +
+            "       ↓<br>" +
+            "       ③ EOCR 4번 (여기서 분기 시작)<br>" +
+            "       ↓<br>" +
+            "       ④ SS(C) → ⑤ 릴레이1(3번) → ⑥ MC1(4번) → ⑦ MC2(4번)" +
+            "       </p>" +
+            "   </div>" +
+            "   <div style='display: flex; gap: 10px;'>" + 
+            "       <div style='flex: 1; text-align: center;'>" +
+            "           <img src='./images/fuse_eocr.png' style='width: 100%; border-radius: 5px; border: 1px solid #ddd;'>" +
+            "           <small style='color: #666; display: block; margin-top: 5px;'>퓨즈-EOCR 연결 예시</small>" +
+            "       </div>" +
+            "       <div style='flex: 1; text-align: center;'>" +
+            "           <img src='./images/ss_relay_mc.png' style='width: 100%; border-radius: 5px; border: 1px solid #ddd;'>" +
+            "           <small style='color: #666; display: block; margin-top: 5px;'>부품간 공통선 연결 예시</small>" +
+            "       </div>" +
+            "   </div>" +
+            "</div>"
+        ],
+        targetIds: ["FUSE", "EOCR", "TB_Top_L", "X", "MC1", "MC2"]
+    },
 
-                // --- 2페이지: FLS 수위 센서 특수 결선 및 미션 ---
-                "🌊 <b>[FLS 수위 체크 결선]</b><br>" +
-                "FLS는 물의 높이를 감지하는 부품으로, <b>7, 8, 1번 단자</b>는 직접 연결되지 않고 <b>외부 단자대(TB)</b>로 인출됩니다.<br><br>" +
-                "<div style='border: 2px dashed #dc3545; background-color: #fff5f5; padding: 15px; border-radius: 10px;'>" +
-                "   <b style='color:#c82333;'>📍 [최종 미션] 아래 부품들을 모두 연결하세요!</b><br>" +
-                "   <p style='margin: 10px 0; font-weight: bold; font-size: 14px; line-height: 1.6;'>" +
-                "   • <b>공통선:</b> 퓨즈(-) → EOCR(6) → FR(7) → YL/BZ(-) → FLS(6) → X(7) → T(7) → MC1/MC2(12) → RL/GL(-)<br>" +
-                "   • <b>FLS 센서:</b> FLS(7, 8, 1) → 외부 단자대 연결" +
-                "   </p>" +
-                "   <div style='display: flex; gap: 10px; margin-top: 10px;'>" + 
-                "       <div style='flex: 1; text-align: center;'>" +
-                "           <img src='./images/fls_wiring.png' style='width: 100%; border-radius: 5px;'>" +
-                "           <small>FLS 핀번호 구조</small>" +
-                "       </div>" +
-                "       <div style='flex: 1; text-align: center;'>" +
-                "           <img src='./images/test_check.png' style='width: 100%; border-radius: 5px;'>" +
-                "           <small>벨테스터 확인 포인트</small>" +
-                "       </div>" +
-                "   </div>" +
-                "</div>"
-            ],
-            targetIds: ["FUSE", "EOCR", "FR", "TB_Top_L", "FLS", "X", "T", "MC1", "MC2", "TB_Bot_L", "TB_Bot_R"]
-        }
+    "t6": {
+        title: "기초 6. 제어 회로 공통선(-) 및 FLS 센서 결선",
+        desc: [
+            // --- 1페이지: 마이너스 공통선 설명 ---
+            "💡 <b>회로를 완성하는 마이너스(-) 공통선</b><br><br>" +
+            "전기가 흐르려면 <b>들어가는 길(+)과 나오는 길(-)</b>이 모두 필요합니다.<br>" +
+            "앞에서 연결한 +선에 이어, 이번엔 -선으로 모든 부품을 연결합니다.<br><br>" +
+            
+            "<b>📍 왜 중요한가요?</b><br>" +
+            "• -선이 하나라도 빠지면 그 부품은 동작하지 않습니다<br>" +
+            "• 연결할 부품이 가장 많은 단계이므로 집중이 필요합니다<br>" +
+            "• 실무에서는 벨테스터로 반드시 점검합니다<br><br>" +
+            
+            "<div style='background: #fff9e6; padding: 15px; border-radius: 8px; border-left: 3px solid #ffc107; margin: 10px 0;'>" +
+            "   <b style='color: #856404;'>✅ 벨테스터 점검 방법</b><br>" +
+            "   <p style='color: #666; line-height: 1.8; margin: 8px 0 0 0; font-size: 14px;'>" +
+            "   ① 퓨즈(-) 단자에 벨테스터 한쪽을 고정<br>" +
+            "   ② 각 부품의 (-) 단자를 하나씩 확인<br>" +
+            "   ③ '삐' 소리가 나면 연결 성공!<br>" +
+            "   ④ 소리가 안 나면 전선 연결을 다시 확인" +
+            "   </p>" +
+            "</div><br>" +
+            
+            "<div style='background: #f0f0f0; padding: 12px; border-radius: 8px;'>" +
+            "   <b style='color: #333;'>연결 대상 부품 (총 7개 부품 + 램프/부저)</b><br>" +
+            "   <small style='color: #666; line-height: 1.8;'>" +
+            "   EOCR(6번), FR(7번), FLS(6번), X(7번), T(7번), MC1(12번), MC2(12번)<br>" +
+            "   + 램프·부저 각각의 (-) 단자" +
+            "   </small>" +
+            "</div>",
+
+            // --- 2페이지: FLS 결선 및 최종 미션 ---
+            "🌊 <b>FLS 수위 센서 결선</b><br><br>" +
+            "FLS(Float Level Switch)는 물탱크의 수위를 감지하는 센서입니다.<br>" +
+            "다른 부품과 달리 <b>7·8·1번 단자는 외부 단자대로 연결</b>해야 합니다.<br><br>" +
+            
+            "<div style='background: #e3f2fd; padding: 12px; border-radius: 8px; margin: 10px 0;'>" +
+            "   <b style='color: #1565c0;'>🔍 FLS 단자 구분</b><br>" +
+            "   <p style='color: #555; line-height: 1.8; margin: 8px 0 0 0; font-size: 14px;'>" +
+            "   • <b>6번:</b> 전원(-) → 공통선으로 연결<br>" +
+            "   • <b>7, 8, 1번:</b> 센서 신호선 → 외부 단자대로 연결" +
+            "   </p>" +
+            "</div><br>" +
+            
+            "<div style='background: linear-gradient(135deg, #ffe5e5 0%, #fff5f5 100%); padding: 20px; border-radius: 12px; border-left: 4px solid #dc3545;'>" +
+            "   <b style='color: #c82333; font-size: 16px;'>📍 최종 미션 - 단계별로 따라하세요!</b><br><br>" +
+            
+            "   <div style='background: white; padding: 15px; border-radius: 8px; margin-bottom: 12px;'>" +
+            "       <b style='color: #333; display: block; margin-bottom: 10px;'>【 Step 1 】 공통선(-) 연결</b>" +
+            "       <p style='margin: 0; color: #555; line-height: 2; font-size: 14px;'>" +
+            "       퓨즈(-) <br>" +
+            "       → EOCR(6) <br>" +
+            "       → FR(7) <br>" +
+            "       → YL/BZ(-) <small style='color: #999;'>[노란램프/부저]</small><br>" +
+            "       → FLS(6) <br>" +
+            "       → X(7), T(7) <small style='color: #999;'>[동시 연결]</small><br>" +
+            "       → MC1(12), MC2(12) <small style='color: #999;'>[동시 연결]</small><br>" +
+            "       → RL/GL(-) <small style='color: #999;'>[빨강/초록 램프]</small>" +
+            "       </p>" +
+            "   </div>" +
+            
+            "   <div style='background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;'>" +
+            "       <b style='color: #333; display: block; margin-bottom: 10px;'>【 Step 2 】 FLS 센서 신호선 연결</b>" +
+            "       <p style='margin: 0; color: #555; line-height: 2; font-size: 14px;'>" +
+            "       FLS(7번) → 외부 단자대<br>" +
+            "       FLS(8번) → 외부 단자대<br>" +
+            "       FLS(1번) → 외부 단자대" +
+            "       </p>" +
+            "       <small style='color: #999; display: block; margin-top: 8px;'>※ 외부 센서와 연결하기 위한 인출선입니다</small>" +
+            "   </div>" +
+            
+            "   <div style='display: flex; gap: 10px;'>" + 
+            "       <div style='flex: 1; text-align: center;'>" +
+            "           <img src='./images/fls_wiring.png' style='width: 100%; border-radius: 5px; border: 1px solid #ddd;'>" +
+            "           <small style='color: #666; display: block; margin-top: 5px;'>FLS 단자 배치도</small>" +
+            "       </div>" +
+            "       <div style='flex: 1; text-align: center;'>" +
+            "           <img src='./images/test_check.png' style='width: 100%; border-radius: 5px; border: 1px solid #ddd;'>" +
+            "           <small style='color: #666; display: block; margin-top: 5px;'>벨테스터 점검 방법</small>" +
+            "       </div>" +
+            "   </div>" +
+            "</div>"
+        ],
+        targetIds: ["FUSE", "EOCR", "FR", "TB_Top_L", "FLS", "X", "T", "MC1", "MC2", "TB_Bot_L", "TB_Bot_R"]
+    }
         
     }
         // 2. 페이지 제어 변수 및 함수
