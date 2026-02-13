@@ -29,13 +29,15 @@
         .btn-undo { background-color: #ffc107; color: black; }
         .btn-check.active { background-color: #dc3545; }
         .btn-info { background-color: #17a2b8; }
+        .btn-numbering { background-color: #6f42c1; }
+        .btn-numbering.active { background-color: #c823e0; }
         .btn-admin { background-color: #007bff; border: 1px solid #0056b3; }
         .btn-delete-all { background-color: #dc3545; border: 1px solid #a71d2a; font-size: 12px;}
 
         /* 모달 스타일 */
         /* 팝업창 영역에서 두 손가락 확대(Pinch Zoom) 허용 */
         #infoModal, .modal-content {
-            touch-action: pich-zoom manipulation !important;
+            touch-action: pinch-zoom manipulation !important;
         }
 
         /* 실제 배선 작업이 이루어지는 캔버스/작업 영역은 
@@ -179,6 +181,7 @@
     <div class="controls">
         <select id="layoutSelect" onchange="changeLayout()"></select>
         <button class="btn-info" onclick="openModal()">📖 설명</button>
+        <button id="btnNumbering" class="btn-numbering" onclick="toggleNumberingMode()">📝 번호학습</button>
         <button class="btn-undo" onclick="undoLastAction()">↩ (Ctrl+Z)</button>
         <button class="btn-reset" onclick="resetWires()">초기화</button>
         <button id="btnCheck" class="btn-check" onclick="toggleGrading()">채점 하기</button>
@@ -201,6 +204,11 @@
             <div class="mode-desc" style="color: #4ecdc4;">
                 <span class="key-badge">F</span> <div><b>공통 채점</b><br><small>입력 후 F (그룹색)</small></div>
             </div>
+        </div>
+        <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <button style="background:#ff6b6b;" onclick="saveTargetsFromWires()">정밀 저장 (T)</button>
+            <button style="background:#4ecdc4; color:#111;" onclick="saveCommonsFromWires()">공통 저장 (F)</button>
+            <button style="background:#6c757d;" onclick="removeLastSavedAnswer()">최근 저장 취소</button>
         </div>
         <div style="margin-top: 10px; padding-top:10px; border-top: 1px solid #444;">
              <button style="width:100%; background:#444;" onclick="exportAllData()">📋 전체 데이터 생성</button>
@@ -678,6 +686,7 @@ let DB_ANSWERS = {
     const successModal = document.getElementById('successModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+    const btnNumbering = document.getElementById('btnNumbering');
 
     let currentLayoutId = "t1"; 
     let currentComponents = [];
@@ -686,6 +695,9 @@ let DB_ANSWERS = {
     let isGradingMode = false;
     let isAdminMode = false; 
     let focusedGroup = null; 
+    let isNumberingMode = false;
+    let numberingAnswers = {};
+    let lastSavedAction = null;
 
     function init() {
         const grp1 = document.createElement('optgroup'); grp1.label = "--- 기초 튜토리얼 ---";
@@ -940,21 +952,11 @@ let DB_ANSWERS = {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undoLastAction(); return; }
         if (isAdminMode) {
             const key = e.key.toLowerCase();
-            const currentAnswers = DB_ANSWERS[currentLayoutId]; 
             if (key === 't') {
-                if (wires.length === 0) return alert("선 없음");
-                wires.forEach(w => currentAnswers.targets.push([w.start.id, w.end.id, w.offset]));
-                showSaveStatus(`${currentLayoutId}: 정밀(빨강) 저장됨!`); wires = []; draw(); 
+                saveTargetsFromWires();
             }
             else if (key === 'f') {
-                if (wires.length === 0) return alert("선 없음");
-                const pinSet = new Set(); const visualWires = []; 
-                wires.forEach(w => { pinSet.add(w.start.id); pinSet.add(w.end.id); visualWires.push([w.start.id, w.end.id, w.offset]); });
-                const groupNum = parseInt(groupIndexInput.value);
-                const color = PALETTE[(groupNum - 1) % PALETTE.length]; 
-                currentAnswers.commons.push({ name: groupNum.toString(), color: color, pins: Array.from(pinSet), visuals: visualWires });
-                showSaveStatus(`${currentLayoutId}: 공통 ${groupNum}번 저장됨!`);
-                groupIndexInput.value = groupNum + 1; wires = []; draw(); 
+                saveCommonsFromWires();
             }
         }
     }
@@ -1090,7 +1092,7 @@ let DB_ANSWERS = {
         prev.forEach(item => { const s = allPins.find(p => p.id === item.s); const e = allPins.find(p => p.id === item.e); if(s && e) { wires.push({ start: s, end: e, offset: item.o }); s.connections++; e.connections++; } });
         selectedPin = null; draw();
     }
-    function resetWires() { wires = []; historyStack = []; allPins.forEach(p => p.connections = 0); selectedPin = null; isGradingMode = false; focusedGroup = null; if(!isAdminMode) updateUI(); draw(); }
+    function resetWires() { wires = []; historyStack = []; allPins.forEach(p => p.connections = 0); selectedPin = null; isGradingMode = false; focusedGroup = null; if(!isAdminMode) updateUI(); if (isNumberingMode) statusMsg.textContent = "번호 학습 모드"; draw(); }
     function toggleGrading() {
         if(isAdminMode) { alert("관리자 모드를 끄세요."); return; }
         if(wires.length === 0) { alert("결선 내용 없음"); return; }
@@ -1108,6 +1110,130 @@ let DB_ANSWERS = {
         exportArea.style.display = 'block'; exportArea.value = "let DB_ANSWERS = " + json + ";"; exportArea.select(); document.execCommand('copy'); alert("복사됨");
     }
     function showSaveStatus(msg) { saveStatus.textContent = msg; setTimeout(() => { saveStatus.textContent = ""; }, 3000); }
+
+    function getTutorialPinList() {
+        const pinMap = new Map();
+        allPins.forEach(pin => {
+            if (!pinMap.has(pin.id)) {
+                pinMap.set(pin.id, {
+                    id: pin.id,
+                    parentId: pin.parentId,
+                    number: String(pin.num),
+                    label: pin.label || ''
+                });
+            }
+        });
+        return Array.from(pinMap.values());
+    }
+
+    function toggleNumberingMode() {
+        isNumberingMode = !isNumberingMode;
+        if (isNumberingMode) {
+            isGradingMode = false;
+            focusedGroup = null;
+            statusMsg.textContent = "번호 학습 모드";
+            statusMsg.style.color = "#c823e0";
+            btnNumbering.classList.add('active');
+            openNumberingPrompt();
+        } else {
+            btnNumbering.classList.remove('active');
+            statusMsg.style.color = "#fff";
+            statusMsg.textContent = "대기 중";
+        }
+        draw();
+    }
+
+    function openNumberingPrompt() {
+        const pins = getTutorialPinList();
+        if (pins.length === 0) {
+            alert("번호를 입력할 핀이 없습니다.");
+            return;
+        }
+
+        const preview = pins.slice(0, 14).map((pin, idx) => `${idx + 1}. ${pin.parentId} 단자 번호는?`).join("\n");
+        const raw = prompt(
+            "번호 학습 입력창입니다.\n" +
+            "아래 형식으로 입력하세요: 부품ID=번호\n" +
+            "예) X_1=1, X_3=3\n\n" +
+            "입력 대상 예시:\n" + preview
+        );
+        if (!raw) return;
+
+        let correct = 0;
+        let total = 0;
+        const pairs = raw.split(',').map(v => v.trim()).filter(Boolean);
+        pairs.forEach(pair => {
+            const [left, right] = pair.split('=').map(v => (v || '').trim());
+            if (!left || !right) return;
+            total++;
+            const targetPin = allPins.find(pin => pin.id.toLowerCase() === left.toLowerCase());
+            if (!targetPin) return;
+            numberingAnswers[left] = right;
+            if (String(targetPin.num) === right) correct++;
+        });
+
+        if (total === 0) {
+            alert("형식이 올바르지 않습니다. 예: X_1=1, X_3=3");
+            return;
+        }
+        alert(`번호 학습 결과: ${correct}/${total} 정답`);
+        statusMsg.textContent = `번호학습 ${correct}/${total}`;
+    }
+
+    function saveTargetsFromWires() {
+        if (!isAdminMode) return alert("관리자 모드에서만 저장 가능합니다.");
+        const currentAnswers = DB_ANSWERS[currentLayoutId];
+        if (!currentAnswers) return alert("현재 도면 데이터가 없습니다.");
+        if (wires.length === 0) return alert("선 없음");
+        const added = wires.map(w => [w.start.id, w.end.id, w.offset]);
+        currentAnswers.targets.push(...added);
+        lastSavedAction = { type: 'targets', count: added.length };
+        showSaveStatus(`${currentLayoutId}: 정밀(빨강) ${added.length}개 저장됨!`);
+        wires = [];
+        draw();
+    }
+
+    function saveCommonsFromWires() {
+        if (!isAdminMode) return alert("관리자 모드에서만 저장 가능합니다.");
+        const currentAnswers = DB_ANSWERS[currentLayoutId];
+        if (!currentAnswers) return alert("현재 도면 데이터가 없습니다.");
+        if (wires.length === 0) return alert("선 없음");
+        const pinSet = new Set();
+        const visualWires = [];
+        wires.forEach(w => {
+            pinSet.add(w.start.id);
+            pinSet.add(w.end.id);
+            visualWires.push([w.start.id, w.end.id, w.offset]);
+        });
+        const groupNum = parseInt(groupIndexInput.value);
+        const color = PALETTE[(groupNum - 1) % PALETTE.length];
+        const item = { name: groupNum.toString(), color: color, pins: Array.from(pinSet), visuals: visualWires };
+        currentAnswers.commons.push(item);
+        lastSavedAction = { type: 'commons', count: 1 };
+        showSaveStatus(`${currentLayoutId}: 공통 ${groupNum}번 저장됨!`);
+        groupIndexInput.value = groupNum + 1;
+        wires = [];
+        draw();
+    }
+
+    function removeLastSavedAnswer() {
+        if (!isAdminMode) return alert("관리자 모드에서만 사용할 수 있습니다.");
+        const currentAnswers = DB_ANSWERS[currentLayoutId];
+        if (!currentAnswers || !lastSavedAction) return alert("취소할 저장 기록이 없습니다.");
+
+        if (lastSavedAction.type === 'targets') {
+            currentAnswers.targets.splice(-lastSavedAction.count, lastSavedAction.count);
+            showSaveStatus("최근 정밀 저장 취소됨");
+        } else if (lastSavedAction.type === 'commons') {
+            currentAnswers.commons.pop();
+            const n = Math.max(1, parseInt(groupIndexInput.value) - 1);
+            groupIndexInput.value = n;
+            showSaveStatus("최근 공통 저장 취소됨");
+        }
+        lastSavedAction = null;
+        draw();
+    }
+
 
     init();
 </script>
