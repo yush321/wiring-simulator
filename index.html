@@ -376,6 +376,7 @@
             <div style="display:flex; gap:8px; margin-top:12px;">
                 <button style="flex:1; background:#6f42c1;" onclick="gradeNumberingAnswers()">진행률 확인</button>
                 <button style="flex:1; background:#17a2b8;" onclick="fillCorrectNumbers()">정답보기</button>
+                <button style="flex:1; background:#fd7e14;" onclick="resetCurrentNumberingStage()">다시 입력</button>
                 <button style="flex:1; background:#495057;" onclick="prevNumberingStage()">이전 단계</button>
                 <button style="flex:1; background:#0d6efd;" onclick="nextNumberingStage()">다음 단계</button>
                 <button style="flex:1; background:#6c757d;" onclick="closeNumberingModal()">닫기</button>
@@ -425,6 +426,20 @@
                 <details class="editor-wide">
                     <summary style="cursor:pointer; font-weight:700; color:#334155;">고급옵션</summary>
                     <div style="margin-top:8px; display:grid; gap:8px;">
+                        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:6px; color:#334155; font-weight:600;">
+                                <input id="editorAllowReverse" type="checkbox">
+                                역순 허용
+                            </label>
+                            <label style="display:flex; align-items:center; gap:6px; color:#334155; font-weight:600;">
+                                채점 방향
+                                <select id="editorOrderMode">
+                                    <option value="horizontal">가로</option>
+                                    <option value="vertical">세로</option>
+                                    <option value="both">가로+세로</option>
+                                </select>
+                            </label>
+                        </div>
                         <input id="editorPinDisplayCsv" placeholder="핀 표시 커스텀(쉼표). 상단좌측→하단우측 순서로 입력 (예: 1,2,3,4,C공통,6,+,-공통)">
                         <input id="editorQuestionChoices" placeholder="문항 보기(선택형, 쉼표구분. 예: 6,7,8,9)">
                     </div>

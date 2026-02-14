@@ -417,6 +417,8 @@ let DB_ANSWERS = {
     const editorGuideText = document.getElementById('editorGuideText');
     const editorQuestionLabel = document.getElementById('editorQuestionLabel');
     const editorQuestionAnswer = document.getElementById('editorQuestionAnswer');
+    const editorAllowReverse = document.getElementById('editorAllowReverse');
+    const editorOrderMode = document.getElementById('editorOrderMode');
     const editorPinDisplayCsv = document.getElementById('editorPinDisplayCsv');
     const editorQuestionChoices = document.getElementById('editorQuestionChoices');
 
@@ -431,6 +433,7 @@ let DB_ANSWERS = {
     let numberingAnswers = {};
     let numberingPinSnapshot = [];
     let numberingSession = null;
+    const NUMBERING_STORAGE_KEY = 'numbering_scenarios_v2';
 
     // Paste exported numbering JSON here.
     // The editor now exports in this shape:
@@ -443,86 +446,78 @@ let DB_ANSWERS = {
     // 2) each stage should include at least one question.
     let NUMBERING_SCENARIOS_DEFAULT = {
   "t1": {
-    "image": "./images/images1.png",
+    "image": "./images/open1.png",
     "stages": [
       {
-        "title": "새 단계 4",
-        "componentId": "NEW",
-        "pinPreset": "",
-        "guide": "설명 문구를 입력하세요.",
-        "inputMode": "choice",
-        "pinDisplayCsv": "",
-        "rect": null,
-        "questions": []
-      },
-      {
-        "title": "MC1 보조접점",
-        "componentId": "MC1",
-        "guide": "ㅇㅇㅇㅇ",
-        "inputMode": "choice",
-        "rect": {
-          "x": 0.8159763313609467,
-          "y": 0.36386827458256027,
-          "w": 0.053254437869822535,
-          "h": 0.16883116883116883
-        },
-        "questions": [],
-        "pinPreset": "",
-        "pinDisplayCsv": ""
-      },
-      {
-        "title": "EOCR 넘버링",
+        "title": "EOCR B접점",
         "componentId": "EOCR",
         "pinPreset": "EOCR_12",
-        "guide": "EOCR 주회로 단자(1,2,3,7,8,9)를 순서대로 익히세요. 역순(9,8,7,3,2,1)도 허용됩니다.",
+        "guide": "EOCR B접점입니다(평상시 정상전류를 통전하고 이상전류 발생시 접점이 떨어지며 전류를 차단합니다.), EOCR A접점과 회로가 이어져있어서 10번을 공통으로 사용해야 됩니다",
         "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
         "pinDisplayCsv": "",
         "rect": {
-          "x": 0.04319526627218935,
-          "y": 0.32490723562152135,
-          "w": 0.09585798816568046,
-          "h": 0.1484230055658627
+          "x": 0.11301775147928994,
+          "y": 0.028033147740515345,
+          "w": 0.06272189349112425,
+          "h": 0.09737148776382235
         },
         "questions": [
           {
-            "pinId": "EOCR_Q1",
-            "label": "주회로 1",
-            "answer": "1",
+            "pinId": "NEW_1771055926650",
+            "label": "B접점",
+            "answer": "10,4",
             "choices": [],
             "inputMode": "choice"
-          },
+          }
+        ]
+      },
+      {
+        "title": "EOCR A접점",
+        "componentId": "EOCR",
+        "pinPreset": "EOCR_12",
+        "guide": "EOCR A접점입니다.(평상시 전류는 차단되어있지만 이상전류발생시 전류가 통전되며 노랑램프와 부저를 작동시킵니다)",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "pinDisplayCsv": "",
+        "rect": {
+          "x": 0.142603550295858,
+          "y": 0.42580603392464067,
+          "w": 0.037869822485207094,
+          "h": 0.1077301566748673
+        },
+        "questions": [
           {
-            "pinId": "EOCR_Q2",
-            "label": "주회로 2",
-            "answer": "2",
+            "pinId": "NEW_1771056781285",
+            "label": "A 접점",
+            "answer": "10,5",
             "choices": [],
             "inputMode": "choice"
-          },
+          }
+        ]
+      },
+      {
+        "title": "EOCR 전원",
+        "componentId": "EOCR",
+        "pinPreset": "EOCR_12",
+        "guide": "EOCR에 전원을 넣어줍니다.(결선을 최단거리로 하기 위해 역순결선 하기도 합니다.)",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "pinDisplayCsv": "",
+        "rect": {
+          "x": 0.06686390532544378,
+          "y": 0.7324226336915707,
+          "w": 0.04852071005917161,
+          "h": 0.1201605593681212
+        },
+        "questions": [
           {
-            "pinId": "EOCR_Q3",
-            "label": "주회로 3",
-            "answer": "3",
-            "choices": [],
-            "inputMode": "choice"
-          },
-          {
-            "pinId": "EOCR_Q4",
-            "label": "주회로 7",
-            "answer": "7",
-            "choices": [],
-            "inputMode": "choice"
-          },
-          {
-            "pinId": "EOCR_Q5",
-            "label": "주회로 8",
-            "answer": "8",
-            "choices": [],
-            "inputMode": "choice"
-          },
-          {
-            "pinId": "EOCR_Q6",
-            "label": "주회로 9",
-            "answer": "9",
+            "pinId": "NEW_1771056843140",
+            "label": "EOCR 전원",
+            "answer": "6,12",
             "choices": [],
             "inputMode": "choice"
           }
@@ -534,6 +529,8 @@ let DB_ANSWERS = {
         "pinPreset": "",
         "guide": "설명 문구를 입력하세요.",
         "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
         "pinDisplayCsv": "",
         "rect": null,
         "questions": []
@@ -552,7 +549,7 @@ let DB_ANSWERS = {
     };
 
     try {
-        const saved = localStorage.getItem('numbering_scenarios_v1');
+        const saved = localStorage.getItem(NUMBERING_STORAGE_KEY);
         if (saved) {
             const parsed = JSON.parse(saved) || {};
             const merged = { ...NUMBERING_SCENARIOS_DEFAULT };
@@ -567,17 +564,29 @@ let DB_ANSWERS = {
 
                     const patchedStages = candidateStages.map(stage => {
                         const qCount = Array.isArray(stage?.questions) ? stage.questions.length : 0;
-                        if (qCount > 0) return stage;
-
                         const backup = baseStages.find(s =>
                             s?.componentId === stage?.componentId
                             && Array.isArray(s?.questions)
                             && s.questions.length > 0
                         );
+                        // Authoring priority: if admin already authored questions, keep them as-is.
+                        if (qCount > 0) {
+                            return {
+                                ...stage,
+                                allowReverse: typeof stage?.allowReverse === 'boolean'
+                                    ? stage.allowReverse
+                                    : backup?.allowReverse,
+                                orderMode: stage?.orderMode || backup?.orderMode || 'horizontal'
+                            };
+                        }
                         if (!backup) return stage;
 
                         return {
                             ...stage,
+                            allowReverse: typeof stage?.allowReverse === 'boolean'
+                                ? stage.allowReverse
+                                : backup.allowReverse,
+                            orderMode: stage?.orderMode || backup.orderMode || 'horizontal',
                             rect: stage?.rect || backup.rect || null,
                             questions: backup.questions.map(q => ({ ...q }))
                         };
@@ -586,6 +595,7 @@ let DB_ANSWERS = {
                     merged[layoutId] = {
                         ...(baseLayout || {}),
                         ...(candidate || {}),
+                        // Keep authored stage list from storage; do not append repository defaults.
                         stages: patchedStages
                     };
                 }

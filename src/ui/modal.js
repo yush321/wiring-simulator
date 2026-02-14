@@ -39,7 +39,8 @@
 
     function persistNumberingScenarios() {
         try {
-            localStorage.setItem('numbering_scenarios_v1', JSON.stringify(NUMBERING_SCENARIOS));
+            const key = (typeof NUMBERING_STORAGE_KEY === 'string' && NUMBERING_STORAGE_KEY) || 'numbering_scenarios_v2';
+            localStorage.setItem(key, JSON.stringify(NUMBERING_SCENARIOS));
         } catch (e) {
             // ignore storage errors
         }
@@ -186,6 +187,8 @@
                     guide: NUMBERING_HELP[comp.id] || `${comp.id}의 핀 번호를 동작 기준으로 확인하세요.`,
                     image: targetImage,
                     inputMode: 'choice',
+                    allowReverse: stageAllowsReverse({ componentId: comp.id }),
+                    orderMode: 'horizontal',
                     rect: null,
                     questions
                 };
@@ -194,14 +197,34 @@
     }
 
     function normalizeScenarioStages(stages, fallbackImage) {
+        const splitAnswerTokens = raw => {
+            const text = String(raw ?? '').trim();
+            if (!text) return [];
+            if (!text.includes(',')) return [text];
+            return text.split(',').map(v => v.trim()).filter(Boolean);
+        };
+
         return stages.map((stage, stageIndex) => {
-            const questions = (stage.questions || []).map((q, qIdx) => ({
-                pinId: q.pinId || `${stage.componentId || 'STAGE'}_${stageIndex}_${qIdx}`,
-                label: q.label || `핀 ${qIdx + 1}`,
-                answer: String(q.answer ?? ''),
-                choices: (q.choices || []).map(String),
-                inputMode: q.inputMode || stage.inputMode || 'choice'
-            }));
+            const questions = (stage.questions || []).flatMap((q, qIdx) => {
+                const tokens = splitAnswerTokens(q.answer);
+                if (!tokens.length) return [];
+                if (tokens.length === 1) {
+                    return [{
+                        pinId: q.pinId || `${stage.componentId || 'STAGE'}_${stageIndex}_${qIdx}`,
+                        label: q.label || `핀 ${qIdx + 1}`,
+                        answer: tokens[0],
+                        choices: (q.choices || []).map(String),
+                        inputMode: q.inputMode || stage.inputMode || 'choice'
+                    }];
+                }
+                return tokens.map((ans, tokenIdx) => ({
+                    pinId: `${q.pinId || `${stage.componentId || 'STAGE'}_${stageIndex}_${qIdx}`}_${tokenIdx + 1}`,
+                    label: `${q.label || `핀 ${qIdx + 1}`} ${tokenIdx + 1}`,
+                    answer: ans,
+                    choices: (q.choices || []).map(String),
+                    inputMode: q.inputMode || stage.inputMode || 'choice'
+                }));
+            });
 
             return {
                 componentId: stage.componentId || `STAGE_${stageIndex + 1}`,
@@ -209,6 +232,8 @@
                 guide: stage.guide || '해당 영역의 핀 번호를 확인하세요.',
                 image: stage.image || fallbackImage,
                 inputMode: stage.inputMode || 'choice',
+                allowReverse: typeof stage.allowReverse === 'boolean' ? stage.allowReverse : undefined,
+                orderMode: stage.orderMode || 'horizontal',
                 rect: stage.rect || null,
                 questions
             };
@@ -232,10 +257,15 @@
         const stage = numberingSession.stages[numberingSession.stageIndex];
         if (!stage) return null;
         const progress = getStageProgress(numberingSession.stageIndex);
-        const idx = progress.direction === 'reverse'
-            ? (stage.questions.length - 1 - progress.entries.length)
-            : progress.entries.length;
-        return stage.questions[idx] || null;
+        const idx = progress.entries.length;
+        const sequences = getStageCandidateSequences(stage);
+        const activeSeq = progress.selectedSequence || progress.candidateSequences?.[0] || sequences[0];
+        const expectedAnswer = activeSeq?.answers?.[idx];
+        if (!expectedAnswer) return stage.questions[idx] || null;
+        const used = new Set(progress.usedPinIds || []);
+        return (stage.questions || []).find(q => String(q.answer ?? '').trim() === expectedAnswer && !used.has(q.pinId))
+            || stage.questions[idx]
+            || null;
     }
 
     function getSolvedCount() {
@@ -248,7 +278,10 @@
         if (!numberingSession.stageProgress[idx]) {
             numberingSession.stageProgress[idx] = {
                 entries: [],
-                direction: null
+                direction: null,
+                usedPinIds: [],
+                candidateSequences: null,
+                selectedSequence: null
             };
         }
         return numberingSession.stageProgress[idx];
@@ -258,22 +291,106 @@
         return (stage?.questions || []).map(q => String(q.answer ?? '').trim());
     }
 
-    function getStageQuestionByEntryIndex(stage, entryIndex, direction) {
-        if (!stage || !Array.isArray(stage.questions) || !stage.questions.length) return null;
-        const mapped = direction === 'reverse'
-            ? (stage.questions.length - 1 - entryIndex)
-            : entryIndex;
-        return stage.questions[mapped] || null;
+    function stageAllowsReverse(stage) {
+        if (!stage) return false;
+        if (typeof stage.allowReverse === 'boolean') return stage.allowReverse;
+        const compId = String(stage.componentId || '').trim().toUpperCase();
+        return compId === 'T' || compId === 'X' || compId === 'FR';
     }
 
-    function getStageNextExpected(stage, progress) {
-        const expected = getStageExpectedAnswers(stage);
-        const idx = progress.entries.length;
-        if (idx >= expected.length) return null;
-        if (progress.direction === 'reverse') {
-            return expected[expected.length - 1 - idx];
+    function getStageOrderMode(stage) {
+        const mode = String(stage?.orderMode || 'horizontal').toLowerCase();
+        if (mode === 'vertical' || mode === 'both') return mode;
+        return 'horizontal';
+    }
+
+    function dedupeSequenceValues(values) {
+        const out = [];
+        values.forEach(v => {
+            const s = String(v ?? '').trim();
+            if (!s || out.includes(s)) return;
+            out.push(s);
+        });
+        return out;
+    }
+
+    function getOrderedPinValuesByMode(stage, mode) {
+        const rows = getStageRows(stage);
+        if (!rows.length) return [];
+        if (mode === 'vertical') {
+            const maxLen = Math.max(...rows.map(r => r.length));
+            const seq = [];
+            for (let c = 0; c < maxLen; c++) {
+                for (let r = 0; r < rows.length; r++) {
+                    const pin = rows[r][c];
+                    if (!pin || pin.value == null) continue;
+                    seq.push(String(pin.value));
+                }
+            }
+            return dedupeSequenceValues(seq);
         }
-        return expected[idx];
+        const seq = [];
+        rows.forEach(row => row.forEach(pin => {
+            if (!pin || pin.value == null) return;
+            seq.push(String(pin.value));
+        }));
+        return dedupeSequenceValues(seq);
+    }
+
+    function projectAnswersByOrder(stage, answers, mode) {
+        const orderedPins = getOrderedPinValuesByMode(stage, mode);
+        if (!orderedPins.length) return null;
+        const counts = new Map();
+        answers.forEach(v => counts.set(v, (counts.get(v) || 0) + 1));
+        const out = [];
+        orderedPins.forEach(v => {
+            const c = counts.get(v) || 0;
+            if (c <= 0) return;
+            out.push(v);
+            counts.set(v, c - 1);
+        });
+        return out.length === answers.length ? out : null;
+    }
+
+    function uniqueSequenceList(items) {
+        const seen = new Set();
+        const out = [];
+        items.forEach(item => {
+            const key = `${item.mode}|${item.reverse ? 'R' : 'F'}|${item.answers.join('>')}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push(item);
+        });
+        return out;
+    }
+
+    function getStageCandidateSequences(stage) {
+        const answers = getStageExpectedAnswers(stage);
+        if (!answers.length) return [];
+
+        const mode = getStageOrderMode(stage);
+        const forward = [];
+        const vSeq = projectAnswersByOrder(stage, answers, 'vertical');
+
+        if (mode === 'horizontal' || mode === 'both') {
+            // Horizontal order follows authored question order exactly.
+            forward.push({ answers: answers.slice(), mode: 'horizontal', reverse: false });
+        }
+        if (mode === 'vertical' || mode === 'both') {
+            // Vertical order is derived from actual pin placement.
+            forward.push({ answers: (vSeq && vSeq.length ? vSeq : answers.slice()), mode: 'vertical', reverse: false });
+        }
+        if (!forward.length) {
+            forward.push({ answers: answers.slice(), mode: 'horizontal', reverse: false });
+        }
+
+        const all = forward.slice();
+        if (stageAllowsReverse(stage)) {
+            forward.forEach(seq => {
+                all.push({ answers: seq.answers.slice().reverse(), mode: seq.mode, reverse: true });
+            });
+        }
+        return uniqueSequenceList(all);
     }
 
     function clearNumberingAnswerOverlay() {
@@ -316,8 +433,10 @@
             };
 
         const total = Math.max((stage?.questions || []).length, progress.entries.length);
-        const cols = total <= 3 ? Math.max(1, total) : (total <= 6 ? 3 : 4);
-        const rows = Math.max(1, Math.ceil(total / cols));
+        const activeSeq = progress?.selectedSequence || progress?.candidateSequences?.[0] || null;
+        const isVerticalView = activeSeq?.mode === 'vertical';
+        const cols = isVerticalView ? 1 : (total <= 3 ? Math.max(1, total) : (total <= 6 ? 3 : 4));
+        const rows = isVerticalView ? Math.max(1, total) : Math.max(1, Math.ceil(total / cols));
 
         progress.entries.forEach((entry, idx) => {
             const row = Math.floor(idx / cols);
@@ -326,10 +445,10 @@
             const y = rect.top + ((row + 0.5) / rows) * rect.height;
 
             const tag = document.createElement('div');
-            tag.className = `numbering-overlay-tag ${progress.direction === 'reverse' ? 'reverse' : ''}`.trim();
+            tag.className = 'numbering-overlay-tag';
             tag.style.left = `${x}px`;
             tag.style.top = `${y}px`;
-            tag.textContent = progress.direction === 'reverse' ? `${entry.value} (역순)` : `${entry.value}`;
+            tag.textContent = `${entry.value}`;
             numberingAnswerOverlay.appendChild(tag);
         });
     }
@@ -447,7 +566,22 @@
 
         const targetId = preset?.componentId || stage.componentId;
         const comp = getComponentById(targetId);
-        return buildRowsFromComponent(comp);
+        const rows = buildRowsFromComponent(comp);
+        if (rows.length) return rows;
+
+        // Fallback: when component/preset id is invalid, still render selectable values from questions.
+        const values = [];
+        const add = v => {
+            const s = String(v ?? '').trim();
+            if (!s || values.includes(s)) return;
+            values.push(s);
+        };
+        (stage?.questions || []).forEach(q => {
+            add(q?.answer);
+            (q?.choices || []).forEach(add);
+        });
+        if (!values.length) return [];
+        return [values.map(v => ({ value: v, label: '선택', sub: '' }))];
     }
 
     function getColClass(size) {
@@ -667,35 +801,34 @@
         const answer = String(answerValue).trim();
         if (!answer) return;
 
-        if (entryIndex === 0 && expectedAnswers.length > 1 && !progress.direction) {
-            const first = expectedAnswers[0];
-            const last = expectedAnswers[expectedAnswers.length - 1];
-            if (answer === first) {
-                progress.direction = 'forward';
-            } else if (answer === last && answer !== first) {
-                progress.direction = 'reverse';
-            } else {
-                numberingResult.textContent = `오답: ${answer} (첫 입력은 ${first} 또는 ${last})`;
-                numberingResult.style.color = '#dc3545';
-                renderNumberingStep();
-                return;
-            }
-        } else if (!progress.direction) {
-            progress.direction = 'forward';
-        }
+        const allCandidates = progress.candidateSequences || getStageCandidateSequences(stage);
+        progress.candidateSequences = allCandidates;
+        if (!allCandidates.length) return;
 
-        const expected = getStageNextExpected(stage, progress);
-        if (answer !== expected) {
-            numberingResult.textContent = `오답: ${answer} (기대값: ${expected})`;
+        const matched = allCandidates.filter(seq => seq.answers[entryIndex] === answer);
+        if (!matched.length) {
+            const expectedSet = Array.from(new Set(allCandidates.map(seq => seq.answers[entryIndex]).filter(Boolean)));
+            const allowedHint = expectedSet.join(', ');
+            numberingResult.textContent = `오답: ${answer} (기대값: ${allowedHint || '없음'})`;
             numberingResult.style.color = '#dc3545';
             renderNumberingStep();
             return;
         }
+        progress.candidateSequences = matched;
+        if (matched.length === 1) progress.selectedSequence = matched[0];
 
-        const question = getStageQuestionByEntryIndex(stage, entryIndex, progress.direction);
+        const picked = progress.selectedSequence || matched[0];
+        progress.direction = picked?.reverse ? 'reverse' : 'forward';
+
+        const used = new Set(progress.usedPinIds || []);
+        const question = (stage.questions || []).find(q => {
+            const ans = String(q.answer ?? '').trim();
+            return ans === answer && !used.has(q.pinId);
+        }) || null;
         if (question) {
             numberingAnswers[question.pinId] = progress.direction === 'reverse' ? `${answer} (역순)` : answer;
             numberingSession.completed.add(question.pinId);
+            progress.usedPinIds.push(question.pinId);
         }
 
         progress.entries.push({
@@ -755,6 +888,30 @@
         renderNumberingStep();
     }
 
+    function resetCurrentNumberingStage() {
+        if (!numberingSession) return;
+        const stageIdx = numberingSession.stageIndex;
+        const stage = numberingSession.stages[stageIdx];
+        if (!stage) return;
+
+        const progress = getStageProgress(stageIdx);
+        progress.entries = [];
+        progress.direction = null;
+        progress.usedPinIds = [];
+        progress.candidateSequences = null;
+        progress.selectedSequence = null;
+
+        (stage.questions || []).forEach(q => {
+            numberingSession.completed.delete(q.pinId);
+            delete numberingAnswers[q.pinId];
+        });
+
+        numberingResult.textContent = '현재 단계 입력을 초기화했습니다. 다시 입력하세요.';
+        numberingResult.style.color = '#333';
+        renderNumberingStep();
+        updateNumberingProgress();
+    }
+
     function openNumberingModal() {
         const stages = createNumberingStages();
 
@@ -780,7 +937,7 @@
             return;
         }
 
-        numberingResult.textContent = '핀 번호를 연속 입력하세요. 첫 입력으로 정순/역순이 자동 판별됩니다.';
+        numberingResult.textContent = '핀 번호를 연속 입력하세요. 단계 설정(역순 허용/채점 방향)에 따라 자동 판별됩니다.';
         renderNumberingStep();
         numberingModal.style.display = 'flex';
     }
@@ -804,11 +961,23 @@
         numberingSession.stages.forEach((stage, stageIdx) => {
             const progress = getStageProgress(stageIdx);
             progress.entries = [];
-            progress.direction = 'forward';
-            stage.questions.forEach(q => {
+            progress.usedPinIds = [];
+            const candidates = getStageCandidateSequences(stage);
+            const picked = candidates.find(c => !c.reverse) || candidates[0] || null;
+            progress.candidateSequences = picked ? [picked] : [];
+            progress.selectedSequence = picked;
+            progress.direction = picked?.reverse ? 'reverse' : 'forward';
+            const answerQueue = picked?.answers || getStageExpectedAnswers(stage);
+            answerQueue.forEach(answer => {
+                const q = (stage.questions || []).find(item =>
+                    String(item.answer ?? '').trim() === String(answer).trim()
+                    && !progress.usedPinIds.includes(item.pinId)
+                );
+                if (!q) return;
                 numberingAnswers[q.pinId] = q.answer;
                 numberingSession.completed.add(q.pinId);
-                progress.entries.push({ value: String(q.answer), reverse: false });
+                progress.usedPinIds.push(q.pinId);
+                progress.entries.push({ value: String(q.answer), reverse: !!picked?.reverse });
             });
         });
 
@@ -917,6 +1086,8 @@
             editorComponentId.value = '';
             editorGuideText.value = '';
             editorInputMode.value = 'choice';
+            if (editorAllowReverse) editorAllowReverse.checked = false;
+            if (editorOrderMode) editorOrderMode.value = 'horizontal';
             editorPinDisplayCsv.value = '';
             numberingEditorState.currentRect = null;
             updateEditorRectOverlay(null);
@@ -929,6 +1100,8 @@
         editorGuideText.value = stage.guide || '';
         editorPinPreset.value = stage.pinPreset || '';
         editorInputMode.value = stage.inputMode || 'choice';
+        if (editorAllowReverse) editorAllowReverse.checked = !!stage.allowReverse;
+        if (editorOrderMode) editorOrderMode.value = stage.orderMode || 'horizontal';
         editorPinDisplayCsv.value = stage.pinDisplayCsv || '';
         numberingEditorState.currentRect = stage.rect || null;
         updateEditorRectOverlay(numberingEditorState.currentRect);
@@ -948,6 +1121,8 @@
             pinPreset: '',
             guide: '설명 문구를 입력하세요.',
             inputMode: 'choice',
+            allowReverse: false,
+            orderMode: 'horizontal',
             pinDisplayCsv: '',
             rect: null,
             questions: []
@@ -956,7 +1131,7 @@
         persistNumberingScenarios();
         renderEditorStageSelect();
         loadEditorStageToForm();
-        updateEditorStageWarning(stage);
+        updateEditorStageWarning(getEditorCurrentStage());
     }
 
     function deleteEditorStage() {
@@ -1022,6 +1197,8 @@
                 componentId: 'NEW',
                 guide: '설명 문구를 입력하세요.',
                 inputMode: 'choice',
+                allowReverse: false,
+                orderMode: 'horizontal',
                 rect: null,
                 questions: []
             };
@@ -1034,6 +1211,8 @@
         stage.pinPreset = (editorPinPreset.value || '').trim();
         stage.guide = (editorGuideText.value || '').trim() || stage.guide;
         stage.inputMode = editorInputMode.value || 'choice';
+        stage.allowReverse = !!editorAllowReverse?.checked;
+        stage.orderMode = editorOrderMode?.value || 'horizontal';
         stage.pinDisplayCsv = (editorPinDisplayCsv.value || '').trim();
         stage.rect = numberingEditorState.currentRect || null;
 
@@ -1055,6 +1234,8 @@
                 pinPreset: '',
                 guide: '설명 문구를 입력하세요.',
                 inputMode: 'choice',
+                allowReverse: false,
+                orderMode: 'horizontal',
                 pinDisplayCsv: '',
                 rect: null,
                 questions: []
@@ -1082,6 +1263,8 @@
                     componentId: 'MC1',
                     guide: '이미지에서 해당 부품을 보고 핀 번호를 맞춰보세요.',
                     inputMode: 'choice',
+                    allowReverse: false,
+                    orderMode: 'horizontal',
                     rect: { x: 0.2, y: 0.2, w: 0.3, h: 0.25 },
                     questions: [
                         {
