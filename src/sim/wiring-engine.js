@@ -199,7 +199,7 @@
         prev.forEach(item => { const s = allPins.find(p => p.id === item.s); const e = allPins.find(p => p.id === item.e); if(s && e) { wires.push({ start: s, end: e, offset: item.o }); s.connections++; e.connections++; } });
         selectedPin = null; draw();
     }
-    function resetWires() { wires = []; historyStack = []; allPins.forEach(p => p.connections = 0); selectedPin = null; isGradingMode = false; focusedGroup = null; if(!isAdminMode) updateUI(); if (isNumberingMode) statusMsg.textContent = "번호 학습 모드"; draw(); }
+    function resetWires() { wires = []; historyStack = []; allPins.forEach(p => p.connections = 0); selectedPin = null; isGradingMode = false; focusedGroup = null; if(!isAdminMode) updateUI(); if (isNumberingMode) statusMsg.textContent = "넘버링 모드"; draw(); }
     function toggleGrading() {
         if(isAdminMode) { alert("관리자 모드를 끄세요."); return; }
         if(wires.length === 0) { alert("결선 내용 없음"); return; }
@@ -223,7 +223,7 @@
         if (isNumberingMode) {
             isGradingMode = false;
             focusedGroup = null;
-            statusMsg.textContent = "번호 학습 모드";
+            statusMsg.textContent = "넘버링 모드";
             statusMsg.style.color = "#c823e0";
             btnNumbering.classList.add('active');
             openNumberingModal();
@@ -291,4 +291,5 @@
     }
 
     init();
+
 

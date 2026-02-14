@@ -388,6 +388,37 @@ let DB_ANSWERS = {
     const numberingModal = document.getElementById('numberingModal');
     const numberingList = document.getElementById('numberingList');
     const numberingResult = document.getElementById('numberingResult');
+    const numberingGuideText = document.getElementById('numberingGuideText');
+    const numberingStageInfo = document.getElementById('numberingStageInfo');
+    const numberingQuestion = document.getElementById('numberingQuestion');
+    const numberingComponentMock = document.getElementById('numberingComponentMock');
+    const numberingChoices = document.getElementById('numberingChoices');
+    const numberingProgressText = document.getElementById('numberingProgressText');
+    const numberingProgressFill = document.getElementById('numberingProgressFill');
+    const numberingImage = document.getElementById('numberingImage');
+    const numberingFocusRect = document.getElementById('numberingFocusRect');
+    const numberingAnswerOverlay = document.getElementById('numberingAnswerOverlay');
+    const numberingReverseState = document.getElementById('numberingReverseState');
+    const numberingInputWrap = document.getElementById('numberingInputWrap');
+    const numberingAnswerInput = document.getElementById('numberingAnswerInput');
+
+    const numberingEditorModal = document.getElementById('numberingEditorModal');
+    const numberingEditorImage = document.getElementById('numberingEditorImage');
+    const numberingEditorRect = document.getElementById('numberingEditorRect');
+    const numberingEditorJson = document.getElementById('numberingEditorJson');
+    const editorRectInfo = document.getElementById('editorRectInfo');
+    const editorImageUrl = document.getElementById('editorImageUrl');
+    const editorStageSelect = document.getElementById('editorStageSelect');
+    const editorStageTitle = document.getElementById('editorStageTitle');
+    const editorComponentId = document.getElementById('editorComponentId');
+    const editorStageWarning = document.getElementById('editorStageWarning');
+    const editorPinPreset = document.getElementById('editorPinPreset');
+    const editorInputMode = document.getElementById('editorInputMode');
+    const editorGuideText = document.getElementById('editorGuideText');
+    const editorQuestionLabel = document.getElementById('editorQuestionLabel');
+    const editorQuestionAnswer = document.getElementById('editorQuestionAnswer');
+    const editorPinDisplayCsv = document.getElementById('editorPinDisplayCsv');
+    const editorQuestionChoices = document.getElementById('editorQuestionChoices');
 
     let currentLayoutId = "t1"; 
     let currentComponents = [];
@@ -399,5 +430,172 @@ let DB_ANSWERS = {
     let isNumberingMode = false;
     let numberingAnswers = {};
     let numberingPinSnapshot = [];
+    let numberingSession = null;
+
+    // Paste exported numbering JSON here.
+    // The editor now exports in this shape:
+    // {
+    //   "t1": { "image": "...", "stages": [ ... ] },
+    //   "t2": { "image": "...", "stages": [ ... ] }
+    // }
+    // Tip:
+    // 1) key must match layout id (t1, t2, ...).
+    // 2) each stage should include at least one question.
+    let NUMBERING_SCENARIOS_DEFAULT = {
+  "t1": {
+    "image": "./images/images1.png",
+    "stages": [
+      {
+        "title": "새 단계 4",
+        "componentId": "NEW",
+        "pinPreset": "",
+        "guide": "설명 문구를 입력하세요.",
+        "inputMode": "choice",
+        "pinDisplayCsv": "",
+        "rect": null,
+        "questions": []
+      },
+      {
+        "title": "MC1 보조접점",
+        "componentId": "MC1",
+        "guide": "ㅇㅇㅇㅇ",
+        "inputMode": "choice",
+        "rect": {
+          "x": 0.8159763313609467,
+          "y": 0.36386827458256027,
+          "w": 0.053254437869822535,
+          "h": 0.16883116883116883
+        },
+        "questions": [],
+        "pinPreset": "",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "EOCR 넘버링",
+        "componentId": "EOCR",
+        "pinPreset": "EOCR_12",
+        "guide": "EOCR 주회로 단자(1,2,3,7,8,9)를 순서대로 익히세요. 역순(9,8,7,3,2,1)도 허용됩니다.",
+        "inputMode": "choice",
+        "pinDisplayCsv": "",
+        "rect": {
+          "x": 0.04319526627218935,
+          "y": 0.32490723562152135,
+          "w": 0.09585798816568046,
+          "h": 0.1484230055658627
+        },
+        "questions": [
+          {
+            "pinId": "EOCR_Q1",
+            "label": "주회로 1",
+            "answer": "1",
+            "choices": [],
+            "inputMode": "choice"
+          },
+          {
+            "pinId": "EOCR_Q2",
+            "label": "주회로 2",
+            "answer": "2",
+            "choices": [],
+            "inputMode": "choice"
+          },
+          {
+            "pinId": "EOCR_Q3",
+            "label": "주회로 3",
+            "answer": "3",
+            "choices": [],
+            "inputMode": "choice"
+          },
+          {
+            "pinId": "EOCR_Q4",
+            "label": "주회로 7",
+            "answer": "7",
+            "choices": [],
+            "inputMode": "choice"
+          },
+          {
+            "pinId": "EOCR_Q5",
+            "label": "주회로 8",
+            "answer": "8",
+            "choices": [],
+            "inputMode": "choice"
+          },
+          {
+            "pinId": "EOCR_Q6",
+            "label": "주회로 9",
+            "answer": "9",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ]
+      },
+      {
+        "title": "새 단계 4",
+        "componentId": "NEW",
+        "pinPreset": "",
+        "guide": "설명 문구를 입력하세요.",
+        "inputMode": "choice",
+        "pinDisplayCsv": "",
+        "rect": null,
+        "questions": []
+      }
+    ]
+  }
+};
+    let NUMBERING_SCENARIOS = { ...NUMBERING_SCENARIOS_DEFAULT };
+    let numberingEditorState = {
+        rectMode: false,
+        dragging: false,
+        startX: 0,
+        startY: 0,
+        currentRect: null,
+        stageIndex: -1
+    };
+
+    try {
+        const saved = localStorage.getItem('numbering_scenarios_v1');
+        if (saved) {
+            const parsed = JSON.parse(saved) || {};
+            const merged = { ...NUMBERING_SCENARIOS_DEFAULT };
+            Object.keys(parsed).forEach(layoutId => {
+                const candidate = parsed[layoutId];
+                const hasQuestions = Array.isArray(candidate?.stages)
+                    && candidate.stages.some(stage => Array.isArray(stage?.questions) && stage.questions.length > 0);
+                if (hasQuestions || !merged[layoutId]) {
+                    const baseLayout = merged[layoutId];
+                    const baseStages = Array.isArray(baseLayout?.stages) ? baseLayout.stages : [];
+                    const candidateStages = Array.isArray(candidate?.stages) ? candidate.stages : [];
+
+                    const patchedStages = candidateStages.map(stage => {
+                        const qCount = Array.isArray(stage?.questions) ? stage.questions.length : 0;
+                        if (qCount > 0) return stage;
+
+                        const backup = baseStages.find(s =>
+                            s?.componentId === stage?.componentId
+                            && Array.isArray(s?.questions)
+                            && s.questions.length > 0
+                        );
+                        if (!backup) return stage;
+
+                        return {
+                            ...stage,
+                            rect: stage?.rect || backup.rect || null,
+                            questions: backup.questions.map(q => ({ ...q }))
+                        };
+                    });
+
+                    merged[layoutId] = {
+                        ...(baseLayout || {}),
+                        ...(candidate || {}),
+                        stages: patchedStages
+                    };
+                }
+            });
+            NUMBERING_SCENARIOS = merged;
+        }
+    } catch (e) {
+        NUMBERING_SCENARIOS = { ...NUMBERING_SCENARIOS_DEFAULT };
+    }
     let lastSavedAction = null;
+
+
 

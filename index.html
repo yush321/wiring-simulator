@@ -145,13 +145,180 @@
         margin: 0 15px;
         color: #333;
     }
-
-        .numbering-list { text-align: left; max-height: 55vh; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 10px; }
-        .numbering-item { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; margin-bottom: 8px; }
-        .numbering-item label { font-size: 14px; color: #222; }
-        .numbering-item input { width: 100%; padding: 8px; border: 1px solid #bbb; border-radius: 5px; background: #fff; color: #111; }
-        #numberingResult { margin-top: 10px; font-weight: bold; color: #333; }
-
+        .numbering-guide { text-align: left; margin: 4px 0 8px; color: #333; font-size: 14px; line-height: 1.5; }
+        .numbering-stage { text-align: left; margin: 4px 0; color: #111; font-size: 14px; font-weight: 700; }
+        .numbering-progress { height: 10px; background: #e9ecef; border-radius: 999px; overflow: hidden; margin-top: 6px; }
+        .numbering-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #6f42c1, #17a2b8); transition: width 0.25s ease; }
+        .numbering-progress-text { text-align: left; margin-top: 6px; color: #555; font-size: 12px; }
+        .numbering-image-wrap { margin-top: 10px; }
+        .numbering-image-wrap img { width: 100%; border: 1px solid #ddd; border-radius: 8px; }
+        .numbering-question { margin-top: 10px; text-align: left; font-size: 14px; font-weight: 700; color: #222; }
+        .numbering-component-mock {
+            margin-top: 10px;
+            border: 1px solid #d0d7de;
+            border-radius: 10px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+        .numbering-component-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        .numbering-mock-body {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 8px;
+        }
+        .numbering-mock-row-label {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 700;
+            margin: 6px 0 4px;
+            text-align: left;
+        }
+        .numbering-pin-row {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .numbering-pin-row:last-child { margin-bottom: 0; }
+        .numbering-pin-row.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .numbering-pin-row.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .numbering-pin-row.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .numbering-pin-row.cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .numbering-pin-row.cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        .numbering-pin-row.cols-8 { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+        .numbering-pin-row.cols-10 { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+        .numbering-pin-slot-empty {
+            border: 1px dashed #e2e8f0;
+            border-radius: 8px;
+            min-height: 42px;
+            background: #f8fafc;
+        }
+        .numbering-pin-btn {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            padding: 8px 6px;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.2;
+            min-height: 42px;
+        }
+        .numbering-pin-btn small {
+            display: block;
+            margin-top: 4px;
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .numbering-pin-btn:hover { background: #eff6ff; }
+        .numbering-pin-btn.selected {
+            border-color: #198754;
+            background: #e9f7ef;
+            color: #14532d;
+        }
+        .numbering-pin-btn.reverse {
+            border-color: #fd7e14;
+            background: #fff4e6;
+            color: #9a3412;
+        }
+        .numbering-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+        .numbering-choice { background: #f8f9fa; border: 1px solid #ced4da; color: #111; border-radius: 8px; padding: 10px; font-weight: 700; }
+        .numbering-choice:hover { background: #eef2ff; }
+        #numberingResult { margin-top: 10px; font-weight: bold; color: #333; text-align: left; }
+        .numbering-focus-wrap { position: relative; margin-top: 10px; }
+        #numberingFocusRect {
+            position: absolute;
+            border: 2px solid #ff4757;
+            background: rgba(255, 71, 87, 0.18);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+            display: none;
+            pointer-events: none;
+        }
+        #numberingAnswerOverlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .numbering-overlay-tag {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 123, 255, 0.9);
+            color: #fff;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .numbering-overlay-tag.reverse {
+            background: rgba(253, 126, 20, 0.95);
+        }
+        #numberingReverseState {
+            margin-top: 6px;
+            text-align: left;
+            font-size: 12px;
+            color: #fd7e14;
+            font-weight: 700;
+            min-height: 16px;
+        }
+        .numbering-input-wrap { display: none; gap: 8px; margin-top: 10px; }
+        .numbering-input-wrap input {
+            flex: 1;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 10px;
+            font-weight: 700;
+        }
+        .numbering-editor-canvas-wrap {
+            position: relative;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .numbering-editor-canvas-wrap img {
+            width: 100%;
+            display: block;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+        }
+        #numberingEditorRect {
+            position: absolute;
+            border: 2px dashed #0d6efd;
+            background: rgba(13, 110, 253, 0.18);
+            display: none;
+            pointer-events: none;
+        }
+        .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .editor-grid input, .editor-grid textarea, .editor-grid select {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 13px;
+        }
+        .editor-warning {
+            grid-column: 1 / -1;
+            text-align: left;
+            color: #dc3545;
+            font-size: 12px;
+            font-weight: 700;
+            min-height: 18px;
+        }
+        .editor-wide { grid-column: 1 / -1; }
+        .editor-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -186,25 +353,114 @@
     <div id="numberingModal" class="modal-overlay">
         <div class="modal-content" style="max-width:620px;">
             <span class="close-btn" onclick="closeNumberingModal()">&times;</span>
-            <div class="modal-header">번호학습 (핀 번호 작성)</div>
-            <p style="margin:0; color:#444;">각 단자의 번호를 입력한 뒤 채점하세요. (예: 1, 3, 12)</p>
-            <div id="numberingList" class="numbering-list"></div>
-            <div id="numberingResult">아직 채점 전</div>
+            <div class="modal-header">넘버링 (핀 번호 선택)</div>
+            <p id="numberingGuideText" class="numbering-guide">넘버링은 회로도에서 현재 부품의 핀 번호를 맞추는 훈련입니다.</p>
+            <div id="numberingStageInfo" class="numbering-stage">단계 준비 중</div>
+            <div class="numbering-progress"><div id="numberingProgressFill" class="numbering-progress-fill"></div></div>
+            <div id="numberingProgressText" class="numbering-progress-text">진행률 0% (0/0)</div>
+            <div class="numbering-focus-wrap">
+                <div class="numbering-image-wrap"><img id="numberingImage" src="./images/images1.png" alt="넘버링 참고" draggable="false"></div>
+                <div id="numberingFocusRect"></div>
+                <div id="numberingAnswerOverlay"></div>
+            </div>
+            <div id="numberingQuestion" class="numbering-question">문제를 불러오는 중입니다.</div>
+            <div id="numberingReverseState"></div>
+            <div id="numberingComponentMock" class="numbering-component-mock" style="display:none;"></div>
+            <div id="numberingChoices" class="numbering-choices"></div>
+            <div id="numberingInputWrap" class="numbering-input-wrap">
+                <input id="numberingAnswerInput" type="text" placeholder="핀 번호 입력 (예: 8, 12, +1)">
+                <button style="background:#0d6efd;" onclick="submitNumberingInput()">정답 확인</button>
+            </div>
+            <div id="numberingList" style="display:none;"></div>
+            <div id="numberingResult">정답을 고르면 자동으로 다음 문제로 이동합니다.</div>
             <div style="display:flex; gap:8px; margin-top:12px;">
-                <button style="flex:1; background:#6f42c1;" onclick="gradeNumberingAnswers()">채점하기</button>
+                <button style="flex:1; background:#6f42c1;" onclick="gradeNumberingAnswers()">진행률 확인</button>
                 <button style="flex:1; background:#17a2b8;" onclick="fillCorrectNumbers()">정답보기</button>
+                <button style="flex:1; background:#495057;" onclick="prevNumberingStage()">이전 단계</button>
+                <button style="flex:1; background:#0d6efd;" onclick="nextNumberingStage()">다음 단계</button>
                 <button style="flex:1; background:#6c757d;" onclick="closeNumberingModal()">닫기</button>
             </div>
         </div>
     </div>
 
 
+    
+    <div id="numberingEditorModal" class="modal-overlay">
+        <div class="modal-content" style="max-width:860px;">
+            <span class="close-btn" onclick="closeNumberingEditorModal()">&times;</span>
+            <div class="modal-header">넘버링 편집기 (관리자)</div>
+            <p style="margin:0; color:#444; text-align:left;">도면 이미지에서 영역을 드래그한 뒤 단계/문항을 저장하면 학습 모드에 바로 반영됩니다.</p>
+
+            <div class="editor-grid">
+                <input id="editorImageUrl" class="editor-wide" placeholder="도면 이미지 경로 (예: ./images/images1.png)">
+                <select id="editorStageSelect" onchange="onEditorStageSelectChange()"></select>
+                <input id="editorStageTitle" placeholder="단계 제목 (예: MC1 보조접점)">
+                <input id="editorComponentId" placeholder="부품 ID (예: MC1)">
+                <div id="editorStageWarning" class="editor-warning"></div>
+                <select id="editorPinPreset" onchange="onEditorPinPresetChange()">
+                    <option value="">부품 프리셋 선택(자동)</option>
+                    <option value="FUSE_4">4핀 퓨즈 (상+,상-,하+,하-)</option>
+                    <option value="RL_2">2핀 RL (+,-)</option>
+                    <option value="WL_2">2핀 WL (+,-)</option>
+                    <option value="GL_2">2핀 GL (+,-)</option>
+                    <option value="BZ_2">2핀 BZ (+,-)</option>
+                    <option value="PB0_2">2핀 PB0 (C,N)</option>
+                    <option value="PB1_2">2핀 PB1 (O,N)</option>
+                    <option value="SS_3">3핀 SS (M,N,A)</option>
+                    <option value="T_8">8핀 타이머(T)</option>
+                    <option value="FR_8">8핀 플리커(FR)</option>
+                    <option value="X_8">8핀 릴레이(X)</option>
+                    <option value="FLS_8">8핀 FLS</option>
+                    <option value="EOCR_12">12핀 EOCR</option>
+                    <option value="MC1_12">12핀 MC1</option>
+                    <option value="MC2_12">12핀 MC2</option>
+                </select>
+                <select id="editorInputMode">
+                    <option value="choice">선택형</option>
+                    <option value="input">입력형</option>
+                </select>
+                <textarea id="editorGuideText" class="editor-wide" rows="2" placeholder="설명 문구"></textarea>
+                <input id="editorQuestionLabel" placeholder="문항 라벨 (예: A접점)">
+                <input id="editorQuestionAnswer" placeholder="정답 번호 (예: 8)">
+                <details class="editor-wide">
+                    <summary style="cursor:pointer; font-weight:700; color:#334155;">고급옵션</summary>
+                    <div style="margin-top:8px; display:grid; gap:8px;">
+                        <input id="editorPinDisplayCsv" placeholder="핀 표시 커스텀(쉼표). 상단좌측→하단우측 순서로 입력 (예: 1,2,3,4,C공통,6,+,-공통)">
+                        <input id="editorQuestionChoices" placeholder="문항 보기(선택형, 쉼표구분. 예: 6,7,8,9)">
+                    </div>
+                </details>
+            </div>
+
+            <div class="editor-actions">
+                <button style="background:#0d6efd;" onclick="startEditorRectMode()">영역 선택 시작</button>
+                <button style="background:#6f42c1;" onclick="addEditorQuestion()">문항 추가</button>
+                <button style="background:#17a2b8;" onclick="saveEditorStage()">단계 저장</button>
+                <button style="background:#495057;" onclick="newEditorStage()">새 단계</button>
+                <button style="background:#dc3545;" onclick="deleteEditorStage()">현재 단계 삭제</button>
+                <button style="background:#20c997;" onclick="refreshNumberingFromEditor()">학습 반영</button>
+            </div>
+
+            <div class="numbering-editor-canvas-wrap">
+                <img id="numberingEditorImage" src="./images/images1.png" alt="넘버링 편집 도면" draggable="false">
+                <div id="numberingEditorRect"></div>
+            </div>
+            <div id="editorRectInfo" style="text-align:left; margin-top:8px; font-size:12px; color:#444;">영역: 미선택</div>
+
+            <div style="display:flex; gap:8px; margin-top:10px;">
+                <button style="background:#6f42c1;" onclick="exportNumberingScenario()">JSON 내보내기</button>
+                <button style="background:#17a2b8;" onclick="importNumberingScenario()">JSON 불러오기</button>
+                <button style="background:#6c757d;" onclick="closeNumberingEditorModal()">닫기</button>
+            </div>
+            <textarea id="numberingEditorJson" style="width:100%; height:120px; margin-top:8px; font-family:monospace; font-size:12px;"></textarea>
+        </div>
+    </div>
+
     <h2>전기기능사 마스터</h2>
     
     <div class="controls">
         <select id="layoutSelect" onchange="changeLayout()"></select>
         <button class="btn-info" onclick="openModal()">📖 설명</button>
-        <button id="btnNumbering" class="btn-numbering" onclick="toggleNumberingMode()">📝 번호학습</button>
+        <button id="btnNumbering" class="btn-numbering" onclick="toggleNumberingMode()">넘버링</button>
         <button class="btn-undo" onclick="undoLastAction()">↩ (Ctrl+Z)</button>
         <button class="btn-reset" onclick="resetWires()">초기화</button>
         <button id="btnCheck" class="btn-check" onclick="toggleGrading()">채점 하기</button>
@@ -233,6 +489,7 @@
             <button style="background:#4ecdc4; color:#111;" onclick="saveCommonsFromWires()">공통 저장 (F)</button>
             <button style="background:#6c757d;" onclick="removeLastSavedAnswer()">최근 저장 취소</button>
         </div>
+        <div style="margin-top: 8px;"><button style="width:100%; background:#6f42c1;" onclick="openNumberingEditorModal()">넘버링 편집기</button></div>
         <div style="margin-top: 10px; padding-top:10px; border-top: 1px solid #444;">
              <button style="width:100%; background:#444;" onclick="exportAllData()">📋 전체 데이터 생성</button>
         </div>
@@ -255,4 +512,11 @@
 <script src="./src/sim/wiring-engine.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
 
