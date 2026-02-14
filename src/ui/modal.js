@@ -407,31 +407,27 @@
         numberingReverseState.textContent = progress.direction === 'reverse' ? '역순 입력 중' : '';
     }
 
-    function renderNumberingAnswerOverlay(stage, progress) {
-        if (!numberingAnswerOverlay) return;
-        clearNumberingAnswerOverlay();
-
-        if (!progress?.entries?.length || !numberingImage) return;
-
-        const wrap = numberingImage.closest('.numbering-focus-wrap');
-        if (!wrap) return;
-
-        const imgRect = numberingImage.getBoundingClientRect();
-        const wrapRect = wrap.getBoundingClientRect();
-        const rect = stage?.rect
-            ? {
+    function getOverlayRectForStage(stage, imgRect, wrapRect) {
+        if (stage?.rect) {
+            return {
                 left: (imgRect.left - wrapRect.left) + (stage.rect.x * imgRect.width),
                 top: (imgRect.top - wrapRect.top) + (stage.rect.y * imgRect.height),
                 width: stage.rect.w * imgRect.width,
                 height: stage.rect.h * imgRect.height
-            }
-            : {
-                left: (imgRect.left - wrapRect.left) + (imgRect.width * 0.2),
-                top: (imgRect.top - wrapRect.top) + (imgRect.height * 0.25),
-                width: imgRect.width * 0.6,
-                height: imgRect.height * 0.2
             };
+        }
+        return {
+            left: (imgRect.left - wrapRect.left) + (imgRect.width * 0.2),
+            top: (imgRect.top - wrapRect.top) + (imgRect.height * 0.25),
+            width: imgRect.width * 0.6,
+            height: imgRect.height * 0.2
+        };
+    }
 
+    function renderStageEntriesOnOverlay(stage, progress, imgRect, wrapRect) {
+        if (!progress?.entries?.length) return;
+
+        const rect = getOverlayRectForStage(stage, imgRect, wrapRect);
         const total = Math.max((stage?.questions || []).length, progress.entries.length);
         const activeSeq = progress?.selectedSequence || progress?.candidateSequences?.[0] || null;
         const isVerticalView = activeSeq?.mode === 'vertical';
@@ -451,6 +447,33 @@
             tag.textContent = `${entry.value}`;
             numberingAnswerOverlay.appendChild(tag);
         });
+    }
+
+    function renderNumberingAnswerOverlay(stage, progress) {
+        if (!numberingAnswerOverlay) return;
+        clearNumberingAnswerOverlay();
+
+        if (!numberingImage) return;
+
+        const wrap = numberingImage.closest('.numbering-focus-wrap');
+        if (!wrap) return;
+
+        const imgRect = numberingImage.getBoundingClientRect();
+        const wrapRect = wrap.getBoundingClientRect();
+        if (numberingSession?.showFinalOverlay) {
+            const currentImageHref = numberingImage?.src ? new URL(numberingImage.src, window.location.href).href : '';
+            numberingSession.stages.forEach((s, idx) => {
+                const stageProgress = getStageProgress(idx);
+                if (!stageProgress?.entries?.length) return;
+                const stageImageHref = s?.image ? new URL(String(s.image), window.location.href).href : '';
+                const sameImage = stageImageHref && currentImageHref && stageImageHref === currentImageHref;
+                if (!sameImage && s !== stage) return;
+                renderStageEntriesOnOverlay(s, stageProgress, imgRect, wrapRect);
+            });
+            return;
+        }
+
+        renderStageEntriesOnOverlay(stage, progress, imgRect, wrapRect);
     }
 
     function updatePinButtonStates(progress) {
@@ -773,6 +796,7 @@
         if (!numberingSession) return;
 
         if (numberingSession.stageIndex < numberingSession.stages.length - 1) {
+            numberingSession.showFinalOverlay = false;
             numberingSession.stageIndex += 1;
             numberingResult.textContent = '정답입니다. 다음 단계로 이동합니다.';
             numberingResult.style.color = '#28a745';
@@ -780,11 +804,14 @@
             return;
         }
 
+        numberingSession.showFinalOverlay = true;
         updateNumberingProgress();
         numberingResult.textContent = '모든 넘버링 단계를 완료했습니다.';
         numberingResult.style.color = '#28a745';
         statusMsg.textContent = '넘버링 100% 완료';
         hideNumberingFocusRect();
+        const currentStage = numberingSession.stages[numberingSession.stageIndex];
+        renderNumberingAnswerOverlay(currentStage, getStageProgress(numberingSession.stageIndex));
     }
 
     function evaluateNumberingAnswer(answerValue) {
@@ -874,6 +901,7 @@
 
     function prevNumberingStage() {
         if (!numberingSession || numberingSession.stageIndex === 0) return;
+        numberingSession.showFinalOverlay = false;
         numberingSession.stageIndex -= 1;
         numberingResult.textContent = '이전 단계로 이동했습니다.';
         numberingResult.style.color = '#333';
@@ -882,6 +910,7 @@
 
     function nextNumberingStage() {
         if (!numberingSession || numberingSession.stageIndex >= numberingSession.stages.length - 1) return;
+        numberingSession.showFinalOverlay = false;
         numberingSession.stageIndex += 1;
         numberingResult.textContent = '다음 단계로 이동했습니다.';
         numberingResult.style.color = '#333';
@@ -890,6 +919,7 @@
 
     function resetCurrentNumberingStage() {
         if (!numberingSession) return;
+        numberingSession.showFinalOverlay = false;
         const stageIdx = numberingSession.stageIndex;
         const stage = numberingSession.stages[stageIdx];
         if (!stage) return;
@@ -920,7 +950,8 @@
             stageIndex: 0,
             totalQuestions: stages.reduce((sum, stage) => sum + stage.questions.length, 0),
             completed: new Set(),
-            stageProgress: {}
+            stageProgress: {},
+            showFinalOverlay: false
         };
 
         numberingResult.style.color = '#333';
@@ -983,6 +1014,7 @@
 
         numberingResult.textContent = '전체 정답을 표시했습니다. 설명 문구와 함께 복습하세요.';
         numberingResult.style.color = '#17a2b8';
+        numberingSession.showFinalOverlay = true;
         updateNumberingProgress();
         renderNumberingStep();
         statusMsg.textContent = '넘버링 정답 표시 완료';
