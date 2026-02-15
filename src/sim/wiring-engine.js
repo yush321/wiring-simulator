@@ -457,7 +457,7 @@
 
     function downloadAnswerJsonFile() {
         persistAnswerData();
-        const payload = JSON.stringify(DB_ANSWERS, null, 2);
+        const payload = `let DB_ANSWERS = ${JSON.stringify(DB_ANSWERS, null, 2)};`;
         const blob = new Blob([payload], { type: 'application/json;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -484,7 +484,15 @@
         const reader = new FileReader();
         reader.onload = () => {
             try {
-                const parsed = JSON.parse(String(reader.result || '{}'));
+                const rawText = String(reader.result || '').trim();
+                let parsed = null;
+                if (rawText.startsWith('{')) {
+                    parsed = JSON.parse(rawText);
+                } else {
+                    const matched = rawText.match(/(?:let|const|var)\s+DB_ANSWERS\s*=\s*([\s\S]*?)\s*;\s*$/);
+                    const objectText = matched ? matched[1] : rawText;
+                    parsed = JSON.parse(objectText);
+                }
                 if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
                     alert('JSON 형식이 올바르지 않습니다.');
                     return;

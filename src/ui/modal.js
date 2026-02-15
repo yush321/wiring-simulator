@@ -61,6 +61,42 @@
         timer: null
     };
 
+    function parseAssignmentObject(rawText, varName) {
+        const text = String(rawText || '').trim();
+        if (!text) return null;
+        if (text.startsWith('{')) return JSON.parse(text);
+        const re = new RegExp(`(?:let|const|var)\\s+${varName}\\s*=\\s*([\\s\\S]*?)\\s*;\\s*$`);
+        const m = text.match(re);
+        if (!m) return JSON.parse(text);
+        return JSON.parse(m[1]);
+    }
+
+    async function copyTextToClipboard(text) {
+        const value = String(text ?? '');
+        if (!value) return false;
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(value);
+                return true;
+            }
+        } catch (e) {
+            // fallback below
+        }
+        try {
+            const temp = document.createElement('textarea');
+            temp.value = value;
+            temp.style.position = 'fixed';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.select();
+            const ok = document.execCommand('copy');
+            temp.remove();
+            return !!ok;
+        } catch (e) {
+            return false;
+        }
+    }
+
     function cloneTutorialEntry(raw, layoutId) {
         const source = (raw && typeof raw === 'object') ? raw : {};
         const fallbackTitle = String(layoutId || '').startsWith('t') ? `튜토리얼 ${layoutId}` : `공개도면 ${layoutId}번`;
@@ -277,15 +313,16 @@
         openModal();
     }
 
-    function exportTutorialScenario() {
+    async function exportTutorialScenario() {
         saveTutorialEditor();
-        const layoutId = String(currentLayoutId || '');
-        const payload = { [layoutId]: cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId) };
+        const payload = JSON.parse(JSON.stringify(TUTORIAL_CONFIG || {}));
+        const out = JSON.stringify(payload, null, 2);
         if (wiringEditorJson) {
-            wiringEditorJson.value = JSON.stringify(payload, null, 2);
+            wiringEditorJson.value = out;
             wiringEditorJson.select();
         }
-        setTutorialEditorStatus('튜토리얼 JSON 내보내기 완료');
+        const copied = await copyTextToClipboard(out);
+        setTutorialEditorStatus(copied ? '결선튜토리얼 전체 JSON 내보내기 + 자동 복사 완료' : '결선튜토리얼 전체 JSON 내보내기 완료 (복사는 수동)');
     }
 
     function importTutorialScenario() {
@@ -293,33 +330,46 @@
         const text = String(wiringEditorJson?.value || '').trim();
         if (!text) return;
         try {
-            const data = JSON.parse(text);
-            let entry = null;
-            if (data && typeof data === 'object' && !Array.isArray(data)) {
-                if (Array.isArray(data.desc)) {
-                    entry = cloneTutorialEntry(data, layoutId);
-                } else if (data[layoutId] && typeof data[layoutId] === 'object') {
-                    entry = cloneTutorialEntry(data[layoutId], layoutId);
-                }
-            }
-            if (!entry) {
-                alert('형식이 올바르지 않아. (title/desc/img) 또는 ({layoutId:{...}}) 형태가 필요해.');
+            const data = parseAssignmentObject(text, 'TUTORIAL_CONFIG');
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                alert('형식이 올바르지 않아. (title/desc/img), ({layoutId:{...}}), 또는 let TUTORIAL_CONFIG = {...}; 형태가 필요해.');
                 return;
             }
-            const existing = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
-            if (!entry.targetIds.length && existing.targetIds.length) {
-                entry.targetIds = existing.targetIds.slice();
-            }
-            TUTORIAL_CONFIG[layoutId] = entry;
-            persistTutorialConfig();
-            updateLayoutOptionTitle(layoutId, entry.title);
 
+            // Single-layout object support: {title,desc,img,...}
+            const looksLikeSingle = Array.isArray(data.desc) || typeof data.title === 'string' || typeof data.img === 'string';
+            if (looksLikeSingle) {
+                const entry = cloneTutorialEntry(data, layoutId);
+                const existing = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
+                if (!entry.targetIds.length && existing.targetIds.length) {
+                    entry.targetIds = existing.targetIds.slice();
+                }
+                TUTORIAL_CONFIG[layoutId] = entry;
+            } else {
+                // Full config object support: { t1:{...}, t2:{...}, ... }
+                Object.keys(data).forEach(key => {
+                    const src = data[key];
+                    if (!src || typeof src !== 'object') return;
+                    const entry = cloneTutorialEntry(src, key);
+                    const existing = cloneTutorialEntry(TUTORIAL_CONFIG[key], key);
+                    if (!entry.targetIds.length && existing.targetIds.length) {
+                        entry.targetIds = existing.targetIds.slice();
+                    }
+                    TUTORIAL_CONFIG[key] = entry;
+                    updateLayoutOptionTitle(key, entry.title);
+                });
+            }
+
+            persistTutorialConfig();
+            updateLayoutOptionTitle(layoutId, TUTORIAL_CONFIG[layoutId]?.title || layoutId);
+
+            const entry = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
             if (wiringEditorTitle) wiringEditorTitle.value = entry.title;
             if (wiringEditorImage) wiringEditorImage.value = entry.img;
             if (wiringEditorPageCount) wiringEditorPageCount.value = String(entry.desc.length || 1);
             tutorialEditorState.activePage = 0;
             renderTutorialEditorPages(entry.desc.length || 1, entry.desc);
-            setTutorialEditorStatus('튜토리얼 JSON 불러오기 완료');
+            setTutorialEditorStatus('결선튜토리얼 JSON 불러오기 완료');
         } catch (e) {
             alert('JSON 파싱 실패: 형식을 확인해줘.');
         }
@@ -352,12 +402,22 @@
         setTutorialEditorStatus('튜토리얼 로컬 저장 초기화 완료');
     }
 
+    function buildTutorialModalPageHtml(data, pageHtml) {
+        const body = String(pageHtml ?? '');
+        const hasInlineImage = /<img\b/i.test(body);
+        const rawSrc = String(data?.img || '').trim().replace(/^['"]|['"]$/g, '');
+        if (!rawSrc || hasInlineImage) return body;
+        const normalizedSrc = rawSrc.replace(/\\/g, '/');
+        const imageBlock = `<img src="${normalizedSrc}" alt="튜토리얼 이미지" style="max-width:100%; height:auto; border:1px solid #ccc; margin:10px 0; border-radius:5px;">`;
+        return `${imageBlock}${body}`;
+    }
+
     function updateModalContent() {
         const data = TUTORIAL_CONFIG[currentLayoutId];
         if (!data) return;
 
         const pages = Array.isArray(data.desc) ? data.desc : [data.desc];
-        modalBody.innerHTML = pages[currentModalPage];
+        modalBody.innerHTML = buildTutorialModalPageHtml(data, pages[currentModalPage]);
 
         const indicator = document.getElementById('pageIndicator');
         if (pages.length > 1) {
@@ -2005,7 +2065,7 @@
         };
     }
 
-    function exportNumberingScenario() {
+    async function exportNumberingScenario() {
         saveEditorStage();
         let scenario = ensureEditorScenario();
         if (!Array.isArray(scenario.stages) || scenario.stages.length === 0) {
@@ -2019,8 +2079,15 @@
         }
         // Export as layout-keyed object so it can be pasted directly into repository defaults.
         const keyed = { [currentLayoutId]: scenario };
-        numberingEditorJson.value = JSON.stringify(keyed, null, 2);
+        const out = JSON.stringify(keyed, null, 2);
+        numberingEditorJson.value = out;
         numberingEditorJson.select();
+        const copied = await copyTextToClipboard(out);
+        if (editorRectInfo) {
+            editorRectInfo.textContent = copied
+                ? '넘버링 JSON 내보내기 + 자동 복사 완료'
+                : '넘버링 JSON 내보내기 완료 (복사는 수동)';
+        }
     }
 
     function importNumberingScenario() {
