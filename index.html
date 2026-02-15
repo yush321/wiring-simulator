@@ -62,6 +62,30 @@
 
         #adminInfo { display: none; width: 90%; max-width: 700px; background: #222; border: 1px solid #555; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; }
         .info-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; }
+        .component-filter-panel {
+            margin-top: 8px;
+            border: 1px solid #3b475c;
+            border-radius: 8px;
+            background: #1a2230;
+            padding: 8px;
+        }
+        .component-filter-list {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 6px;
+            background: #0f172a;
+        }
+        .component-filter-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 3px 0;
+            color: #dbeafe;
+            font-size: 12px;
+        }
         .key-badge { background: #555; padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #fff; border: 1px solid #777; font-family: monospace; font-size: 16px; margin-right: 5px;}
         .mode-desc { display: flex; align-items: center; margin-bottom: 8px; }
         input[type="number"] { width: 50px; padding: 4px; text-align: center; background: #333; color: white; border: 1px solid #666; font-weight: bold; }
@@ -104,6 +128,7 @@
     }
     .btn-page:disabled { background: #ccc; cursor: not-allowed; }
     .btn-start { background: #007bff; }
+    .btn-play { background: #fd7e14; }
     #pageIndicator { font-size: 14px; font-weight: bold; color: #666; }
     
         /* 튜토리얼 팝업 내 버튼 스타일 */
@@ -361,6 +386,102 @@
         }
         .editor-wide { grid-column: 1 / -1; }
         .editor-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .tutorial-editor-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .tutorial-editor-toolbar button {
+            background: #334155;
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+        .tutorial-page-item {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px;
+            background: #f8fafc;
+            margin-top: 8px;
+        }
+        .tutorial-page-item h4 {
+            margin: 0 0 6px;
+            text-align: left;
+            color: #1e293b;
+            font-size: 13px;
+        }
+        .tutorial-page-item textarea {
+            width: 100%;
+            min-height: 110px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 8px;
+            box-sizing: border-box;
+            font-size: 13px;
+            font-family: 'Malgun Gothic', sans-serif;
+        }
+        .tutorial-editor-status {
+            margin-top: 8px;
+            min-height: 18px;
+            color: #0f766e;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .tutorial-page-tabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .tutorial-page-tab {
+            border: 1px solid #cbd5e1;
+            background: #e2e8f0;
+            color: #1e293b;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .tutorial-page-tab.active {
+            background: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+        .tutorial-preview-box {
+            min-height: 90px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px;
+            text-align: left;
+            color: #111;
+            line-height: 1.5;
+        }
+        #playbackControls {
+            display: none;
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            background: #1f2937;
+            color: #e5e7eb;
+            width: 90%;
+            max-width: 700px;
+        }
+        #playbackControls .row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        #playbackControls .row button {
+            background: #374151;
+            border: 1px solid #4b5563;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
 </style>
 </head>
 <body>
@@ -372,6 +493,14 @@
             <div id="modalBody" class="modal-body"></div>
             
             <div class="modal-footer">
+                <div style="display:flex; gap:6px; align-items:center; flex:1;">
+                    <button id="playBtn" class="btn-page btn-play" onclick="playTutorialFlowFromModal()">재생</button>
+                    <select id="playSpeedSelect" style="padding:8px; border-radius:5px; border:1px solid #ced4da; font-weight:700;">
+                        <option value="800">느림</option>
+                        <option value="550" selected>보통</option>
+                        <option value="300">빠름</option>
+                    </select>
+                </div>
                 <button id="prevBtn" onclick="changePage(-1)">이전</button>
                 <span id="pageIndicator">1 / 1</span>
                 <button id="nextBtn" onclick="changePage(1)">다음</button>
@@ -388,7 +517,7 @@
                 <h2 style="color:#28a745; margin:0;">정답입니다!</h2>
                 <p style="margin-top:10px; font-size:16px;">완벽하게 결선하셨습니다.</p>
             </div>
-            <button style="width:100%; margin-top:15px; background:#28a745; color:white; padding:12px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:16px;" onclick="closeModal('successModal')">계속하기</button>
+            <button style="width:100%; margin-top:15px; background:#28a745; color:white; padding:12px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:16px;" onclick="continueAfterSuccess()">다음 실습</button>
         </div>
     </div>
 
@@ -520,6 +649,52 @@
         </div>
     </div>
 
+    <div id="tutorialEditorModal" class="modal-overlay">
+        <div class="modal-content" style="max-width:860px;">
+            <span class="close-btn" onclick="closeTutorialEditorModal()">&times;</span>
+            <div class="modal-header">결선 튜토리얼 편집기 (관리자)</div>
+            <p style="margin:0; color:#444; text-align:left;">제목/설명/이미지/페이지 수를 편집합니다. 설명은 HTML을 지원합니다. (`&lt;br&gt;`, `&lt;b&gt;`, `&lt;span style='color:#dc3545;'&gt;`)</p>
+
+            <div class="editor-grid">
+                <input id="wiringEditorTitle" class="editor-wide" placeholder="튜토리얼 제목">
+                <input id="wiringEditorImage" class="editor-wide" placeholder="튜토리얼 이미지 경로 (예: ./images/images1.png)">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input id="wiringEditorPageCount" type="number" min="1" max="20" value="1" style="width:90px;">
+                    <button style="background:#0d6efd;" onclick="applyTutorialPageCount()">페이지 수 적용</button>
+                </div>
+                <div style="text-align:left; color:#475569; font-size:12px;">페이지별 설명은 아래에서 입력합니다.</div>
+            </div>
+
+            <div class="tutorial-editor-toolbar">
+                <button onclick="wrapActiveTutorialText('<b>','</b>')">굵게</button>
+                <button onclick="insertActiveTutorialText('<br>')">줄바꿈 태그</button>
+                <button onclick="wrapActiveTutorialText('<span style=&quot;color:#dc3545;&quot;>','</span>')">빨강</button>
+                <button onclick="wrapActiveTutorialText('<span style=&quot;color:#007bff;&quot;>','</span>')">파랑</button>
+            </div>
+
+            <div id="wiringEditorPageTabs" class="tutorial-page-tabs"></div>
+            <div class="tutorial-page-item">
+                <h4 id="wiringEditorActivePageLabel">페이지 1 설명</h4>
+                <textarea id="wiringEditorPageText" placeholder="설명(HTML 가능): 줄바꿈(<br>), 굵게(<b>), 색상(<span style='color:#...'>)"></textarea>
+            </div>
+            <div class="tutorial-page-item">
+                <h4>페이지 미리보기</h4>
+                <div id="wiringEditorPreview" class="tutorial-preview-box"></div>
+            </div>
+            <div id="wiringEditorStatus" class="tutorial-editor-status"></div>
+
+            <div class="editor-actions">
+                <button style="background:#17a2b8;" onclick="saveTutorialEditor()">저장</button>
+                <button style="background:#0d6efd;" onclick="previewTutorialEditor()">미리보기</button>
+                <button style="background:#6f42c1;" onclick="exportTutorialScenario()">JSON 내보내기</button>
+                <button style="background:#20c997;" onclick="importTutorialScenario()">JSON 불러오기</button>
+                <button style="background:#dc3545;" onclick="resetTutorialLocalStorage()">로컬저장 초기화</button>
+                <button style="background:#6c757d;" onclick="closeTutorialEditorModal()">닫기</button>
+            </div>
+            <textarea id="wiringEditorJson" style="width:100%; height:120px; margin-top:8px; font-family:monospace; font-size:12px;"></textarea>
+        </div>
+    </div>
+
     <h2>전기기능사 마스터</h2>
     
     <div class="controls">
@@ -544,11 +719,35 @@
             관리자 결선을 저장하면 연결 노드(핀 집합) 기준으로 채점합니다.<br>
             결선 순서/경로가 달라도 전기적으로 같은 노드면 정답 처리됩니다.
         </div>
+        <div class="component-filter-panel">
+            <div style="display:flex; gap:8px; align-items:center; justify-content:space-between;">
+                <b style="color:#93c5fd;">부품 세팅 (현재 도면)</b>
+                <button style="background:#475569; padding:6px 10px; font-size:12px;" onclick="toggleComponentFilterPanel()">열기/닫기</button>
+            </div>
+            <div id="componentFilterWrap" style="display:none;">
+                <div id="componentFilterList" class="component-filter-list"></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
+                    <button style="background:#0ea5e9;" onclick="selectAllComponentFilter()">전체 선택</button>
+                    <button style="background:#64748b;" onclick="clearAllComponentFilter()">전체 해제</button>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
+                    <button style="background:#22c55e;" onclick="applyComponentFilterForCurrentLayout()">세팅 적용</button>
+                    <button style="background:#ef4444;" onclick="resetComponentFilterForCurrentLayout()">기본값 복원</button>
+                </div>
+            </div>
+        </div>
         <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <button style="background:#4ecdc4; color:#111;" onclick="saveNodeAnswersFromWires()">입력 완료 저장</button>
             <button style="background:#6c757d;" onclick="removeLastSavedAnswer()">최근 저장 취소</button>
         </div>
-        <div style="margin-top: 8px;"><button style="width:100%; background:#6f42c1;" onclick="openNumberingEditorModal()">넘버링 편집기</button></div>
+        <div style="margin-top: 8px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button style="background:#fd7e14;" onclick="saveTutorialFlowFromWires()">재생 순서 저장</button>
+            <button style="background:#6b7280;" onclick="clearTutorialFlow()">재생 순서 초기화</button>
+        </div>
+        <div style="margin-top: 8px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button style="background:#6f42c1;" onclick="openNumberingEditorModal()">넘버링 편집기</button>
+            <button style="background:#0ea5e9;" onclick="openTutorialEditorModal()">결선 튜토리얼 편집기</button>
+        </div>
         <div style="margin-top: 10px; padding-top:10px; border-top: 1px solid #444;">
              <button style="width:100%; background:#444;" onclick="exportAllData()">📋 전체 데이터 생성</button>
         </div>
@@ -559,6 +758,16 @@
         <input id="answerJsonInput" type="file" accept=".json,application/json" onchange="handleAnswerJsonFileChange(event)" style="display:none;">
         <textarea id="exportArea" readonly></textarea>
         <div id="saveStatus" style="color: yellow; margin-top: 5px; height: 20px;"></div>
+    </div>
+
+    <div id="playbackControls">
+        <div class="row">
+            <button onclick="pauseTutorialFlowPlayback()">일시정지</button>
+            <button onclick="resumeTutorialFlowPlayback()">재개</button>
+            <button onclick="stepTutorialFlowPlayback()">스텝</button>
+            <button onclick="stopTutorialFlowPlayback()">중지</button>
+            <span id="playbackProgress" style="font-size:12px; color:#93c5fd;">재생 대기</span>
+        </div>
     </div>
 
     <div class="legend">

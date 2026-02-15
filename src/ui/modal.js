@@ -46,6 +46,312 @@
         }
     }
 
+    const TUTORIAL_STORAGE_KEY = 'tutorial_config_v1';
+    const TUTORIAL_CONFIG_DEFAULT = JSON.parse(JSON.stringify(TUTORIAL_CONFIG || {}));
+    const tutorialEditorState = {
+        pages: [''],
+        activePage: 0
+    };
+    const tutorialPlaybackState = {
+        active: false,
+        paused: false,
+        edges: [],
+        index: 0,
+        stepMs: 550,
+        timer: null
+    };
+
+    function cloneTutorialEntry(raw, layoutId) {
+        const source = (raw && typeof raw === 'object') ? raw : {};
+        const fallbackTitle = String(layoutId || '').startsWith('t') ? `튜토리얼 ${layoutId}` : `공개도면 ${layoutId}번`;
+        const descList = Array.isArray(source.desc)
+            ? source.desc.map(v => String(v ?? ''))
+            : [String(source.desc ?? '')];
+        return {
+            title: String(source.title || fallbackTitle),
+            desc: descList.length ? descList : [''],
+            img: String(source.img || './images/images1.png'),
+            targetIds: Array.isArray(source.targetIds) ? source.targetIds.slice() : []
+        };
+    }
+
+    function updateLayoutOptionTitle(layoutId, title) {
+        if (!layoutSelect) return;
+        const options = Array.from(layoutSelect.options || []);
+        const opt = options.find(item => String(item.value) === String(layoutId));
+        if (opt) opt.text = title;
+    }
+
+    function persistTutorialConfig() {
+        try {
+            localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(TUTORIAL_CONFIG));
+        } catch (e) {
+            // ignore storage errors
+        }
+    }
+
+    function loadTutorialConfigFromStorage() {
+        try {
+            const raw = localStorage.getItem(TUTORIAL_STORAGE_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return;
+            Object.keys(parsed).forEach(layoutId => {
+                const merged = cloneTutorialEntry({
+                    ...(TUTORIAL_CONFIG[layoutId] || {}),
+                    ...(parsed[layoutId] || {})
+                }, layoutId);
+                const baseTargetIds = Array.isArray(TUTORIAL_CONFIG[layoutId]?.targetIds)
+                    ? TUTORIAL_CONFIG[layoutId].targetIds.slice()
+                    : [];
+                if (!merged.targetIds.length && baseTargetIds.length) {
+                    merged.targetIds = baseTargetIds;
+                }
+                TUTORIAL_CONFIG[layoutId] = merged;
+            });
+        } catch (e) {
+            // ignore parse errors
+        }
+    }
+
+    loadTutorialConfigFromStorage();
+
+    function setTutorialEditorStatus(msg, color = '#0f766e') {
+        if (!wiringEditorStatus) return;
+        wiringEditorStatus.textContent = msg || '';
+        wiringEditorStatus.style.color = color;
+    }
+
+    function normalizeTutorialPages(values) {
+        const list = Array.isArray(values) ? values : [values];
+        const normalized = list.map(v => String(v ?? ''));
+        return normalized.length ? normalized : [''];
+    }
+
+    function syncActiveTutorialPageText() {
+        if (!wiringEditorPageText) return;
+        const idx = tutorialEditorState.activePage;
+        tutorialEditorState.pages[idx] = String(wiringEditorPageText.value || '');
+    }
+
+    function renderTutorialPreview() {
+        if (!wiringEditorPreview) return;
+        syncActiveTutorialPageText();
+        const idx = tutorialEditorState.activePage;
+        const pageHtml = tutorialEditorState.pages[idx] || '';
+        const img = String(wiringEditorImage?.value || '').trim();
+        const imageHtml = img ? `<img src="${img}" style="max-width:100%; border:1px solid #ddd; border-radius:6px; margin-bottom:8px;">` : '';
+        wiringEditorPreview.innerHTML = `${imageHtml}${pageHtml || '<span style="color:#6b7280;">미리보기 내용 없음</span>'}`;
+    }
+
+    function renderTutorialPageTabs() {
+        if (!wiringEditorPageTabs) return;
+        wiringEditorPageTabs.innerHTML = '';
+        tutorialEditorState.pages.forEach((_, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `tutorial-page-tab${idx === tutorialEditorState.activePage ? ' active' : ''}`;
+            btn.textContent = `${idx + 1}`;
+            btn.addEventListener('click', () => {
+                syncActiveTutorialPageText();
+                tutorialEditorState.activePage = idx;
+                renderTutorialEditorPage();
+            });
+            wiringEditorPageTabs.appendChild(btn);
+        });
+    }
+
+    function renderTutorialEditorPage() {
+        if (!wiringEditorPageText) return;
+        const idx = tutorialEditorState.activePage;
+        if (wiringEditorActivePageLabel) wiringEditorActivePageLabel.textContent = `페이지 ${idx + 1} 설명`;
+        wiringEditorPageText.value = tutorialEditorState.pages[idx] || '';
+        renderTutorialPageTabs();
+        renderTutorialPreview();
+    }
+
+    function renderTutorialEditorPages(count, values = []) {
+        const safeCount = Math.max(1, Math.min(20, Number.isFinite(count) ? count : 1));
+        const normalized = normalizeTutorialPages(values);
+        tutorialEditorState.pages = Array.from({ length: safeCount }, (_, i) => normalized[i] ?? '');
+        tutorialEditorState.activePage = Math.max(0, Math.min(tutorialEditorState.activePage, safeCount - 1));
+        renderTutorialEditorPage();
+    }
+
+    function applyTutorialPageCount() {
+        const count = parseInt(wiringEditorPageCount?.value || '1', 10);
+        syncActiveTutorialPageText();
+        renderTutorialEditorPages(count, tutorialEditorState.pages);
+        if (wiringEditorPageCount) wiringEditorPageCount.value = String(Math.max(1, Math.min(20, count || 1)));
+        setTutorialEditorStatus('페이지 수를 반영했습니다.');
+    }
+
+    function getTutorialEditorDraft() {
+        syncActiveTutorialPageText();
+        const title = String(wiringEditorTitle?.value || '').trim() || `튜토리얼 ${currentLayoutId}`;
+        const img = String(wiringEditorImage?.value || '').trim() || './images/images1.png';
+        const desc = tutorialEditorState.pages.map(v => String(v ?? '').trim());
+        return {
+            title,
+            img,
+            desc: desc.length ? desc : ['']
+        };
+    }
+
+    function applyTutorialDraft(layoutId, draft) {
+        const base = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
+        const next = {
+            ...base,
+            title: draft.title || base.title,
+            img: draft.img || base.img,
+            desc: Array.isArray(draft.desc) && draft.desc.length ? draft.desc : ['']
+        };
+        TUTORIAL_CONFIG[layoutId] = next;
+        return next;
+    }
+
+    function wrapActiveTutorialText(prefix, suffix) {
+        const target = wiringEditorPageText;
+        if (!target) return;
+        const start = target.selectionStart ?? target.value.length;
+        const end = target.selectionEnd ?? target.value.length;
+        const before = target.value.slice(0, start);
+        const selected = target.value.slice(start, end);
+        const after = target.value.slice(end);
+        target.value = `${before}${prefix}${selected}${suffix}${after}`;
+        const pos = start + prefix.length + selected.length + suffix.length;
+        target.focus();
+        target.setSelectionRange(pos, pos);
+        syncActiveTutorialPageText();
+        renderTutorialPreview();
+    }
+
+    function insertActiveTutorialText(text) {
+        wrapActiveTutorialText(text, '');
+    }
+
+    function openTutorialEditorModal() {
+        if (!isAdminMode) {
+            alert('관리자 모드에서만 편집기를 열 수 있어.');
+            return;
+        }
+        const layoutId = String(currentLayoutId || '');
+        const entry = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
+        if (wiringEditorTitle) wiringEditorTitle.value = entry.title;
+        if (wiringEditorImage) wiringEditorImage.value = entry.img;
+        if (wiringEditorPageCount) wiringEditorPageCount.value = String(entry.desc.length || 1);
+        tutorialEditorState.activePage = 0;
+        renderTutorialEditorPages(entry.desc.length || 1, entry.desc);
+        if (wiringEditorJson) wiringEditorJson.value = '';
+        if (wiringEditorPageText && wiringEditorPageText.dataset.boundInput !== '1') {
+            wiringEditorPageText.addEventListener('input', () => {
+                syncActiveTutorialPageText();
+                renderTutorialPreview();
+            });
+            wiringEditorPageText.dataset.boundInput = '1';
+        }
+        if (wiringEditorImage && wiringEditorImage.dataset.boundInput !== '1') {
+            wiringEditorImage.addEventListener('input', () => renderTutorialPreview());
+            wiringEditorImage.dataset.boundInput = '1';
+        }
+        setTutorialEditorStatus('');
+        if (tutorialEditorModal) tutorialEditorModal.style.display = 'flex';
+    }
+
+    function closeTutorialEditorModal() {
+        if (tutorialEditorModal) tutorialEditorModal.style.display = 'none';
+    }
+
+    function saveTutorialEditor() {
+        const layoutId = String(currentLayoutId || '');
+        if (!layoutId) return;
+        const saved = applyTutorialDraft(layoutId, getTutorialEditorDraft());
+        persistTutorialConfig();
+        updateLayoutOptionTitle(layoutId, saved.title);
+        setTutorialEditorStatus(`${layoutId} 튜토리얼 저장 완료`);
+    }
+
+    function previewTutorialEditor() {
+        saveTutorialEditor();
+        closeTutorialEditorModal();
+        openModal();
+    }
+
+    function exportTutorialScenario() {
+        saveTutorialEditor();
+        const layoutId = String(currentLayoutId || '');
+        const payload = { [layoutId]: cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId) };
+        if (wiringEditorJson) {
+            wiringEditorJson.value = JSON.stringify(payload, null, 2);
+            wiringEditorJson.select();
+        }
+        setTutorialEditorStatus('튜토리얼 JSON 내보내기 완료');
+    }
+
+    function importTutorialScenario() {
+        const layoutId = String(currentLayoutId || '');
+        const text = String(wiringEditorJson?.value || '').trim();
+        if (!text) return;
+        try {
+            const data = JSON.parse(text);
+            let entry = null;
+            if (data && typeof data === 'object' && !Array.isArray(data)) {
+                if (Array.isArray(data.desc)) {
+                    entry = cloneTutorialEntry(data, layoutId);
+                } else if (data[layoutId] && typeof data[layoutId] === 'object') {
+                    entry = cloneTutorialEntry(data[layoutId], layoutId);
+                }
+            }
+            if (!entry) {
+                alert('형식이 올바르지 않아. (title/desc/img) 또는 ({layoutId:{...}}) 형태가 필요해.');
+                return;
+            }
+            const existing = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
+            if (!entry.targetIds.length && existing.targetIds.length) {
+                entry.targetIds = existing.targetIds.slice();
+            }
+            TUTORIAL_CONFIG[layoutId] = entry;
+            persistTutorialConfig();
+            updateLayoutOptionTitle(layoutId, entry.title);
+
+            if (wiringEditorTitle) wiringEditorTitle.value = entry.title;
+            if (wiringEditorImage) wiringEditorImage.value = entry.img;
+            if (wiringEditorPageCount) wiringEditorPageCount.value = String(entry.desc.length || 1);
+            tutorialEditorState.activePage = 0;
+            renderTutorialEditorPages(entry.desc.length || 1, entry.desc);
+            setTutorialEditorStatus('튜토리얼 JSON 불러오기 완료');
+        } catch (e) {
+            alert('JSON 파싱 실패: 형식을 확인해줘.');
+        }
+    }
+
+    function resetTutorialLocalStorage() {
+        const ok = confirm('튜토리얼 로컬 저장 데이터를 초기화하고 기본값으로 되돌릴까?');
+        if (!ok) return;
+
+        try {
+            localStorage.removeItem(TUTORIAL_STORAGE_KEY);
+        } catch (e) {
+            // ignore storage errors
+        }
+
+        Object.keys(TUTORIAL_CONFIG).forEach(key => { delete TUTORIAL_CONFIG[key]; });
+        Object.assign(TUTORIAL_CONFIG, JSON.parse(JSON.stringify(TUTORIAL_CONFIG_DEFAULT || {})));
+
+        Object.keys(TUTORIAL_CONFIG).forEach(layoutId => {
+            const title = TUTORIAL_CONFIG[layoutId]?.title;
+            if (title) updateLayoutOptionTitle(layoutId, title);
+        });
+
+        const current = cloneTutorialEntry(TUTORIAL_CONFIG[currentLayoutId], currentLayoutId);
+        if (wiringEditorTitle) wiringEditorTitle.value = current.title;
+        if (wiringEditorImage) wiringEditorImage.value = current.img;
+        if (wiringEditorPageCount) wiringEditorPageCount.value = String(current.desc.length || 1);
+        tutorialEditorState.activePage = 0;
+        renderTutorialEditorPages(current.desc.length || 1, current.desc);
+        setTutorialEditorStatus('튜토리얼 로컬 저장 초기화 완료');
+    }
+
     function updateModalContent() {
         const data = TUTORIAL_CONFIG[currentLayoutId];
         if (!data) return;
@@ -66,6 +372,17 @@
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         const startBtn = document.getElementById('startBtn');
+        const playBtn = document.getElementById('playBtn');
+        const playSpeedSelect = document.getElementById('playSpeedSelect');
+        if (playBtn) {
+            const canPlay = hasTutorialPlayableFlow(currentLayoutId);
+            playBtn.style.display = 'inline-block';
+            playBtn.disabled = !canPlay;
+            if (playSpeedSelect) {
+                playSpeedSelect.style.display = 'inline-block';
+                playSpeedSelect.disabled = !canPlay;
+            }
+        }
 
         if (pages.length <= 1) {
             prevBtn.style.display = 'none';
@@ -115,11 +432,202 @@
         document.getElementById('nextBtn').style.display = 'none';
         document.getElementById('pageIndicator').style.display = 'none';
         document.getElementById('startBtn').style.display = 'inline-block';
+        const playBtn = document.getElementById('playBtn');
+        const playSpeedSelect = document.getElementById('playSpeedSelect');
+        if (playBtn) playBtn.style.display = 'none';
+        if (playSpeedSelect) playSpeedSelect.style.display = 'none';
         infoModal.style.display = 'flex';
     }
 
     function closeModal(id) {
         document.getElementById(id).style.display = 'none';
+    }
+
+    function getLayoutPlaybackEdges(layoutId) {
+        const ans = DB_ANSWERS[layoutId] || {};
+        if (Array.isArray(ans.tutorialFlow) && ans.tutorialFlow.length) {
+            return ans.tutorialFlow
+                .map(item => {
+                    if (Array.isArray(item) && item.length >= 2) {
+                        return [String(item[0]), String(item[1])];
+                    }
+                    if (item && typeof item === 'object' && item.from && item.to) {
+                        return [String(item.from), String(item.to)];
+                    }
+                    return null;
+                })
+                .filter(v => Array.isArray(v) && v[0] && v[1]);
+        }
+
+        if (Array.isArray(ans.nodes) && ans.nodes.length) {
+            return ans.nodes.flatMap(node =>
+                (node.visuals || [])
+                    .filter(v => Array.isArray(v) && v.length >= 2)
+                    .map(v => [String(v[0]), String(v[1])])
+            );
+        }
+
+        if (Array.isArray(ans.targets) && ans.targets.length) {
+            return ans.targets
+                .filter(v => Array.isArray(v) && v.length >= 2)
+                .map(v => [String(v[0]), String(v[1])]);
+        }
+
+        return [];
+    }
+
+    function hasTutorialPlayableFlow(layoutId) {
+        return getLayoutPlaybackEdges(layoutId).length > 0;
+    }
+
+    function updatePlaybackControlPanel() {
+        if (!playbackControls) return;
+        playbackControls.style.display = tutorialPlaybackState.active ? 'block' : 'none';
+        if (playbackProgress) {
+            const total = tutorialPlaybackState.edges.length;
+            const current = Math.min(tutorialPlaybackState.index, total);
+            const mode = tutorialPlaybackState.paused ? '일시정지' : '재생';
+            playbackProgress.textContent = tutorialPlaybackState.active
+                ? `${mode} ${current}/${total}`
+                : '재생 대기';
+        }
+    }
+
+    function drawPlaybackEdge(edge, edgeIndex, total) {
+        const fromId = String(edge?.[0] ?? '');
+        const toId = String(edge?.[1] ?? '');
+        const fromPin = allPins.find(p => p.id === fromId);
+        const toPin = allPins.find(p => p.id === toId);
+        if (!fromPin || !toPin) return false;
+
+        const duplicate = wires.some(w =>
+            (w.start.id === fromId && w.end.id === toId) || (w.start.id === toId && w.end.id === fromId)
+        );
+        if (duplicate) return false;
+
+        const offset = (typeof getRecommendedWireOffset === 'function')
+            ? getRecommendedWireOffset(fromPin, toPin)
+            : 0;
+        wires.push({ start: fromPin, end: toPin, offset });
+        fromPin.connections = (fromPin.connections || 0) + 1;
+        toPin.connections = (toPin.connections || 0) + 1;
+        if (statusMsg) {
+            statusMsg.textContent = `결선 재생 ${edgeIndex + 1}/${total}`;
+            statusMsg.style.color = '#fd7e14';
+        }
+        draw();
+        return true;
+    }
+
+    function finishTutorialFlowPlayback() {
+        tutorialPlaybackState.active = false;
+        tutorialPlaybackState.paused = false;
+        if (tutorialPlaybackState.timer) {
+            clearTimeout(tutorialPlaybackState.timer);
+            tutorialPlaybackState.timer = null;
+        }
+        if (statusMsg) {
+            statusMsg.textContent = `결선 재생 완료 (${tutorialPlaybackState.edges.length}개)`;
+            statusMsg.style.color = '#17a2b8';
+        }
+        updatePlaybackControlPanel();
+    }
+
+    function scheduleTutorialFlowPlayback() {
+        if (!tutorialPlaybackState.active || tutorialPlaybackState.paused) return;
+        if (tutorialPlaybackState.index >= tutorialPlaybackState.edges.length) {
+            finishTutorialFlowPlayback();
+            return;
+        }
+        const edgeIndex = tutorialPlaybackState.index;
+        const edge = tutorialPlaybackState.edges[edgeIndex];
+        drawPlaybackEdge(edge, edgeIndex, tutorialPlaybackState.edges.length);
+        tutorialPlaybackState.index += 1;
+        updatePlaybackControlPanel();
+        if (tutorialPlaybackState.index >= tutorialPlaybackState.edges.length) {
+            finishTutorialFlowPlayback();
+            return;
+        }
+        tutorialPlaybackState.timer = setTimeout(scheduleTutorialFlowPlayback, tutorialPlaybackState.stepMs);
+    }
+
+    function stopTutorialFlowPlayback() {
+        const wasActive = tutorialPlaybackState.active || !!tutorialPlaybackState.timer || tutorialPlaybackState.edges.length > 0;
+        if (tutorialPlaybackState.timer) {
+            clearTimeout(tutorialPlaybackState.timer);
+            tutorialPlaybackState.timer = null;
+        }
+        tutorialPlaybackState.active = false;
+        tutorialPlaybackState.paused = false;
+        tutorialPlaybackState.index = 0;
+        tutorialPlaybackState.edges = [];
+        if (wasActive && statusMsg) {
+            statusMsg.textContent = '결선 재생 중지';
+            statusMsg.style.color = '#fff';
+        }
+        updatePlaybackControlPanel();
+    }
+
+    function pauseTutorialFlowPlayback() {
+        if (!tutorialPlaybackState.active) return;
+        tutorialPlaybackState.paused = true;
+        if (tutorialPlaybackState.timer) {
+            clearTimeout(tutorialPlaybackState.timer);
+            tutorialPlaybackState.timer = null;
+        }
+        updatePlaybackControlPanel();
+    }
+
+    function resumeTutorialFlowPlayback() {
+        if (!tutorialPlaybackState.active) return;
+        if (!tutorialPlaybackState.paused) return;
+        tutorialPlaybackState.paused = false;
+        updatePlaybackControlPanel();
+        scheduleTutorialFlowPlayback();
+    }
+
+    function stepTutorialFlowPlayback() {
+        if (!tutorialPlaybackState.active || !tutorialPlaybackState.paused) return;
+        if (tutorialPlaybackState.index >= tutorialPlaybackState.edges.length) {
+            finishTutorialFlowPlayback();
+            return;
+        }
+        const edgeIndex = tutorialPlaybackState.index;
+        const edge = tutorialPlaybackState.edges[edgeIndex];
+        drawPlaybackEdge(edge, edgeIndex, tutorialPlaybackState.edges.length);
+        tutorialPlaybackState.index += 1;
+        updatePlaybackControlPanel();
+        if (tutorialPlaybackState.index >= tutorialPlaybackState.edges.length) {
+            finishTutorialFlowPlayback();
+        }
+    }
+
+    function playTutorialFlowFromModal() {
+        if (typeof allPins === 'undefined' || typeof wires === 'undefined') return;
+        if (typeof draw !== 'function') return;
+
+        const playSpeedSelect = document.getElementById('playSpeedSelect');
+        const edges = getLayoutPlaybackEdges(currentLayoutId);
+        if (!edges.length) {
+            alert('재생할 결선 데이터가 없습니다. 관리자 모드에서 결선을 저장해 주세요.');
+            return;
+        }
+
+        // 재생 시작 시 안내 팝업은 자동으로 닫고 캔버스에서 진행 상태를 보여준다.
+        closeModal('infoModal');
+
+        stopTutorialFlowPlayback();
+
+        if (typeof resetWires === 'function') resetWires();
+
+        const selectedMs = parseInt(playSpeedSelect?.value || '550', 10);
+        tutorialPlaybackState.stepMs = Number.isFinite(selectedMs) && selectedMs > 50 ? selectedMs : 550;
+        tutorialPlaybackState.edges = edges.slice();
+        tutorialPlaybackState.index = 0;
+        tutorialPlaybackState.active = true;
+        tutorialPlaybackState.paused = false;
+        updatePlaybackControlPanel();
+        scheduleTutorialFlowPlayback();
     }
 
     function getTutorialPinList() {

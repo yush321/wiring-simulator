@@ -13,7 +13,7 @@
             const parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== 'object') return;
             Object.keys(parsed).forEach(k => {
-                if (!DB_ANSWERS[k]) DB_ANSWERS[k] = { targets: [], commons: [], nodes: [] };
+                if (!DB_ANSWERS[k]) DB_ANSWERS[k] = { targets: [], commons: [], nodes: [], tutorialFlow: [], componentFilter: [] };
                 DB_ANSWERS[k] = {
                     ...(DB_ANSWERS[k] || {}),
                     ...(parsed[k] || {})
@@ -25,10 +25,12 @@
     function ensureLayoutAnswer(layoutId) {
         const key = String(layoutId || currentLayoutId || '');
         if (!key) return null;
-        if (!DB_ANSWERS[key]) DB_ANSWERS[key] = { targets: [], commons: [], nodes: [] };
+        if (!DB_ANSWERS[key]) DB_ANSWERS[key] = { targets: [], commons: [], nodes: [], tutorialFlow: [], componentFilter: [] };
         if (!Array.isArray(DB_ANSWERS[key].targets)) DB_ANSWERS[key].targets = [];
         if (!Array.isArray(DB_ANSWERS[key].commons)) DB_ANSWERS[key].commons = [];
         if (!Array.isArray(DB_ANSWERS[key].nodes)) DB_ANSWERS[key].nodes = [];
+        if (!Array.isArray(DB_ANSWERS[key].tutorialFlow)) DB_ANSWERS[key].tutorialFlow = [];
+        if (!Array.isArray(DB_ANSWERS[key].componentFilter)) DB_ANSWERS[key].componentFilter = [];
         return DB_ANSWERS[key];
     }
     function init() {
@@ -54,22 +56,38 @@
     }
 
     function changeLayout() {
+        if (typeof stopTutorialFlowPlayback === 'function') stopTutorialFlowPlayback();
         currentLayoutId = layoutSelect.value;
         currentLayoutNumSpan.innerText = currentLayoutId;
+        const answer = ensureLayoutAnswer(currentLayoutId);
+        const savedFilter = Array.isArray(answer?.componentFilter) ? answer.componentFilter : [];
         
-        if (TUTORIAL_CONFIG[currentLayoutId]) {
-            const targetIds = TUTORIAL_CONFIG[currentLayoutId].targetIds;
-            currentComponents = PUBLIC_LAYOUT_BASE.filter(comp => targetIds.includes(comp.id));
+        const tutorial = TUTORIAL_CONFIG[currentLayoutId];
+        const hasCustomFilter = savedFilter.length > 0;
+        const tutorialTargetIds = Array.isArray(tutorial?.targetIds) ? tutorial.targetIds : [];
+        const targetIds = hasCustomFilter ? savedFilter : tutorialTargetIds;
+
+        if (tutorial) {
+            if (targetIds.length > 0) {
+                currentComponents = PUBLIC_LAYOUT_BASE.filter(comp => targetIds.includes(comp.id));
+            } else {
+                currentComponents = JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
+            }
             currentComponents = JSON.parse(JSON.stringify(currentComponents));
             openModal();
         } else {
-            currentComponents = JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
+            if (targetIds.length > 0) {
+                currentComponents = JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE.filter(comp => targetIds.includes(comp.id))));
+            } else {
+                currentComponents = JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
+            }
         }
         
         allPins = [];
         currentComponents.forEach(comp => generatePins(comp));
         resetWires();
         statusMsg.textContent = `${currentLayoutId} 준비완료`;
+        if (isAdminMode) renderComponentFilterPanel();
     }
 
 
@@ -77,14 +95,24 @@
         isAdminMode = !isAdminMode;
         if(isAdminMode) {
             adminInfo.style.display = 'block';
+            renderComponentFilterPanel();
+            allPins.forEach(p => p.connections = 0);
+            selectedPin = null;
+            wires = [];
+            historyStack = [];
             statusMsg.textContent = `[관리자] ${currentLayoutId} 작업 중`;
             statusMsg.style.color = "#007bff";
-            wires = []; draw();
+            draw();
         } else {
             adminInfo.style.display = 'none';
+            if (componentFilterWrap) componentFilterWrap.style.display = 'none';
+            allPins.forEach(p => p.connections = 0);
+            selectedPin = null;
+            wires = [];
+            historyStack = [];
             statusMsg.textContent = "대기 중";
             statusMsg.style.color = "#fff";
-            wires = []; draw();
+            draw();
         }
     }
 
@@ -276,6 +304,64 @@
         return groups;
     }
 
+    function getAlternatingOffset(rank, gap = 5) {
+        if (rank <= 0) return 0;
+        const step = Math.ceil(rank / 2);
+        const sign = (rank % 2 === 1) ? 1 : -1;
+        return sign * step * gap;
+    }
+
+    function getWireHorizontalSegments(startPin, endPin) {
+        if (typeof getNearestDuctY !== 'function') return [];
+        const startDuct = getNearestDuctY(startPin.y);
+        const endDuct = getNearestDuctY(endPin.y);
+        if (startDuct === endDuct) {
+            return [{
+                ductY: startDuct,
+                minX: Math.min(startPin.x, endPin.x),
+                maxX: Math.max(startPin.x, endPin.x)
+            }];
+        }
+
+        const ducts = (typeof getActiveDucts === 'function') ? getActiveDucts() : DUCTS;
+        const midX = (startPin.x + endPin.x) / 2;
+        const sideX = (midX < 350) ? ducts.leftX : ducts.rightX;
+        return [
+            {
+                ductY: startDuct,
+                minX: Math.min(startPin.x, sideX),
+                maxX: Math.max(startPin.x, sideX)
+            },
+            {
+                ductY: endDuct,
+                minX: Math.min(endPin.x, sideX),
+                maxX: Math.max(endPin.x, sideX)
+            }
+        ];
+    }
+
+    function getHorizontalOverlapRank(startPin, endPin) {
+        const candidateSegments = getWireHorizontalSegments(startPin, endPin);
+        if (!candidateSegments.length) return 0;
+
+        let rank = 0;
+        wires.forEach(w => {
+            const existingSegments = getWireHorizontalSegments(w.start, w.end);
+            const overlaps = candidateSegments.some(cs =>
+                existingSegments.some(es =>
+                    es.ductY === cs.ductY && Math.max(es.minX, cs.minX) <= Math.min(es.maxX, cs.maxX)
+                )
+            );
+            if (overlaps) rank++;
+        });
+        return rank;
+    }
+
+    function getRecommendedWireOffset(startPin, endPin) {
+        const rank = getHorizontalOverlapRank(startPin, endPin);
+        return getAlternatingOffset(rank, 5);
+    }
+
     function handleInput(clientX, clientY) {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
@@ -317,7 +403,8 @@
             if (selectedPin === clickedPin) { selectedPin = null; statusMsg.textContent = "취소"; draw(); return; }
             if (clickedPin.connections >= 2) { alert("연결 불가"); return; }
             saveHistory();
-            wires.push({ start: selectedPin, end: clickedPin, offset: (Math.random() * 16) - 8 });
+            const offset = getRecommendedWireOffset(selectedPin, clickedPin);
+            wires.push({ start: selectedPin, end: clickedPin, offset });
             selectedPin.connections++; clickedPin.connections++; selectedPin = null; 
             statusMsg.textContent = "완료"; statusMsg.style.color = "#007bff"; draw();
         }
@@ -331,7 +418,18 @@
         prev.forEach(item => { const s = allPins.find(p => p.id === item.s); const e = allPins.find(p => p.id === item.e); if(s && e) { wires.push({ start: s, end: e, offset: item.o }); s.connections++; e.connections++; } });
         selectedPin = null; draw();
     }
-    function resetWires() { wires = []; historyStack = []; allPins.forEach(p => p.connections = 0); selectedPin = null; isGradingMode = false; focusedGroup = null; if(!isAdminMode) updateUI(); if (isNumberingMode) statusMsg.textContent = "넘버링 모드"; draw(); }
+    function resetWires() {
+        if (typeof stopTutorialFlowPlayback === 'function') stopTutorialFlowPlayback();
+        wires = [];
+        historyStack = [];
+        allPins.forEach(p => p.connections = 0);
+        selectedPin = null;
+        isGradingMode = false;
+        focusedGroup = null;
+        if(!isAdminMode) updateUI();
+        if (isNumberingMode) statusMsg.textContent = "넘버링 모드";
+        draw();
+    }
     function toggleGrading() {
         if(isAdminMode) { alert("관리자 모드를 끄세요."); return; }
         if(wires.length === 0) { alert("결선 내용 없음"); return; }
@@ -344,7 +442,7 @@
     function clearCurrentLayoutData() {
         if(confirm("현재 도면 정답 삭제?")) {
             ensureLayoutAnswer(currentLayoutId);
-            DB_ANSWERS[currentLayoutId] = { targets: [], commons: [], nodes: [] };
+            DB_ANSWERS[currentLayoutId] = { targets: [], commons: [], nodes: [], tutorialFlow: [], componentFilter: [] };
             persistAnswerData();
             wires = [];
             draw();
@@ -407,6 +505,93 @@
 
     function showSaveStatus(msg) { saveStatus.textContent = msg; setTimeout(() => { saveStatus.textContent = ""; }, 3000); }
 
+    function getComponentLabelById(id) {
+        const found = PUBLIC_LAYOUT_BASE.find(c => c.id === id);
+        return found ? `${found.id} (${found.label})` : id;
+    }
+
+    function renderComponentFilterPanel() {
+        if (!componentFilterList) return;
+        const ans = ensureLayoutAnswer(currentLayoutId);
+        const selected = new Set(Array.isArray(ans?.componentFilter) ? ans.componentFilter : []);
+        const comps = (PUBLIC_LAYOUT_BASE || []).map(c => ({ id: c.id, label: c.label || c.id }));
+        componentFilterList.innerHTML = comps.map(item => `
+            <label class="component-filter-item">
+                <input type="checkbox" data-comp-id="${item.id}" ${selected.has(item.id) ? 'checked' : ''}>
+                <span>${item.id} (${item.label})</span>
+            </label>
+        `).join('');
+    }
+
+    function toggleComponentFilterPanel() {
+        if (!isAdminMode) return alert("관리자 모드에서만 사용할 수 있습니다.");
+        if (!componentFilterWrap) return;
+        const isOpen = componentFilterWrap.style.display !== 'none';
+        componentFilterWrap.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) renderComponentFilterPanel();
+    }
+
+    function getCheckedComponentIdsFromPanel() {
+        if (!componentFilterList) return [];
+        return Array.from(componentFilterList.querySelectorAll('input[type="checkbox"][data-comp-id]'))
+            .filter(chk => chk.checked)
+            .map(chk => chk.getAttribute('data-comp-id'))
+            .filter(Boolean);
+    }
+
+    function selectAllComponentFilter() {
+        if (!componentFilterList) return;
+        componentFilterList.querySelectorAll('input[type="checkbox"][data-comp-id]').forEach(chk => { chk.checked = true; });
+    }
+
+    function clearAllComponentFilter() {
+        if (!componentFilterList) return;
+        componentFilterList.querySelectorAll('input[type="checkbox"][data-comp-id]').forEach(chk => { chk.checked = false; });
+    }
+
+    function applyComponentFilterForCurrentLayout() {
+        if (!isAdminMode) return alert("관리자 모드에서만 사용할 수 있습니다.");
+        const selected = getCheckedComponentIdsFromPanel();
+        if (selected.length === 0) {
+            alert("최소 1개 부품을 선택해 주세요.");
+            return;
+        }
+        const ans = ensureLayoutAnswer(currentLayoutId);
+        ans.componentFilter = selected;
+        persistAnswerData();
+        showSaveStatus(`${currentLayoutId}: 부품 세팅 ${selected.length}개 적용`);
+        changeLayout();
+        statusMsg.textContent = `[관리자] ${currentLayoutId} 부품 세팅 적용`;
+        statusMsg.style.color = "#007bff";
+    }
+
+    function resetComponentFilterForCurrentLayout() {
+        if (!isAdminMode) return alert("관리자 모드에서만 사용할 수 있습니다.");
+        const ans = ensureLayoutAnswer(currentLayoutId);
+        ans.componentFilter = [];
+        persistAnswerData();
+        showSaveStatus(`${currentLayoutId}: 부품 세팅 기본값 복원`);
+        changeLayout();
+        statusMsg.textContent = `[관리자] ${currentLayoutId} 기본 부품 복원`;
+        statusMsg.style.color = "#007bff";
+    }
+
+    function continueAfterSuccess() {
+        if (typeof closeModal === 'function') closeModal('successModal');
+        if (!layoutSelect) return;
+
+        const idx = Number(layoutSelect.selectedIndex);
+        const nextIdx = idx + 1;
+        if (!Number.isInteger(idx) || nextIdx >= layoutSelect.options.length) {
+            statusMsg.textContent = '마지막 도면입니다.';
+            statusMsg.style.color = '#17a2b8';
+            return;
+        }
+
+        layoutSelect.selectedIndex = nextIdx;
+        changeLayout();
+    }
+
     function toggleNumberingMode() {
         isNumberingMode = !isNumberingMode;
         if (isNumberingMode) {
@@ -452,6 +637,46 @@
         showSaveStatus(`${currentLayoutId}: 노드 기준 ${nodes.length}개 저장됨!`);
         wires = [];
         draw();
+    }
+
+    function saveTutorialFlowFromWires() {
+        if (!isAdminMode) return alert("관리자 모드에서만 저장 가능합니다.");
+        const currentAnswers = ensureLayoutAnswer(currentLayoutId);
+        if (!currentAnswers) return alert("현재 도면 데이터가 없습니다.");
+        if (wires.length === 0) return alert("저장할 선이 없습니다.");
+
+        const visualWires = wires.map(w => [w.start.id, w.end.id, w.offset]);
+        const groups = buildGroupsFromVisualWires(visualWires);
+        const nodes = groups.map((setPins, idx) => {
+            const pins = Array.from(setPins);
+            return {
+                name: String(idx + 1),
+                color: PALETTE[idx % PALETTE.length],
+                pins,
+                visuals: visualWires.filter(v => setPins.has(String(v[0])) && setPins.has(String(v[1])))
+            };
+        });
+
+        const flow = wires.map(w => ({
+            from: String(w.start.id),
+            to: String(w.end.id),
+            offset: Number(w.offset || 0)
+        }));
+        currentAnswers.nodes = nodes;
+        currentAnswers.targets = [];
+        currentAnswers.commons = nodes.map(n => ({ ...n }));
+        currentAnswers.tutorialFlow = flow;
+        persistAnswerData();
+        showSaveStatus(`${currentLayoutId}: 정답노드 ${nodes.length}개 + 재생순서 ${flow.length}개 저장됨`);
+    }
+
+    function clearTutorialFlow() {
+        if (!isAdminMode) return alert("관리자 모드에서만 사용할 수 있습니다.");
+        const currentAnswers = ensureLayoutAnswer(currentLayoutId);
+        if (!currentAnswers) return;
+        currentAnswers.tutorialFlow = [];
+        persistAnswerData();
+        showSaveStatus(`${currentLayoutId}: 재생 순서 초기화`);
     }
 
     function removeLastSavedAnswer() {
