@@ -1,4 +1,37 @@
-﻿    function init() {
+﻿    const ANSWER_STORAGE_KEY = 'wiring_answers_v1';
+
+    function persistAnswerData() {
+        try {
+            localStorage.setItem(ANSWER_STORAGE_KEY, JSON.stringify(DB_ANSWERS));
+        } catch (e) {}
+    }
+
+    function loadAnswerDataFromStorage() {
+        try {
+            const raw = localStorage.getItem(ANSWER_STORAGE_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return;
+            Object.keys(parsed).forEach(k => {
+                if (!DB_ANSWERS[k]) DB_ANSWERS[k] = { targets: [], commons: [], nodes: [] };
+                DB_ANSWERS[k] = {
+                    ...(DB_ANSWERS[k] || {}),
+                    ...(parsed[k] || {})
+                };
+            });
+        } catch (e) {}
+    }
+
+    function ensureLayoutAnswer(layoutId) {
+        const key = String(layoutId || currentLayoutId || '');
+        if (!key) return null;
+        if (!DB_ANSWERS[key]) DB_ANSWERS[key] = { targets: [], commons: [], nodes: [] };
+        if (!Array.isArray(DB_ANSWERS[key].targets)) DB_ANSWERS[key].targets = [];
+        if (!Array.isArray(DB_ANSWERS[key].commons)) DB_ANSWERS[key].commons = [];
+        if (!Array.isArray(DB_ANSWERS[key].nodes)) DB_ANSWERS[key].nodes = [];
+        return DB_ANSWERS[key];
+    }
+    function init() {
         const grp1 = document.createElement('optgroup'); grp1.label = "--- 기초 튜토리얼 ---";
         for(let k in TUTORIAL_CONFIG) {
             const opt = document.createElement('option'); opt.value = k; opt.innerText = TUTORIAL_CONFIG[k].title;
@@ -16,7 +49,7 @@
         document.addEventListener('keydown', handleKeyInput);
         canvas.addEventListener('mousedown', (e) => handleInput(e.clientX, e.clientY));
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-        
+        loadAnswerDataFromStorage();
         changeLayout();
     }
 
@@ -57,77 +90,172 @@
 
     function handleKeyInput(e) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undoLastAction(); return; }
-        if (isAdminMode) {
-            const key = e.key.toLowerCase();
-            if (key === 't') {
-                saveTargetsFromWires();
+        // T/F shortcut removed. Admin saving is now done by one explicit button.
+    }
+
+    function getPinCodeMap() {
+        const ids = allPins.map(p => String(p.id)).sort();
+        const map = new Map();
+        ids.forEach((id, idx) => map.set(id, idx + 1));
+        return map;
+    }
+
+    function canonicalPinSetKey(pinSetLike, pinCodeMap) {
+        const arr = Array.from(pinSetLike || [])
+            .map(String)
+            .map(id => pinCodeMap?.get(id) || 0)
+            .filter(n => Number.isFinite(n) && n > 0)
+            .sort((a, b) => a - b);
+        return arr.join('|');
+    }
+
+    function buildGroupsFromVisualWires(visuals) {
+        const byId = new Map();
+        (visuals || []).forEach(v => {
+            const a = String(v[0] || '');
+            const b = String(v[1] || '');
+            if (!a || !b) return;
+            if (!byId.has(a)) byId.set(a, []);
+            if (!byId.has(b)) byId.set(b, []);
+            byId.get(a).push(b);
+            byId.get(b).push(a);
+        });
+        const visited = new Set();
+        const out = [];
+        byId.forEach((_, id) => {
+            if (visited.has(id)) return;
+            const queue = [id];
+            const pins = new Set();
+            visited.add(id);
+            while (queue.length) {
+                const curr = queue.shift();
+                pins.add(curr);
+                (byId.get(curr) || []).forEach(next => {
+                    if (visited.has(next)) return;
+                    visited.add(next);
+                    queue.push(next);
+                });
             }
-            else if (key === 'f') {
-                saveCommonsFromWires();
-            }
+            out.push(pins);
+        });
+        return out;
+    }
+
+    function getExpectedNodesForLayout() {
+        const ans = DB_ANSWERS[currentLayoutId] || { targets: [], commons: [] };
+        if (Array.isArray(ans.nodes) && ans.nodes.length) {
+            return ans.nodes.map((n, idx) => ({
+                name: n.name || String(idx + 1),
+                color: n.color || PALETTE[idx % PALETTE.length],
+                pins: Array.from(new Set((n.pins || []).map(String))),
+                visuals: Array.isArray(n.visuals) ? n.visuals.slice() : []
+            }));
         }
+
+        const nodes = [];
+        // Backward compatibility: old commons already represent node groups.
+        (ans.commons || []).forEach((g, idx) => {
+            const pins = Array.from(new Set((g.pins || []).map(String)));
+            if (!pins.length) return;
+            nodes.push({
+                name: g.name || String(idx + 1),
+                color: g.color || PALETTE[idx % PALETTE.length],
+                pins,
+                visuals: Array.isArray(g.visuals) ? g.visuals.slice() : []
+            });
+        });
+
+        // Backward compatibility: old targets are individual 2-pin node requirements.
+        const targetVisuals = (ans.targets || []).filter(t => Array.isArray(t) && t.length >= 2);
+        if (targetVisuals.length) {
+            const targetGroups = buildGroupsFromVisualWires(targetVisuals);
+            targetGroups.forEach((setPins, idx) => {
+                const pins = Array.from(setPins).map(String);
+                if (!pins.length) return;
+                nodes.push({
+                    name: `T${idx + 1}`,
+                    color: '#28a745',
+                    pins,
+                    visuals: targetVisuals.filter(v => setPins.has(String(v[0])) && setPins.has(String(v[1])))
+                });
+            });
+        }
+        return nodes;
     }
 
     function calculateGrading() {
         wires.forEach(w => { w.gradingColor = null; w.matchedGroup = null; });
-        const userGroups = getUserConnectedGroups();
-        const ans = DB_ANSWERS[currentLayoutId]; 
-        
-        let correctTargetCount = 0;
-        let correctCommonGroups = 0; // 그룹 단위 성공 체크
-        let wrongWireCount = 0;
+        const ans = DB_ANSWERS[currentLayoutId] || { targets: [], commons: [], nodes: [] };
+        const hasLegacyTargets = Array.isArray(ans.targets) && ans.targets.length > 0;
+        const hasLegacyCommons = Array.isArray(ans.commons) && ans.commons.length > 0;
+        const hasNodes = Array.isArray(ans.nodes) && ans.nodes.length > 0;
+        const pinCodeMap = getPinCodeMap();
 
-        if(ans) {
-            // Target 채점
-            ans.targets.forEach(info => {
-                const foundWire = wires.find(w => (w.start.id === info[0] && w.end.id === info[1]) || (w.start.id === info[1] && w.end.id === info[0]));
-                if (foundWire) { 
-                    foundWire.gradingColor = '#28a745'; 
-                    foundWire.matchedGroup = info;
-                    correctTargetCount++;
+        // Legacy fallback: target edges are interpreted as connectivity constraints.
+        // Any wiring inside the same expected node group is accepted.
+        if (!hasNodes && hasLegacyTargets && !hasLegacyCommons) {
+            const targetVisuals = (ans.targets || []).filter(t => Array.isArray(t) && t.length >= 2);
+            const expectedGroups = buildGroupsFromVisualWires(targetVisuals);
+            const expectedNodes = expectedGroups.map((pins, idx) => ({
+                name: `T${idx + 1}`,
+                color: '#28a745',
+                pins: Array.from(pins).map(String),
+                visuals: targetVisuals.filter(v => pins.has(String(v[0])) && pins.has(String(v[1])))
+            }));
+
+            let satisfiedTargets = 0;
+            targetVisuals.forEach(info => {
+                const a = String(info[0]);
+                const b = String(info[1]);
+                const ok = getUserConnectedGroups().some(setPins => setPins.has(a) && setPins.has(b));
+                if (ok) satisfiedTargets++;
+            });
+
+            let wrongWireCount = 0;
+            wires.forEach(w => {
+                const matched = expectedNodes.find(n => n.pins.includes(w.start.id) && n.pins.includes(w.end.id));
+                if (matched) {
+                    w.gradingColor = matched.color;
+                    w.matchedGroup = matched;
+                } else {
+                    w.gradingColor = '#ff0000';
+                    wrongWireCount++;
                 }
             });
 
-            // Common 채점 (집합 비교)
-            ans.commons.forEach(commonGroup => {
-                const targetSet = new Set(commonGroup.pins);
-                const matchedUserGroup = userGroups.find(userSet => {
-                    let hasIntersection = false;
-                    for (let p of targetSet) { if (userSet.has(p)) { hasIntersection = true; break; } }
-                    return hasIntersection;
-                });
+            const userKeys = Array.from(new Set(getUserConnectedGroups().map(s => canonicalPinSetKey(s, pinCodeMap)))).sort();
+            const expectedKeys = Array.from(new Set(expectedNodes.map(n => canonicalPinSetKey(n.pins, pinCodeMap)))).sort();
+            const keysEqual = expectedKeys.length === userKeys.length && expectedKeys.every((k, i) => k === userKeys[i]);
 
-                if (matchedUserGroup) {
-                    const isMissing = !commonGroup.pins.every(p => matchedUserGroup.has(p));
-                    const isExtra = matchedUserGroup.size !== targetSet.size;
-
-                    if (!isMissing && !isExtra) {
-                        // 성공한 그룹
-                        correctCommonGroups++;
-                        wires.forEach(w => {
-                            if (matchedUserGroup.has(w.start.id) && matchedUserGroup.has(w.end.id)) {
-                                w.gradingColor = commonGroup.color; w.matchedGroup = commonGroup;
-                            }
-                        });
-                    }
-                }
-            });
-        }
-        
-        wires.forEach(w => { 
-            if (!w.gradingColor) { 
-                w.gradingColor = '#ff0000'; 
-                wrongWireCount++;
-            } 
-        });
-
-        if(ans) {
-            const totalTargets = ans.targets.length;
-            const totalCommons = ans.commons.length;
-            
-            if (correctTargetCount === totalTargets && correctCommonGroups === totalCommons && wrongWireCount === 0) {
+            if (satisfiedTargets === targetVisuals.length && keysEqual && wrongWireCount === 0) {
                 setTimeout(() => { successModal.style.display = "flex"; }, 300);
             }
+            return;
+        }
+
+        const userGroups = getUserConnectedGroups();
+        const expectedNodes = getExpectedNodesForLayout();
+        const expectedByKey = new Map(expectedNodes.map(n => [canonicalPinSetKey(n.pins, pinCodeMap), n]));
+        const userByKey = new Map(userGroups.map(s => [canonicalPinSetKey(s, pinCodeMap), s]));
+
+        let wrongWireCount = 0;
+        wires.forEach(w => {
+            const matched = expectedNodes.find(n => n.pins.includes(w.start.id) && n.pins.includes(w.end.id));
+            if (matched) {
+                w.gradingColor = matched.color || '#28a745';
+                w.matchedGroup = matched;
+            } else {
+                w.gradingColor = '#ff0000';
+                wrongWireCount++;
+            }
+        });
+
+        const expectedKeys = Array.from(expectedByKey.keys()).sort();
+        const userKeys = Array.from(userByKey.keys()).sort();
+        const keysEqual = expectedKeys.length === userKeys.length && expectedKeys.every((k, i) => k === userKeys[i]);
+
+        if (keysEqual && wrongWireCount === 0) {
+            setTimeout(() => { successModal.style.display = "flex"; }, 300);
         }
     }
 
@@ -152,31 +280,35 @@
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
         const x = (clientX - rect.left) * scaleX; const y = (clientY - rect.top) * scaleY;
+        const pickPin = () => {
+            let best = null;
+            let bestDist = Infinity;
+            allPins.forEach(p => {
+                const d = Math.hypot(x - p.x, y - p.y);
+                if (d < PIN_HIT_RADIUS && d < bestDist) {
+                    best = p;
+                    bestDist = d;
+                }
+            });
+            return best;
+        };
+
         if (isGradingMode) {
-            let clickedPin = null;
-            for(let p of allPins) { if (Math.sqrt((x - p.x)**2 + (y - p.y)**2) < 20) { clickedPin = p; break; } }
+            const clickedPin = pickPin();
             if (clickedPin) {
                 const wire = wires.find(w => w.start === clickedPin || w.end === clickedPin);
                 if (wire && wire.matchedGroup) {
-                    focusedGroup = { type: wire.matchedGroup.visuals ? 'common' : 'target', data: wire.matchedGroup };
+                    focusedGroup = { type: 'node', data: wire.matchedGroup };
                     statusMsg.textContent = "집중 모드";
                 } else {
-                    const ans = DB_ANSWERS[currentLayoutId];
-                    if (ans) {
-                        const common = ans.commons.find(g => g.pins.includes(clickedPin.id));
-                        if(common) focusedGroup = { type: 'common', data: common };
-                        else {
-                            const target = ans.targets.find(t => t[0] === clickedPin.id || t[1] === clickedPin.id);
-                            if(target) focusedGroup = { type: 'target', data: target };
-                        }
-                    }
+                    const node = getExpectedNodesForLayout().find(n => (n.pins || []).includes(clickedPin.id));
+                    if (node) focusedGroup = { type: 'node', data: node };
                 }
                 draw(); return;
             } else { focusedGroup = null; statusMsg.textContent = "채점 완료"; draw(); return; }
         }
         if (isAdminMode) { } else { if(isGradingMode) return; }
-        let clickedPin = null;
-        for(let p of allPins) { if (Math.sqrt((x - p.x)**2 + (y - p.y)**2) < 20) { clickedPin = p; break; } }
+        const clickedPin = pickPin();
         if (!clickedPin) { selectedPin = null; statusMsg.textContent = "취소"; draw(); return; }
         if (selectedPin === null) {
             if (clickedPin.connections >= 2) { alert("2선 초과"); return; }
@@ -185,7 +317,7 @@
             if (selectedPin === clickedPin) { selectedPin = null; statusMsg.textContent = "취소"; draw(); return; }
             if (clickedPin.connections >= 2) { alert("연결 불가"); return; }
             saveHistory();
-            wires.push({ start: selectedPin, end: clickedPin, offset: (Math.random() * 30) - 15 });
+            wires.push({ start: selectedPin, end: clickedPin, offset: (Math.random() * 16) - 8 });
             selectedPin.connections++; clickedPin.connections++; selectedPin = null; 
             statusMsg.textContent = "완료"; statusMsg.style.color = "#007bff"; draw();
         }
@@ -210,12 +342,69 @@
     }
     function updateUI() { btnCheck.classList.remove('active'); statusMsg.textContent = "대기 중"; btnCheck.textContent = "채점 하기"; }
     function clearCurrentLayoutData() {
-        if(confirm("현재 도면 정답 삭제?")) { DB_ANSWERS[currentLayoutId] = { targets: [], commons: [] }; wires = []; groupIndexInput.value = 1; draw(); showSaveStatus("삭제됨"); }
+        if(confirm("현재 도면 정답 삭제?")) {
+            ensureLayoutAnswer(currentLayoutId);
+            DB_ANSWERS[currentLayoutId] = { targets: [], commons: [], nodes: [] };
+            persistAnswerData();
+            wires = [];
+            draw();
+            showSaveStatus("삭제됨");
+        }
     }
     function exportAllData() {
+        persistAnswerData();
         const json = JSON.stringify(DB_ANSWERS, null, 4);
         exportArea.style.display = 'block'; exportArea.value = "let DB_ANSWERS = " + json + ";"; exportArea.select(); document.execCommand('copy'); alert("복사됨");
     }
+
+    function downloadAnswerJsonFile() {
+        persistAnswerData();
+        const payload = JSON.stringify(DB_ANSWERS, null, 2);
+        const blob = new Blob([payload], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        a.href = url;
+        a.download = `answers-${stamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showSaveStatus('정답 JSON 다운로드 완료');
+    }
+
+    function triggerAnswerJsonImport() {
+        const input = document.getElementById('answerJsonInput');
+        if (!input) return;
+        input.value = '';
+        input.click();
+    }
+
+    function handleAnswerJsonFileChange(evt) {
+        const file = evt?.target?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const parsed = JSON.parse(String(reader.result || '{}'));
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    alert('JSON 형식이 올바르지 않습니다.');
+                    return;
+                }
+                DB_ANSWERS = parsed;
+                // Ensure active layout has minimum shape.
+                ensureLayoutAnswer(currentLayoutId);
+                persistAnswerData();
+                wires = [];
+                draw();
+                showSaveStatus('정답 JSON 불러오기 완료');
+            } catch (e) {
+                alert('JSON 파싱 실패: 파일 내용을 확인해 주세요.');
+            }
+        };
+        reader.readAsText(file, 'utf-8');
+    }
+
     function showSaveStatus(msg) { saveStatus.textContent = msg; setTimeout(() => { saveStatus.textContent = ""; }, 3000); }
 
     function toggleNumberingMode() {
@@ -236,55 +425,45 @@
         draw();
     }
 
-    function saveTargetsFromWires() {
+    function saveNodeAnswersFromWires() {
         if (!isAdminMode) return alert("관리자 모드에서만 저장 가능합니다.");
-        const currentAnswers = DB_ANSWERS[currentLayoutId];
+        const currentAnswers = ensureLayoutAnswer(currentLayoutId);
         if (!currentAnswers) return alert("현재 도면 데이터가 없습니다.");
         if (wires.length === 0) return alert("선 없음");
-        const added = wires.map(w => [w.start.id, w.end.id, w.offset]);
-        currentAnswers.targets.push(...added);
-        lastSavedAction = { type: 'targets', count: added.length };
-        showSaveStatus(`${currentLayoutId}: 정밀(빨강) ${added.length}개 저장됨!`);
-        wires = [];
-        draw();
-    }
-
-    function saveCommonsFromWires() {
-        if (!isAdminMode) return alert("관리자 모드에서만 저장 가능합니다.");
-        const currentAnswers = DB_ANSWERS[currentLayoutId];
-        if (!currentAnswers) return alert("현재 도면 데이터가 없습니다.");
-        if (wires.length === 0) return alert("선 없음");
-        const pinSet = new Set();
-        const visualWires = [];
-        wires.forEach(w => {
-            pinSet.add(w.start.id);
-            pinSet.add(w.end.id);
-            visualWires.push([w.start.id, w.end.id, w.offset]);
+        const beforeSnapshot = JSON.stringify(currentAnswers);
+        const visualWires = wires.map(w => [w.start.id, w.end.id, w.offset]);
+        const groups = buildGroupsFromVisualWires(visualWires);
+        const nodes = groups.map((setPins, idx) => {
+            const pins = Array.from(setPins);
+            return {
+                name: String(idx + 1),
+                color: PALETTE[idx % PALETTE.length],
+                pins,
+                visuals: visualWires.filter(v => setPins.has(String(v[0])) && setPins.has(String(v[1])))
+            };
         });
-        const groupNum = parseInt(groupIndexInput.value);
-        const color = PALETTE[(groupNum - 1) % PALETTE.length];
-        const item = { name: groupNum.toString(), color: color, pins: Array.from(pinSet), visuals: visualWires };
-        currentAnswers.commons.push(item);
-        lastSavedAction = { type: 'commons', count: 1 };
-        showSaveStatus(`${currentLayoutId}: 공통 ${groupNum}번 저장됨!`);
-        groupIndexInput.value = groupNum + 1;
+
+        currentAnswers.nodes = nodes;
+        // keep compatibility fields so existing admin/focus visuals still work.
+        currentAnswers.targets = [];
+        currentAnswers.commons = nodes.map(n => ({ ...n }));
+        persistAnswerData();
+        lastSavedAction = { type: 'nodes', snapshot: beforeSnapshot };
+        showSaveStatus(`${currentLayoutId}: 노드 기준 ${nodes.length}개 저장됨!`);
         wires = [];
         draw();
     }
 
     function removeLastSavedAnswer() {
         if (!isAdminMode) return alert("관리자 모드에서만 사용할 수 있습니다.");
-        const currentAnswers = DB_ANSWERS[currentLayoutId];
+        const currentAnswers = ensureLayoutAnswer(currentLayoutId);
         if (!currentAnswers || !lastSavedAction) return alert("취소할 저장 기록이 없습니다.");
 
-        if (lastSavedAction.type === 'targets') {
-            currentAnswers.targets.splice(-lastSavedAction.count, lastSavedAction.count);
-            showSaveStatus("최근 정밀 저장 취소됨");
-        } else if (lastSavedAction.type === 'commons') {
-            currentAnswers.commons.pop();
-            const n = Math.max(1, parseInt(groupIndexInput.value) - 1);
-            groupIndexInput.value = n;
-            showSaveStatus("최근 공통 저장 취소됨");
+        if (lastSavedAction.type === 'nodes') {
+            const prev = JSON.parse(lastSavedAction.snapshot || '{}');
+            DB_ANSWERS[currentLayoutId] = prev;
+            persistAnswerData();
+            showSaveStatus("최근 노드 저장 취소됨");
         }
         lastSavedAction = null;
         draw();
@@ -292,4 +471,6 @@
 
     init();
 
+
+    const PIN_HIT_RADIUS = 26;
 

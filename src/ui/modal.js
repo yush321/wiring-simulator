@@ -370,15 +370,15 @@
 
         const mode = getStageOrderMode(stage);
         const forward = [];
-        const vSeq = projectAnswersByOrder(stage, answers, 'vertical');
 
         if (mode === 'horizontal' || mode === 'both') {
             // Horizontal order follows authored question order exactly.
             forward.push({ answers: answers.slice(), mode: 'horizontal', reverse: false });
         }
         if (mode === 'vertical' || mode === 'both') {
-            // Vertical order is derived from actual pin placement.
-            forward.push({ answers: (vSeq && vSeq.length ? vSeq : answers.slice()), mode: 'vertical', reverse: false });
+            // Vertical mode still respects authored answer order.
+            // (orderMode controls UI guidance, not answer token reordering)
+            forward.push({ answers: answers.slice(), mode: 'vertical', reverse: false });
         }
         if (!forward.length) {
             forward.push({ answers: answers.slice(), mode: 'horizontal', reverse: false });
@@ -425,28 +425,67 @@
     }
 
     function renderStageEntriesOnOverlay(stage, progress, imgRect, wrapRect) {
-        if (!progress?.entries?.length) return;
-
         const rect = getOverlayRectForStage(stage, imgRect, wrapRect);
         const total = Math.max((stage?.questions || []).length, progress.entries.length);
         const activeSeq = progress?.selectedSequence || progress?.candidateSequences?.[0] || null;
-        const isVerticalView = activeSeq?.mode === 'vertical';
+        const displayMode = activeSeq?.mode || getStageOrderMode(stage);
+        const isVerticalView = displayMode === 'vertical';
         const cols = isVerticalView ? 1 : (total <= 3 ? Math.max(1, total) : (total <= 6 ? 3 : 4));
         const rows = isVerticalView ? Math.max(1, total) : Math.max(1, Math.ceil(total / cols));
+        const isReverse = progress?.direction === 'reverse';
+
+        const getTagPosition = (index) => {
+            const clamped = Math.max(0, Math.min(index, Math.max(0, total - 1)));
+            const displayIdx = isReverse ? (total - 1 - clamped) : clamped;
+            const row = Math.floor(displayIdx / cols);
+            const col = displayIdx % cols;
+            return {
+                x: rect.left + ((col + 0.5) / cols) * rect.width,
+                y: rect.top + ((row + 0.5) / rows) * rect.height
+            };
+        };
+        const getQuestionMarkerPosition = (index) => {
+            const pos = getTagPosition(index);
+            if (!isVerticalView) return pos;
+            return {
+                x: rect.left + rect.width + 12,
+                y: pos.y - 10
+            };
+        };
+
+        if (!progress?.entries?.length) {
+            if (total > 0) {
+                const pos = getQuestionMarkerPosition(0);
+                const marker = document.createElement('div');
+                marker.className = 'numbering-overlay-tag question';
+                marker.style.left = `${pos.x}px`;
+                marker.style.top = `${pos.y}px`;
+                marker.textContent = '?';
+                numberingAnswerOverlay.appendChild(marker);
+            }
+            return;
+        }
 
         progress.entries.forEach((entry, idx) => {
-            const row = Math.floor(idx / cols);
-            const col = idx % cols;
-            const x = rect.left + ((col + 0.5) / cols) * rect.width;
-            const y = rect.top + ((row + 0.5) / rows) * rect.height;
+            const pos = getTagPosition(idx);
 
             const tag = document.createElement('div');
             tag.className = 'numbering-overlay-tag';
-            tag.style.left = `${x}px`;
-            tag.style.top = `${y}px`;
+            tag.style.left = `${pos.x}px`;
+            tag.style.top = `${pos.y}px`;
             tag.textContent = `${entry.value}`;
             numberingAnswerOverlay.appendChild(tag);
         });
+
+        if (progress.entries.length < total) {
+            const pos = getQuestionMarkerPosition(progress.entries.length);
+            const marker = document.createElement('div');
+            marker.className = 'numbering-overlay-tag question';
+            marker.style.left = `${pos.x}px`;
+            marker.style.top = `${pos.y}px`;
+            marker.textContent = '?';
+            numberingAnswerOverlay.appendChild(marker);
+        }
     }
 
     function renderNumberingAnswerOverlay(stage, progress) {
@@ -477,12 +516,9 @@
     }
 
     function updatePinButtonStates(progress) {
-        const selectedValues = new Set((progress?.entries || []).map(e => String(e.value)));
         document.querySelectorAll('.numbering-pin-btn').forEach(btn => {
-            const value = String(btn.dataset.pinValue || '');
-            const isSelected = selectedValues.has(value);
-            btn.classList.toggle('selected', isSelected);
-            btn.classList.toggle('reverse', isSelected && progress?.direction === 'reverse');
+            btn.classList.remove('selected');
+            btn.classList.remove('reverse');
         });
     }
 
@@ -759,13 +795,10 @@
         if (!stage || !Array.isArray(stage.questions) || !stage.questions.length) return;
 
         const progress = getStageProgress(numberingSession.stageIndex);
-        const solvedInStage = progress.entries.length;
-        const totalInStage = stage.questions.length;
         const question = getCurrentNumberingQuestion() || stage.questions[0];
 
         numberingGuideText.textContent = stage.guide;
         numberingStageInfo.textContent = `단계 ${numberingSession.stageIndex + 1}/${numberingSession.stages.length} · ${stage.title}`;
-        numberingQuestion.textContent = `${stage.componentId} 연속입력 ${solvedInStage}/${totalInStage} · 다음: '${question.label}'`;
 
         numberingImage.src = stage.image;
         numberingImage.alt = `${stage.componentId} 넘버링 참고 이미지`;
@@ -1107,6 +1140,63 @@
             : '';
     }
 
+    function clearEditorQuestionForm() {
+        if (editorQuestionLabel) editorQuestionLabel.value = '';
+        if (editorQuestionAnswer) editorQuestionAnswer.value = '';
+        if (editorQuestionChoices) editorQuestionChoices.value = '';
+    }
+
+    function renderEditorQuestionSelect(stage) {
+        if (!editorQuestionSelect) return;
+        editorQuestionSelect.innerHTML = '';
+
+        const emptyOpt = document.createElement('option');
+        emptyOpt.value = '-1';
+        emptyOpt.textContent = '문항 선택 (수정/삭제)';
+        editorQuestionSelect.appendChild(emptyOpt);
+
+        if (!stage || !Array.isArray(stage.questions) || stage.questions.length === 0) {
+            editorQuestionSelect.value = '-1';
+            editorQuestionSelect.disabled = true;
+            numberingEditorState.questionIndex = -1;
+            return;
+        }
+
+        stage.questions.forEach((q, idx) => {
+            const opt = document.createElement('option');
+            opt.value = String(idx);
+            opt.textContent = `${idx + 1}. ${q.label || '라벨 없음'} = ${q.answer || ''}`;
+            editorQuestionSelect.appendChild(opt);
+        });
+
+        const idx = Number.isInteger(numberingEditorState.questionIndex) ? numberingEditorState.questionIndex : -1;
+        if (idx >= 0 && idx < stage.questions.length) {
+            editorQuestionSelect.value = String(idx);
+        } else {
+            editorQuestionSelect.value = '-1';
+            numberingEditorState.questionIndex = -1;
+        }
+        editorQuestionSelect.disabled = false;
+    }
+
+    function loadEditorQuestionToForm() {
+        const stage = getEditorCurrentStage();
+        const idx = Number.isInteger(numberingEditorState.questionIndex) ? numberingEditorState.questionIndex : -1;
+        if (!stage || !Array.isArray(stage.questions) || idx < 0 || idx >= stage.questions.length) {
+            clearEditorQuestionForm();
+            return;
+        }
+        const q = stage.questions[idx];
+        if (editorQuestionLabel) editorQuestionLabel.value = q.label || '';
+        if (editorQuestionAnswer) editorQuestionAnswer.value = q.answer || '';
+        if (editorQuestionChoices) editorQuestionChoices.value = Array.isArray(q.choices) ? q.choices.join(',') : '';
+    }
+
+    function onEditorQuestionSelectChange() {
+        numberingEditorState.questionIndex = parseInt(editorQuestionSelect?.value || '-1', 10);
+        loadEditorQuestionToForm();
+    }
+
     function loadEditorStageToForm() {
         const scenario = ensureEditorScenario();
         editorImageUrl.value = scenario.image || './images/images1.png';
@@ -1122,8 +1212,11 @@
             if (editorOrderMode) editorOrderMode.value = 'horizontal';
             editorPinDisplayCsv.value = '';
             numberingEditorState.currentRect = null;
+            numberingEditorState.questionIndex = -1;
             updateEditorRectOverlay(null);
             updateEditorStageWarning(null);
+            renderEditorQuestionSelect(null);
+            clearEditorQuestionForm();
             return;
         }
 
@@ -1138,10 +1231,13 @@
         numberingEditorState.currentRect = stage.rect || null;
         updateEditorRectOverlay(numberingEditorState.currentRect);
         updateEditorStageWarning(stage);
+        renderEditorQuestionSelect(stage);
+        loadEditorQuestionToForm();
     }
 
     function onEditorStageSelectChange() {
         numberingEditorState.stageIndex = parseInt(editorStageSelect.value || '-1', 10);
+        numberingEditorState.questionIndex = -1;
         loadEditorStageToForm();
     }
 
@@ -1178,6 +1274,38 @@
         loadEditorStageToForm();
     }
 
+    function moveEditorStageUp() {
+        const scenario = ensureEditorScenario();
+        const idx = numberingEditorState.stageIndex;
+        if (idx <= 0 || idx >= scenario.stages.length) return;
+
+        const tmp = scenario.stages[idx - 1];
+        scenario.stages[idx - 1] = scenario.stages[idx];
+        scenario.stages[idx] = tmp;
+        numberingEditorState.stageIndex = idx - 1;
+
+        persistNumberingScenarios();
+        renderEditorStageSelect();
+        loadEditorStageToForm();
+        if (editorRectInfo) editorRectInfo.textContent = '단계 순서를 위로 이동했어.';
+    }
+
+    function moveEditorStageDown() {
+        const scenario = ensureEditorScenario();
+        const idx = numberingEditorState.stageIndex;
+        if (idx < 0 || idx >= scenario.stages.length - 1) return;
+
+        const tmp = scenario.stages[idx + 1];
+        scenario.stages[idx + 1] = scenario.stages[idx];
+        scenario.stages[idx] = tmp;
+        numberingEditorState.stageIndex = idx + 1;
+
+        persistNumberingScenarios();
+        renderEditorStageSelect();
+        loadEditorStageToForm();
+        if (editorRectInfo) editorRectInfo.textContent = '단계 순서를 아래로 이동했어.';
+    }
+
     function startEditorRectMode() {
         numberingEditorState.rectMode = true;
         editorRectInfo.textContent = '영역 선택 모드: 이미지에서 드래그하세요.';
@@ -1209,15 +1337,72 @@
 
         if (!Array.isArray(stage.questions)) stage.questions = [];
         stage.questions.push(item);
+        numberingEditorState.questionIndex = stage.questions.length - 1;
 
-        editorQuestionLabel.value = '';
-        editorQuestionAnswer.value = '';
-        editorQuestionChoices.value = '';
+        clearEditorQuestionForm();
 
         persistNumberingScenarios();
         editorRectInfo.textContent = `문항 추가됨 (총 ${stage.questions.length}개)`;
         renderEditorStageSelect();
         updateEditorStageWarning(stage);
+        renderEditorQuestionSelect(stage);
+        loadEditorQuestionToForm();
+    }
+
+    function updateEditorQuestion() {
+        const stage = getEditorCurrentStage();
+        if (!stage || !Array.isArray(stage.questions)) return;
+        const idx = Number.isInteger(numberingEditorState.questionIndex) ? numberingEditorState.questionIndex : -1;
+        if (idx < 0 || idx >= stage.questions.length) {
+            alert('수정할 문항을 먼저 선택해줘.');
+            return;
+        }
+
+        const label = (editorQuestionLabel.value || '').trim();
+        const answer = (editorQuestionAnswer.value || '').trim();
+        if (!label || !answer) {
+            alert('문항 라벨과 정답 번호를 입력해줘.');
+            return;
+        }
+
+        const choices = (editorQuestionChoices.value || '')
+            .split(',')
+            .map(v => v.trim())
+            .filter(Boolean);
+
+        const target = stage.questions[idx] || {};
+        target.pinId = target.pinId || `${stage.componentId || 'Q'}_${Date.now()}`;
+        target.label = label;
+        target.answer = answer;
+        target.choices = choices;
+        target.inputMode = editorInputMode.value || 'choice';
+        stage.questions[idx] = target;
+
+        persistNumberingScenarios();
+        renderEditorStageSelect();
+        updateEditorStageWarning(stage);
+        renderEditorQuestionSelect(stage);
+        editorRectInfo.textContent = `문항 수정됨 (${idx + 1}번)`;
+    }
+
+    function deleteEditorQuestion() {
+        const stage = getEditorCurrentStage();
+        if (!stage || !Array.isArray(stage.questions)) return;
+        const idx = Number.isInteger(numberingEditorState.questionIndex) ? numberingEditorState.questionIndex : -1;
+        if (idx < 0 || idx >= stage.questions.length) {
+            alert('삭제할 문항을 먼저 선택해줘.');
+            return;
+        }
+
+        stage.questions.splice(idx, 1);
+        numberingEditorState.questionIndex = Math.min(idx, stage.questions.length - 1);
+
+        persistNumberingScenarios();
+        renderEditorStageSelect();
+        updateEditorStageWarning(stage);
+        renderEditorQuestionSelect(stage);
+        loadEditorQuestionToForm();
+        editorRectInfo.textContent = `문항 삭제됨 (남은 문항 ${stage.questions.length}개)`;
     }
 
     function saveEditorStage() {
@@ -1370,6 +1555,32 @@
             openNumberingModal();
         }
         editorRectInfo.textContent = '학습 모드 반영 완료 (넘버링 버튼으로 바로 확인 가능)';
+    }
+
+    function resetNumberingLocalStorage() {
+        const ok = confirm('넘버링 로컬 저장 데이터를 초기화하고 기본값으로 되돌릴까?');
+        if (!ok) return;
+
+        try {
+            const key = (typeof NUMBERING_STORAGE_KEY === 'string' && NUMBERING_STORAGE_KEY) || 'numbering_scenarios_v2';
+            localStorage.removeItem(key);
+        } catch (e) {
+            // ignore storage errors
+        }
+
+        NUMBERING_SCENARIOS = JSON.parse(JSON.stringify(NUMBERING_SCENARIOS_DEFAULT || {}));
+        numberingEditorState.stageIndex = -1;
+        numberingEditorState.questionIndex = -1;
+        numberingEditorState.currentRect = null;
+        numberingSession = null;
+        numberingAnswers = {};
+
+        const scenario = ensureEditorScenario();
+        numberingEditorState.stageIndex = scenario.stages.length ? 0 : -1;
+        renderEditorStageSelect();
+        loadEditorStageToForm();
+        if (isNumberingMode) openNumberingModal();
+        editorRectInfo.textContent = '로컬 저장 초기화 완료. 기본 시나리오로 복원했어.';
     }
 
     function bindEditorPointerEvents() {
