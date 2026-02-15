@@ -687,7 +687,16 @@
         tutorialPlaybackState.active = true;
         tutorialPlaybackState.paused = false;
         updatePlaybackControlPanel();
-        scheduleTutorialFlowPlayback();
+        if (statusMsg) {
+            statusMsg.textContent = '결선 재생 준비중...';
+            statusMsg.style.color = '#f59e0b';
+        }
+        const startDelayMs = 700;
+        tutorialPlaybackState.timer = setTimeout(() => {
+            tutorialPlaybackState.timer = null;
+            if (!tutorialPlaybackState.active || tutorialPlaybackState.paused) return;
+            scheduleTutorialFlowPlayback();
+        }, startDelayMs);
     }
 
     function getTutorialPinList() {

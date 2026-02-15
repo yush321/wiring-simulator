@@ -760,6 +760,14 @@
         <div id="saveStatus" style="color: yellow; margin-top: 5px; height: 20px;"></div>
     </div>
 
+    <div class="legend">
+        <span><i class="dot" style="background:#e6b800"></i>작업선</span>
+        <span><i class="dot" style="background:#28a745"></i>정답</span>
+        <span><i class="dot" style="background:#dc3545"></i>오답</span>
+    </div>
+    <span id="statusMsg">대기 중</span>
+    
+    <canvas id="simCanvas" width="700" height="720"></canvas>
     <div id="playbackControls">
         <div class="row">
             <button onclick="pauseTutorialFlowPlayback()">일시정지</button>
@@ -769,15 +777,6 @@
             <span id="playbackProgress" style="font-size:12px; color:#93c5fd;">재생 대기</span>
         </div>
     </div>
-
-    <div class="legend">
-        <span><i class="dot" style="background:#e6b800"></i>작업선</span>
-        <span><i class="dot" style="background:#28a745"></i>정답</span>
-        <span><i class="dot" style="background:#dc3545"></i>오답</span>
-    </div>
-    <span id="statusMsg">대기 중</span>
-    
-    <canvas id="simCanvas" width="700" height="720"></canvas>
 
 <script src="./src/data/repository.js"></script>
 <script src="./src/ui/modal.js"></script>
