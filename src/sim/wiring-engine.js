@@ -1,5 +1,27 @@
 ﻿    const ANSWER_STORAGE_KEY = 'wiring_answers_v1';
 
+    const DROPIN_BASE_PATH = './src/data/dropin/';
+    const DROPIN_MANIFEST_PATH = `${DROPIN_BASE_PATH}manifest.json`;
+    const DROPIN_DEFAULT_FILES = {
+        tutorial: 'tutorial.json',
+        numbering: 'numbering.json',
+        answers: 'answers.json'
+    };
+
+    function isPlainObject(value) {
+        return !!value && typeof value === 'object' && !Array.isArray(value);
+    }
+
+    function getRuntimeConfig() {
+        if (typeof window === 'undefined' || !isPlainObject(window.APP_RUNTIME_CONFIG)) return {};
+        return window.APP_RUNTIME_CONFIG;
+    }
+
+    function shouldLoadAnswerStorageOverride() {
+        const cfg = getRuntimeConfig();
+        return cfg.enableAnswerStorageOverride === true;
+    }
+
     function persistAnswerData() {
         try {
             localStorage.setItem(ANSWER_STORAGE_KEY, JSON.stringify(DB_ANSWERS));
@@ -10,12 +32,11 @@
         try {
             const raw = localStorage.getItem(ANSWER_STORAGE_KEY);
             if (!raw) return;
-            const parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== 'object') return;
+            const parsed = normalizeAnswersPayload(JSON.parse(raw));
+            if (!parsed) return;
             Object.keys(parsed).forEach(k => {
-                if (!DB_ANSWERS[k]) DB_ANSWERS[k] = { targets: [], commons: [], nodes: [], tutorialFlow: [], componentFilter: [] };
                 DB_ANSWERS[k] = {
-                    ...(DB_ANSWERS[k] || {}),
+                    ...(normalizeAnswerEntry(DB_ANSWERS[k])),
                     ...(parsed[k] || {})
                 };
             });
@@ -46,54 +67,87 @@
         }
     }
 
-    function extractFileStampScore(fileName) {
-        const bare = String(fileName || '').replace(/\.json$/i, '');
-        const m = bare.match(/(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_T]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})$/);
-        if (!m) return -1;
-        return Number(`${m[1]}${m[2]}${m[3]}${m[4]}${m[5]}${m[6]}`);
+    function toDropinPath(fileName) {
+        const normalized = String(fileName || '').trim().replace(/^\.?\/*/, '');
+        return `${DROPIN_BASE_PATH}${normalized || ''}`;
     }
 
-    function pickLatestDropinName(jsonNames, prefix) {
-        const re = new RegExp(`^${prefix}(?:[-_.].*)?\\.json$`, 'i');
-        const candidates = jsonNames
-            .filter(name => re.test(name || ''))
-            .map(name => ({
-                name,
-                score: extractFileStampScore(name)
-            }))
-            .sort((a, b) => {
-                if (a.score !== b.score) return a.score - b.score;
-                return a.name.localeCompare(b.name);
-            });
-        return candidates.length ? candidates[candidates.length - 1].name : null;
+    function normalizeAnswerEntry(raw) {
+        const src = isPlainObject(raw) ? raw : {};
+        return {
+            targets: Array.isArray(src.targets) ? src.targets : [],
+            commons: Array.isArray(src.commons) ? src.commons : [],
+            nodes: Array.isArray(src.nodes) ? src.nodes : [],
+            tutorialFlow: Array.isArray(src.tutorialFlow) ? src.tutorialFlow : [],
+            componentFilter: Array.isArray(src.componentFilter) ? src.componentFilter : []
+        };
+    }
+
+    function normalizeAnswersPayload(raw) {
+        let src = raw;
+        if (isPlainObject(src) && isPlainObject(src.DB_ANSWERS)) src = src.DB_ANSWERS;
+        if (!isPlainObject(src)) return null;
+        const normalized = {};
+        Object.keys(src).forEach(layoutId => {
+            if (!String(layoutId).trim()) return;
+            normalized[String(layoutId)] = normalizeAnswerEntry(src[layoutId]);
+        });
+        return Object.keys(normalized).length ? normalized : null;
+    }
+
+    function normalizeTutorialEntry(raw) {
+        if (!isPlainObject(raw) || typeof raw.title !== 'string' || !raw.title.trim()) return null;
+        const descList = Array.isArray(raw.desc) ? raw.desc : [raw.desc];
+        return {
+            title: String(raw.title),
+            desc: descList.map(v => String(v ?? '')),
+            img: String(raw.img || ''),
+            targetIds: Array.isArray(raw.targetIds) ? raw.targetIds.map(v => String(v)) : []
+        };
+    }
+
+    function normalizeTutorialPayload(raw) {
+        if (!isPlainObject(raw)) return null;
+        const normalized = {};
+        Object.keys(raw).forEach(layoutId => {
+            const entry = normalizeTutorialEntry(raw[layoutId]);
+            if (!entry) return;
+            normalized[String(layoutId)] = entry;
+        });
+        return Object.keys(normalized).length ? normalized : null;
+    }
+
+    function normalizeNumberingPayload(raw) {
+        if (!isPlainObject(raw)) return null;
+        return raw;
+    }
+
+    function parseManifestPayload(raw) {
+        if (!isPlainObject(raw)) return {};
+        const files = isPlainObject(raw.files) ? raw.files : raw;
+        const picked = {};
+        ['tutorial', 'numbering', 'answers'].forEach(kind => {
+            const name = String(files[kind] || '').trim();
+            if (!name || !/\.json$/i.test(name)) return;
+            picked[kind] = name;
+        });
+        return picked;
     }
 
     async function discoverDropinFiles() {
-        const base = './src/data/dropin/';
         const defaults = {
-            tutorial: `${base}tutorial.json`,
-            numbering: `${base}numbering.json`,
-            answers: `${base}answers.json`
+            tutorial: toDropinPath(DROPIN_DEFAULT_FILES.tutorial),
+            numbering: toDropinPath(DROPIN_DEFAULT_FILES.numbering),
+            answers: toDropinPath(DROPIN_DEFAULT_FILES.answers)
         };
         try {
-            const res = await fetch(`${base}?v=${Date.now()}`, { cache: 'no-store' });
+            const res = await fetch(`${DROPIN_MANIFEST_PATH}?v=${Date.now()}`, { cache: 'no-store' });
             if (!res.ok) return defaults;
-            const html = await res.text();
-            const links = Array.from(html.matchAll(/href\s*=\s*["']([^"']+)["']/gi))
-                .map(m => String(m[1] || ''))
-                .map(v => {
-                    try { return decodeURIComponent(v); } catch (_) { return v; }
-                });
-            const jsonNames = links
-                .map(v => v.split('/').pop())
-                .filter(name => /\.json$/i.test(name || ''));
-            const tutorialName = pickLatestDropinName(jsonNames, 'tutorial');
-            const numberingName = pickLatestDropinName(jsonNames, 'numbering');
-            const answersName = pickLatestDropinName(jsonNames, 'answers');
+            const manifest = parseManifestPayload(parseLooseJsonPayload(await res.text()));
             return {
-                tutorial: tutorialName ? `${base}${tutorialName}` : defaults.tutorial,
-                numbering: numberingName ? `${base}${numberingName}` : defaults.numbering,
-                answers: answersName ? `${base}${answersName}` : defaults.answers
+                tutorial: manifest.tutorial ? toDropinPath(manifest.tutorial) : defaults.tutorial,
+                numbering: manifest.numbering ? toDropinPath(manifest.numbering) : defaults.numbering,
+                answers: manifest.answers ? toDropinPath(manifest.answers) : defaults.answers
             };
         } catch (e) {
             return defaults;
@@ -112,15 +166,17 @@
                 const res = await fetch(`${item.path}?v=${Date.now()}`, { cache: 'no-store' });
                 if (!res.ok) continue;
                 const parsed = parseLooseJsonPayload(await res.text());
-                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue;
-
                 if (item.kind === 'tutorial') {
-                    Object.assign(TUTORIAL_CONFIG, parsed);
+                    const normalized = normalizeTutorialPayload(parsed);
+                    if (normalized) Object.assign(TUTORIAL_CONFIG, normalized);
                 } else if (item.kind === 'numbering') {
-                    Object.assign(NUMBERING_SCENARIOS_DEFAULT, parsed);
-                    Object.assign(NUMBERING_SCENARIOS, parsed);
+                    const normalized = normalizeNumberingPayload(parsed);
+                    if (!normalized) continue;
+                    Object.assign(NUMBERING_SCENARIOS_DEFAULT, normalized);
+                    Object.assign(NUMBERING_SCENARIOS, normalized);
                 } else if (item.kind === 'answers') {
-                    Object.assign(DB_ANSWERS, parsed);
+                    const normalized = normalizeAnswersPayload(parsed);
+                    if (normalized) Object.assign(DB_ANSWERS, normalized);
                 }
             } catch (e) {
                 // Ignore missing file/fetch errors.
@@ -145,7 +201,7 @@
         document.addEventListener('keydown', handleKeyInput);
         canvas.addEventListener('mousedown', (e) => handleInput(e.clientX, e.clientY));
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-        loadAnswerDataFromStorage();
+        if (shouldLoadAnswerStorageOverride()) loadAnswerDataFromStorage();
         changeLayout();
     }
 
@@ -604,11 +660,12 @@
                 if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.DB_ANSWERS && typeof parsed.DB_ANSWERS === 'object') {
                     parsed = parsed.DB_ANSWERS;
                 }
-                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                const normalized = normalizeAnswersPayload(parsed);
+                if (!normalized) {
                     alert('JSON 형식이 올바르지 않습니다.');
                     return;
                 }
-                DB_ANSWERS = parsed;
+                DB_ANSWERS = normalized;
                 // Ensure active layout has minimum shape.
                 ensureLayoutAnswer(currentLayoutId);
                 persistAnswerData();

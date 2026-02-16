@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "files": {
+    "tutorial": "tutorial.json",
+    "numbering": "numbering.json",
+    "answers": "answers.json"
+  }
+}
