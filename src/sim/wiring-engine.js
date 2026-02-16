@@ -33,6 +33,82 @@
         if (!Array.isArray(DB_ANSWERS[key].componentFilter)) DB_ANSWERS[key].componentFilter = [];
         return DB_ANSWERS[key];
     }
+
+    function parseLooseJsonPayload(rawText) {
+        const text = String(rawText || '').trim();
+        if (!text) return null;
+        try {
+            return JSON.parse(text);
+        } catch (jsonErr) {
+            const matched = text.match(/(?:let|const|var)\s+[A-Za-z_$][\w$]*\s*=\s*([\s\S]*?)\s*;?\s*$/);
+            const objectText = matched ? matched[1] : text;
+            return JSON.parse(objectText);
+        }
+    }
+
+    async function discoverDropinFiles() {
+        const base = './src/data/dropin/';
+        const defaults = {
+            tutorial: `${base}tutorial.json`,
+            numbering: `${base}numbering.json`,
+            answers: `${base}answers.json`
+        };
+        try {
+            const res = await fetch(`${base}?v=${Date.now()}`, { cache: 'no-store' });
+            if (!res.ok) return defaults;
+            const html = await res.text();
+            const links = Array.from(html.matchAll(/href\s*=\s*["']([^"']+)["']/gi))
+                .map(m => String(m[1] || ''))
+                .map(v => {
+                    try { return decodeURIComponent(v); } catch (_) { return v; }
+                });
+            const jsonNames = links
+                .map(v => v.split('/').pop())
+                .filter(name => /\.json$/i.test(name || ''));
+            const pick = prefix => jsonNames
+                .filter(name => new RegExp(`^${prefix}(?:-|\\.).*\\.json$`, 'i').test(name) || name.toLowerCase() === `${prefix}.json`)
+                .sort()
+                .pop();
+            const tutorialName = pick('tutorial');
+            const numberingName = pick('numbering');
+            const answersName = pick('answers');
+            return {
+                tutorial: tutorialName ? `${base}${tutorialName}` : defaults.tutorial,
+                numbering: numberingName ? `${base}${numberingName}` : defaults.numbering,
+                answers: answersName ? `${base}${answersName}` : defaults.answers
+            };
+        } catch (e) {
+            return defaults;
+        }
+    }
+
+    async function loadDropinOverrides() {
+        const discovered = await discoverDropinFiles();
+        const files = [
+            { kind: 'tutorial', path: discovered.tutorial },
+            { kind: 'numbering', path: discovered.numbering },
+            { kind: 'answers', path: discovered.answers }
+        ];
+        for (const item of files) {
+            try {
+                const res = await fetch(`${item.path}?v=${Date.now()}`, { cache: 'no-store' });
+                if (!res.ok) continue;
+                const parsed = parseLooseJsonPayload(await res.text());
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue;
+
+                if (item.kind === 'tutorial') {
+                    Object.assign(TUTORIAL_CONFIG, parsed);
+                } else if (item.kind === 'numbering') {
+                    Object.assign(NUMBERING_SCENARIOS_DEFAULT, parsed);
+                    Object.assign(NUMBERING_SCENARIOS, parsed);
+                } else if (item.kind === 'answers') {
+                    Object.assign(DB_ANSWERS, parsed);
+                }
+            } catch (e) {
+                // Ignore missing file/fetch errors.
+            }
+        }
+    }
     function init() {
         const grp1 = document.createElement('optgroup'); grp1.label = "--- 기초 튜토리얼 ---";
         for(let k in TUTORIAL_CONFIG) {
@@ -484,14 +560,21 @@
         const reader = new FileReader();
         reader.onload = () => {
             try {
-                const rawText = String(reader.result || '').trim();
+                const rawText = String(reader.result || '').replace(/^\uFEFF/, '').trim();
                 let parsed = null;
-                if (rawText.startsWith('{')) {
+                try {
                     parsed = JSON.parse(rawText);
-                } else {
-                    const matched = rawText.match(/(?:let|const|var)\s+DB_ANSWERS\s*=\s*([\s\S]*?)\s*;\s*$/);
-                    const objectText = matched ? matched[1] : rawText;
-                    parsed = JSON.parse(objectText);
+                } catch (jsonErr) {
+                    const assignMatched = rawText.match(/(?:let|const|var)\s+DB_ANSWERS\s*=\s*([\s\S]*?)\s*;?\s*$/);
+                    if (assignMatched && assignMatched[1]) {
+                        parsed = JSON.parse(assignMatched[1]);
+                    } else {
+                        const genericAssign = rawText.match(/(?:let|const|var)\s+[A-Za-z_$][\w$]*\s*=\s*([\s\S]*?)\s*;?\s*$/);
+                        parsed = JSON.parse(genericAssign ? genericAssign[1] : rawText);
+                    }
+                }
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.DB_ANSWERS && typeof parsed.DB_ANSWERS === 'object') {
+                    parsed = parsed.DB_ANSWERS;
                 }
                 if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
                     alert('JSON 형식이 올바르지 않습니다.');
@@ -505,7 +588,7 @@
                 draw();
                 showSaveStatus('정답 JSON 불러오기 완료');
             } catch (e) {
-                alert('JSON 파싱 실패: 파일 내용을 확인해 주세요.');
+                alert(`JSON 파싱 실패: ${e?.message || '파일 내용을 확인해 주세요.'}`);
             }
         };
         reader.readAsText(file, 'utf-8');
@@ -702,7 +785,10 @@
         draw();
     }
 
-    init();
+    (async () => {
+        await loadDropinOverrides();
+        init();
+    })();
 
 
     const PIN_HIT_RADIUS = 26;

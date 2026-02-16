@@ -757,7 +757,7 @@
             <button style="background:#0d6efd;" onclick="downloadAnswerJsonFile()">정답 JSON 다운로드</button>
             <button style="background:#198754;" onclick="triggerAnswerJsonImport()">정답 JSON 불러오기</button>
         </div>
-        <input id="answerJsonInput" type="file" accept=".json,application/json" onchange="handleAnswerJsonFileChange(event)" style="display:none;">
+        <input id="answerJsonInput" type="file" accept=".json,.js,application/json,text/javascript" onchange="handleAnswerJsonFileChange(event)" style="display:none;">
         <textarea id="exportArea" readonly></textarea>
         <div id="saveStatus" style="color: yellow; margin-top: 5px; height: 20px;"></div>
     </div>
@@ -780,6 +780,7 @@
         </div>
     </div>
 
+<script src="./src/data/local-overrides.js"></script>
 <script src="./src/data/repository.js"></script>
 <script src="./src/ui/modal.js"></script>
 <script src="./src/sim/canvas.js"></script>

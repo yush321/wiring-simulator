@@ -24,9 +24,9 @@ function Pick-File {
     return $null
 }
 
-$scriptPath = Join-Path (Get-Location).Path "sync-repository-data.js"
+$scriptPath = Join-Path (Get-Location).Path "sync-local-overrides.js"
 if (-not (Test-Path $scriptPath)) {
-    Write-Host "[sync-ui] sync-repository-data.js 파일을 찾을 수 없습니다: $scriptPath" -ForegroundColor Red
+    Write-Host "[sync-ui] sync-local-overrides.js 파일을 찾을 수 없습니다: $scriptPath" -ForegroundColor Red
     exit 1
 }
 
@@ -51,7 +51,7 @@ $layout = [Microsoft.VisualBasic.Interaction]::InputBox(
     ""
 )
 
-$args = @("sync-repository-data.js")
+$args = @("sync-local-overrides.js")
 if ($tutorial) { $args += @("--tutorial", $tutorial) }
 if ($numbering) { $args += @("--numbering", $numbering) }
 if ($answers) { $args += @("--answers", $answers) }
@@ -69,4 +69,3 @@ if ($exitCode -eq 0) {
 }
 
 exit $exitCode
-

@@ -15,7 +15,22 @@ function readText(filePath) {
 }
 
 function writeText(filePath, text) {
-  fs.writeFileSync(filePath, text, "utf8");
+  try {
+    fs.writeFileSync(filePath, text, "utf8");
+  } catch (e) {
+    if (e && (e.code === "EPERM" || e.code === "EACCES")) {
+      fail(
+        [
+          `Cannot write file (permission/lock): ${filePath}`,
+          "Check:",
+          "1) repository.js is writable (not locked by another process)",
+          "2) terminal/editor is running with enough permission",
+          "3) Windows Defender Controlled folder access is not blocking writes",
+        ].join("\n")
+      );
+    }
+    throw e;
+  }
 }
 
 function detectEol(text) {
@@ -295,4 +310,3 @@ function run() {
 }
 
 run();
-

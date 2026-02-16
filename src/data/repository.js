@@ -1880,6 +1880,24 @@ let DB_ANSWERS = {
     ]
   }
 };
+    function applyAppDataOverrides() {
+        const src = (typeof window !== 'undefined' && window.APP_DATA_OVERRIDES && typeof window.APP_DATA_OVERRIDES === 'object')
+            ? window.APP_DATA_OVERRIDES
+            : null;
+        if (!src) return;
+
+        if (src.tutorial && typeof src.tutorial === 'object' && !Array.isArray(src.tutorial)) {
+            TUTORIAL_CONFIG = { ...TUTORIAL_CONFIG, ...src.tutorial };
+        }
+        if (src.numbering && typeof src.numbering === 'object' && !Array.isArray(src.numbering)) {
+            NUMBERING_SCENARIOS_DEFAULT = { ...NUMBERING_SCENARIOS_DEFAULT, ...src.numbering };
+        }
+        if (src.answers && typeof src.answers === 'object' && !Array.isArray(src.answers)) {
+            DB_ANSWERS = { ...DB_ANSWERS, ...src.answers };
+        }
+    }
+
+    applyAppDataOverrides();
     let NUMBERING_SCENARIOS = { ...NUMBERING_SCENARIOS_DEFAULT };
     let numberingEditorState = {
         rectMode: false,
