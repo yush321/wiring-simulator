@@ -659,7 +659,7 @@
                 <input id="wiringEditorTitle" class="editor-wide" placeholder="튜토리얼 제목">
                 <input id="wiringEditorImage" class="editor-wide" placeholder="튜토리얼 이미지 경로 (예: ./images/images1.png)">
                 <div style="display:flex; gap:8px; align-items:center;">
-                    <input id="wiringEditorPageCount" type="number" min="1" max="20" value="1" style="width:90px;">
+                    <input id="wiringEditorPageCount" type="number" min="1" max="300" value="1" style="width:90px;">
                     <button style="background:#0d6efd;" onclick="applyTutorialPageCount()">페이지 수 적용</button>
                 </div>
                 <div style="text-align:left; color:#475569; font-size:12px;">페이지별 설명은 아래에서 입력합니다.</div>
@@ -686,6 +686,8 @@
             <div class="editor-actions">
                 <button style="background:#17a2b8;" onclick="saveTutorialEditor()">저장</button>
                 <button style="background:#0d6efd;" onclick="previewTutorialEditor()">미리보기</button>
+                <button style="background:#495057;" onclick="addTutorialEditorPage()">새 페이지</button>
+                <button style="background:#1f7a8c;" onclick="createNewTutorialLayout()">새 튜토리얼</button>
                 <button style="background:#6f42c1;" onclick="exportTutorialScenario()">JSON 내보내기</button>
                 <button style="background:#20c997;" onclick="importTutorialScenario()">JSON 불러오기</button>
                 <button style="background:#dc3545;" onclick="resetTutorialLocalStorage()">로컬저장 초기화</button>

@@ -112,10 +112,38 @@
     }
 
     function updateLayoutOptionTitle(layoutId, title) {
+        ensureLayoutOption(layoutId, title);
+    }
+
+    function ensureLayoutOption(layoutId, title) {
         if (!layoutSelect) return;
         const options = Array.from(layoutSelect.options || []);
         const opt = options.find(item => String(item.value) === String(layoutId));
-        if (opt) opt.text = title;
+        if (opt) {
+            opt.text = title;
+            return;
+        }
+        const created = document.createElement('option');
+        created.value = String(layoutId);
+        created.text = String(title || layoutId);
+        const tutorialGroup = Array.from(layoutSelect.querySelectorAll('optgroup'))
+            .find(group => String(group.label || '').includes('튜토리얼'));
+        if (tutorialGroup) tutorialGroup.appendChild(created);
+        else layoutSelect.appendChild(created);
+    }
+
+    function getNextTutorialLayoutId() {
+        const keys = Object.keys(TUTORIAL_CONFIG || {});
+        let maxNum = 0;
+        keys.forEach(key => {
+            const m = String(key).match(/^t(\d+)$/i);
+            if (!m) return;
+            const n = parseInt(m[1], 10);
+            if (Number.isFinite(n)) maxNum = Math.max(maxNum, n);
+        });
+        let nextNum = maxNum + 1;
+        while (TUTORIAL_CONFIG[`t${nextNum}`]) nextNum += 1;
+        return `t${nextNum}`;
     }
 
     function persistTutorialConfig() {
@@ -207,7 +235,7 @@
     }
 
     function renderTutorialEditorPages(count, values = []) {
-        const safeCount = Math.max(1, Math.min(20, Number.isFinite(count) ? count : 1));
+        const safeCount = Math.max(1, Math.min(300, Number.isFinite(count) ? count : 1));
         const normalized = normalizeTutorialPages(values);
         tutorialEditorState.pages = Array.from({ length: safeCount }, (_, i) => normalized[i] ?? '');
         tutorialEditorState.activePage = Math.max(0, Math.min(tutorialEditorState.activePage, safeCount - 1));
@@ -218,8 +246,51 @@
         const count = parseInt(wiringEditorPageCount?.value || '1', 10);
         syncActiveTutorialPageText();
         renderTutorialEditorPages(count, tutorialEditorState.pages);
-        if (wiringEditorPageCount) wiringEditorPageCount.value = String(Math.max(1, Math.min(20, count || 1)));
+        if (wiringEditorPageCount) wiringEditorPageCount.value = String(Math.max(1, Math.min(300, count || 1)));
         setTutorialEditorStatus('페이지 수를 반영했습니다.');
+    }
+
+    function addTutorialEditorPage() {
+        syncActiveTutorialPageText();
+        const currentCount = Array.isArray(tutorialEditorState.pages) ? tutorialEditorState.pages.length : 0;
+        if (currentCount >= 300) {
+            if (wiringEditorPageCount) wiringEditorPageCount.value = '300';
+            setTutorialEditorStatus('페이지는 최대 300개까지 추가할 수 있습니다.', '#b45309');
+            return;
+        }
+        tutorialEditorState.pages.push('');
+        tutorialEditorState.activePage = tutorialEditorState.pages.length - 1;
+        if (wiringEditorPageCount) wiringEditorPageCount.value = String(tutorialEditorState.pages.length);
+        renderTutorialEditorPage();
+        setTutorialEditorStatus(`새 단계 ${tutorialEditorState.pages.length}를 추가했습니다.`);
+    }
+
+    function createNewTutorialLayout() {
+        const newLayoutId = getNextTutorialLayoutId();
+        const currentEntry = cloneTutorialEntry(TUTORIAL_CONFIG[currentLayoutId], currentLayoutId);
+        const fresh = {
+            title: `튜토리얼 ${newLayoutId}`,
+            desc: [''],
+            img: String(wiringEditorImage?.value || currentEntry.img || './images/images1.png'),
+            targetIds: Array.isArray(currentEntry.targetIds) ? currentEntry.targetIds.slice() : []
+        };
+        TUTORIAL_CONFIG[newLayoutId] = fresh;
+        if (!DB_ANSWERS[newLayoutId]) {
+            DB_ANSWERS[newLayoutId] = { targets: [], commons: [], nodes: [], tutorialFlow: [], componentFilter: [] };
+        }
+        persistTutorialConfig();
+        if (typeof persistAnswerData === 'function') persistAnswerData();
+        ensureLayoutOption(newLayoutId, fresh.title);
+        if (layoutSelect) layoutSelect.value = newLayoutId;
+        currentLayoutId = newLayoutId;
+        if (typeof changeLayout === 'function') changeLayout();
+        if (wiringEditorTitle) wiringEditorTitle.value = fresh.title;
+        if (wiringEditorImage) wiringEditorImage.value = fresh.img;
+        if (wiringEditorPageCount) wiringEditorPageCount.value = '1';
+        tutorialEditorState.activePage = 0;
+        renderTutorialEditorPages(1, fresh.desc);
+        if (wiringEditorJson) wiringEditorJson.value = '';
+        setTutorialEditorStatus(`${newLayoutId} 새 튜토리얼을 생성했습니다.`);
     }
 
     function getTutorialEditorDraft() {
