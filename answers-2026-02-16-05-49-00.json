@@ -1,0 +1,864 @@
+let DB_ANSWERS = {
+  "1": {
+    "targets": [],
+    "commons": []
+  },
+  "2": {
+    "targets": [],
+    "commons": []
+  },
+  "3": {
+    "targets": [],
+    "commons": []
+  },
+  "4": {
+    "targets": [],
+    "commons": []
+  },
+  "5": {
+    "targets": [],
+    "commons": []
+  },
+  "6": {
+    "targets": [],
+    "commons": []
+  },
+  "7": {
+    "targets": [],
+    "commons": []
+  },
+  "8": {
+    "targets": [],
+    "commons": []
+  },
+  "9": {
+    "targets": [],
+    "commons": []
+  },
+  "10": {
+    "targets": [],
+    "commons": []
+  },
+  "11": {
+    "targets": [],
+    "commons": []
+  },
+  "12": {
+    "targets": [],
+    "commons": []
+  },
+  "13": {
+    "targets": [],
+    "commons": []
+  },
+  "14": {
+    "targets": [],
+    "commons": []
+  },
+  "15": {
+    "targets": [],
+    "commons": []
+  },
+  "16": {
+    "targets": [],
+    "commons": []
+  },
+  "17": {
+    "targets": [],
+    "commons": []
+  },
+  "18": {
+    "targets": [],
+    "commons": []
+  },
+  "t1": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_L_9",
+          "MCCB_1"
+        ],
+        "visuals": [
+          [
+            "TB_Top_L_9",
+            "MCCB_1",
+            6.050435428984084
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "TB_Top_L_10",
+          "MCCB_2"
+        ],
+        "visuals": [
+          [
+            "TB_Top_L_10",
+            "MCCB_2",
+            3.6646900243013203
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "TB_Top_R_11",
+          "MCCB_3"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_11",
+            "MCCB_3",
+            -3.1523829420431735
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_L_9",
+          "MCCB_1"
+        ],
+        "visuals": [
+          [
+            "TB_Top_L_9",
+            "MCCB_1",
+            6.050435428984084
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "TB_Top_L_10",
+          "MCCB_2"
+        ],
+        "visuals": [
+          [
+            "TB_Top_L_10",
+            "MCCB_2",
+            3.6646900243013203
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "TB_Top_R_11",
+          "MCCB_3"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_11",
+            "MCCB_3",
+            -3.1523829420431735
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "TB_Top_L_9",
+        "to": "MCCB_1",
+        "offset": 6.050435428984084
+      },
+      {
+        "from": "TB_Top_L_10",
+        "to": "MCCB_2",
+        "offset": 3.6646900243013203
+      },
+      {
+        "from": "TB_Top_R_11",
+        "to": "MCCB_3",
+        "offset": -3.1523829420431735
+      }
+    ],
+    "componentFilter": []
+  },
+  "t2": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "MCCB_7",
+          "EOCR_1",
+          "FUSE_+1"
+        ],
+        "visuals": [
+          [
+            "MCCB_7",
+            "EOCR_1",
+            -0.8041552965342191
+          ],
+          [
+            "EOCR_1",
+            "FUSE_+1",
+            -3.482260123737932
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "MCCB_8",
+          "EOCR_2"
+        ],
+        "visuals": [
+          [
+            "MCCB_8",
+            "EOCR_2",
+            -4.525864857724585
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "MCCB_9",
+          "EOCR_3",
+          "FUSE_-1"
+        ],
+        "visuals": [
+          [
+            "MCCB_9",
+            "EOCR_3",
+            6.415203031886213
+          ],
+          [
+            "EOCR_3",
+            "FUSE_-1",
+            -3.743862919906155
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "MCCB_7",
+          "EOCR_1",
+          "FUSE_+1"
+        ],
+        "visuals": [
+          [
+            "MCCB_7",
+            "EOCR_1",
+            -0.8041552965342191
+          ],
+          [
+            "EOCR_1",
+            "FUSE_+1",
+            -3.482260123737932
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "MCCB_8",
+          "EOCR_2"
+        ],
+        "visuals": [
+          [
+            "MCCB_8",
+            "EOCR_2",
+            -4.525864857724585
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "MCCB_9",
+          "EOCR_3",
+          "FUSE_-1"
+        ],
+        "visuals": [
+          [
+            "MCCB_9",
+            "EOCR_3",
+            6.415203031886213
+          ],
+          [
+            "EOCR_3",
+            "FUSE_-1",
+            -3.743862919906155
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "MCCB_7",
+        "to": "EOCR_1",
+        "offset": -0.8041552965342191
+      },
+      {
+        "from": "EOCR_1",
+        "to": "FUSE_+1",
+        "offset": -3.482260123737932
+      },
+      {
+        "from": "MCCB_8",
+        "to": "EOCR_2",
+        "offset": -4.525864857724585
+      },
+      {
+        "from": "MCCB_9",
+        "to": "EOCR_3",
+        "offset": 6.415203031886213
+      },
+      {
+        "from": "EOCR_3",
+        "to": "FUSE_-1",
+        "offset": -3.743862919906155
+      }
+    ]
+  },
+  "t3": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "EOCR_7",
+          "MC1_1",
+          "MC2_1"
+        ],
+        "visuals": [
+          [
+            "EOCR_7",
+            "MC1_1",
+            0
+          ],
+          [
+            "MC1_1",
+            "MC2_1",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "EOCR_8",
+          "MC1_2",
+          "MC2_2"
+        ],
+        "visuals": [
+          [
+            "EOCR_8",
+            "MC1_2",
+            -5
+          ],
+          [
+            "MC1_2",
+            "MC2_2",
+            -5
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "EOCR_9",
+          "MC1_3",
+          "MC2_3"
+        ],
+        "visuals": [
+          [
+            "EOCR_9",
+            "MC1_3",
+            -10
+          ],
+          [
+            "MC1_3",
+            "MC2_3",
+            10
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "EOCR_7",
+          "MC1_1",
+          "MC2_1"
+        ],
+        "visuals": [
+          [
+            "EOCR_7",
+            "MC1_1",
+            0
+          ],
+          [
+            "MC1_1",
+            "MC2_1",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "EOCR_8",
+          "MC1_2",
+          "MC2_2"
+        ],
+        "visuals": [
+          [
+            "EOCR_8",
+            "MC1_2",
+            -5
+          ],
+          [
+            "MC1_2",
+            "MC2_2",
+            -5
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "EOCR_9",
+          "MC1_3",
+          "MC2_3"
+        ],
+        "visuals": [
+          [
+            "EOCR_9",
+            "MC1_3",
+            -10
+          ],
+          [
+            "MC1_3",
+            "MC2_3",
+            10
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "EOCR_7",
+        "to": "MC1_1",
+        "offset": 0
+      },
+      {
+        "from": "MC1_1",
+        "to": "MC2_1",
+        "offset": 5
+      },
+      {
+        "from": "EOCR_8",
+        "to": "MC1_2",
+        "offset": -5
+      },
+      {
+        "from": "MC1_2",
+        "to": "MC2_2",
+        "offset": -5
+      },
+      {
+        "from": "EOCR_9",
+        "to": "MC1_3",
+        "offset": -10
+      },
+      {
+        "from": "MC1_3",
+        "to": "MC2_3",
+        "offset": 10
+      }
+    ],
+    "componentFilter": [
+      "EOCR",
+      "MC1",
+      "MC2"
+    ]
+  },
+  "t4": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Bot_L_7",
+          "MC1_7"
+        ],
+        "visuals": [
+          [
+            "TB_Bot_L_7",
+            "MC1_7",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "MC1_8",
+          "TB_Bot_L_8"
+        ],
+        "visuals": [
+          [
+            "MC1_8",
+            "TB_Bot_L_8",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "MC1_9",
+          "TB_Bot_L_9"
+        ],
+        "visuals": [
+          [
+            "MC1_9",
+            "TB_Bot_L_9",
+            -5
+          ]
+        ]
+      },
+      {
+        "name": "4",
+        "color": "#8B4513",
+        "pins": [
+          "MC2_7",
+          "TB_Bot_R_17"
+        ],
+        "visuals": [
+          [
+            "MC2_7",
+            "TB_Bot_R_17",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "5",
+        "color": "#6f42c1",
+        "pins": [
+          "MC2_8",
+          "TB_Bot_R_18"
+        ],
+        "visuals": [
+          [
+            "MC2_8",
+            "TB_Bot_R_18",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "6",
+        "color": "#17a2b8",
+        "pins": [
+          "MC2_9",
+          "TB_Bot_R_19"
+        ],
+        "visuals": [
+          [
+            "MC2_9",
+            "TB_Bot_R_19",
+            -5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Bot_L_7",
+          "MC1_7"
+        ],
+        "visuals": [
+          [
+            "TB_Bot_L_7",
+            "MC1_7",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "MC1_8",
+          "TB_Bot_L_8"
+        ],
+        "visuals": [
+          [
+            "MC1_8",
+            "TB_Bot_L_8",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "MC1_9",
+          "TB_Bot_L_9"
+        ],
+        "visuals": [
+          [
+            "MC1_9",
+            "TB_Bot_L_9",
+            -5
+          ]
+        ]
+      },
+      {
+        "name": "4",
+        "color": "#8B4513",
+        "pins": [
+          "MC2_7",
+          "TB_Bot_R_17"
+        ],
+        "visuals": [
+          [
+            "MC2_7",
+            "TB_Bot_R_17",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "5",
+        "color": "#6f42c1",
+        "pins": [
+          "MC2_8",
+          "TB_Bot_R_18"
+        ],
+        "visuals": [
+          [
+            "MC2_8",
+            "TB_Bot_R_18",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "6",
+        "color": "#17a2b8",
+        "pins": [
+          "MC2_9",
+          "TB_Bot_R_19"
+        ],
+        "visuals": [
+          [
+            "MC2_9",
+            "TB_Bot_R_19",
+            -5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "TB_Bot_L_7",
+        "to": "MC1_7",
+        "offset": 0
+      },
+      {
+        "from": "MC1_8",
+        "to": "TB_Bot_L_8",
+        "offset": 5
+      },
+      {
+        "from": "MC1_9",
+        "to": "TB_Bot_L_9",
+        "offset": -5
+      },
+      {
+        "from": "MC2_7",
+        "to": "TB_Bot_R_17",
+        "offset": 0
+      },
+      {
+        "from": "MC2_8",
+        "to": "TB_Bot_R_18",
+        "offset": 5
+      },
+      {
+        "from": "MC2_9",
+        "to": "TB_Bot_R_19",
+        "offset": -5
+      }
+    ],
+    "componentFilter": [
+      "MC1",
+      "MC2",
+      "TB_Bot_L",
+      "TB_Bot_R"
+    ]
+  },
+  "t5": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_R_12",
+          "TB_Bot_R_20",
+          "TB_Bot_L_10"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_12",
+            "TB_Bot_R_20",
+            0
+          ],
+          [
+            "TB_Bot_R_20",
+            "TB_Bot_L_10",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_R_12",
+          "TB_Bot_R_20",
+          "TB_Bot_L_10"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_12",
+            "TB_Bot_R_20",
+            0
+          ],
+          [
+            "TB_Bot_R_20",
+            "TB_Bot_L_10",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "TB_Top_R_12",
+        "to": "TB_Bot_R_20",
+        "offset": 0
+      },
+      {
+        "from": "TB_Bot_R_20",
+        "to": "TB_Bot_L_10",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_L",
+      "TB_Top_R",
+      "TB_Bot_L",
+      "TB_Bot_R"
+    ]
+  },
+  "t6": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "FUSE_+2",
+          "EOCR_10",
+          "EOCR_6"
+        ],
+        "visuals": [
+          [
+            "FUSE_+2",
+            "EOCR_10",
+            0
+          ],
+          [
+            "EOCR_10",
+            "EOCR_6",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "FUSE_+2",
+          "EOCR_10",
+          "EOCR_6"
+        ],
+        "visuals": [
+          [
+            "FUSE_+2",
+            "EOCR_10",
+            0
+          ],
+          [
+            "EOCR_10",
+            "EOCR_6",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "FUSE_+2",
+        "to": "EOCR_10",
+        "offset": 0
+      },
+      {
+        "from": "EOCR_10",
+        "to": "EOCR_6",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "FUSE",
+      "EOCR"
+    ]
+  }
+};
