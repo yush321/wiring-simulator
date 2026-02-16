@@ -97,6 +97,34 @@
         }
     }
 
+    function buildExportStamp(date = new Date()) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        const ss = String(date.getSeconds()).padStart(2, '0');
+        return `${y}${m}${d}-${hh}${mm}${ss}`;
+    }
+
+    function buildExportFileName(kind, scope) {
+        const safeKind = String(kind || 'data').replace(/[^A-Za-z0-9_-]+/g, '_');
+        const safeScope = String(scope || 'all').replace(/[^A-Za-z0-9_-]+/g, '_');
+        return `${safeKind}-${safeScope}-${buildExportStamp()}.json`;
+    }
+
+    function downloadJsonTextFile(fileName, text) {
+        const blob = new Blob([String(text ?? '')], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
     function cloneTutorialEntry(raw, layoutId) {
         const source = (raw && typeof raw === 'object') ? raw : {};
         const fallbackTitle = String(layoutId || '').startsWith('t') ? `튜토리얼 ${layoutId}` : `공개도면 ${layoutId}번`;
@@ -388,12 +416,18 @@
         saveTutorialEditor();
         const payload = JSON.parse(JSON.stringify(TUTORIAL_CONFIG || {}));
         const out = JSON.stringify(payload, null, 2);
+        const fileName = buildExportFileName('tutorial', 'all');
         if (wiringEditorJson) {
             wiringEditorJson.value = out;
             wiringEditorJson.select();
         }
+        downloadJsonTextFile(fileName, out);
         const copied = await copyTextToClipboard(out);
-        setTutorialEditorStatus(copied ? '결선튜토리얼 전체 JSON 내보내기 + 자동 복사 완료' : '결선튜토리얼 전체 JSON 내보내기 완료 (복사는 수동)');
+        setTutorialEditorStatus(
+            copied
+                ? `결선튜토리얼 JSON 내보내기 완료 (${fileName}) + 자동 복사 완료`
+                : `결선튜토리얼 JSON 내보내기 완료 (${fileName}, 복사는 수동)`
+        );
     }
 
     function importTutorialScenario() {
@@ -2160,13 +2194,15 @@
         // Export as layout-keyed object so it can be pasted directly into repository defaults.
         const keyed = { [currentLayoutId]: scenario };
         const out = JSON.stringify(keyed, null, 2);
+        const fileName = buildExportFileName('numbering', currentLayoutId || 'layout');
         numberingEditorJson.value = out;
         numberingEditorJson.select();
+        downloadJsonTextFile(fileName, out);
         const copied = await copyTextToClipboard(out);
         if (editorRectInfo) {
             editorRectInfo.textContent = copied
-                ? '넘버링 JSON 내보내기 + 자동 복사 완료'
-                : '넘버링 JSON 내보내기 완료 (복사는 수동)';
+                ? `넘버링 JSON 내보내기 완료 (${fileName}) + 자동 복사 완료`
+                : `넘버링 JSON 내보내기 완료 (${fileName}, 복사는 수동)`;
         }
     }
 

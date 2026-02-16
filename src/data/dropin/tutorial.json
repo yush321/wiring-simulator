@@ -1,0 +1,141 @@
+{
+  "t1": {
+    "title": "기초 1. 주전원 배선용차단기(MCCB) 연결",
+    "desc": [
+      "단자대에서 차단기(MCCB) 1차측으로<br>전원을 연결하는 가장 기초적인 작업입니다.<br><br>회로도의  R(갈), S(흑), T(회)상의 <span style=\"color:#dc3545;\">색상</span>을 확인하고 연결하세요."
+    ],
+    "img": "./images/t01-01.png",
+    "targetIds": [
+      "TB_Top_L",
+      "TB_Top_R",
+      "MCCB",
+      "EOCR",
+      "FUSE"
+    ]
+  },
+  "t2": {
+    "title": "기초 2. MCCB와 FUSE 연결하기",
+    "desc": [
+      "MCCB에서 퓨즈(FUSE)를 거쳐<br>EOCR의 전원부까지 연결하는 과정입니다.<br><br>점으로 표시된 부분은 전선이 연결되어있다는 표시이며<br><br>한 단자에 두 선을 넣어서 결속하면 됩니다.<br><br><span style=\"color:#dc3545;\">재생버튼</span>을 눌러 확인하세요."
+    ],
+    "img": "./images/t01-02.png",
+    "targetIds": [
+      "MCCB",
+      "FUSE",
+      "EOCR"
+    ]
+  },
+  "t3": {
+    "title": "기초 3. EOCR과 MC1,MC2 결선하기",
+    "desc": [
+      "<br><br>EOCR  7,8,9번에서 나온 각 선은<br> <br><b>MC1에서 MC2로</b> 혹은<br> <b>MC2에서 MC1</b> 으로<br><br>두가지 방법중 전선의 길이를 최소화하는 방법으로 선택하면 됩니다."
+    ],
+    "img": "./images/t01-03.png",
+    "targetIds": [
+      "FR",
+      "EOCR"
+    ]
+  },
+  "t4": {
+    "title": "기초 4. MC1,MC2 출력과 단자대 연결하기",
+    "desc": [
+      "<b>MC1, MC2</b> 7,8,9 번에서 나온 각 선들은<br><br><b>단자대 TB2, TB3</b>로 각각 결선해주면 됩니다."
+    ],
+    "img": "./images/t01-04.png",
+    "targetIds": [
+      "X",
+      "T",
+      "MC1",
+      "TB_Top_L"
+    ]
+  },
+  "t5": {
+    "title": "기초 5. 접지선 결선하기",
+    "desc": [
+      "도면의 <b>모든 접지는 모두</b> 연결하세요"
+    ],
+    "img": "./images/t01-05.png",
+    "targetIds": [
+      "FUSE",
+      "EOCR",
+      "TB_Top_L",
+      "X",
+      "MC1",
+      "MC2"
+    ]
+  },
+  "t6": {
+    "title": "기초 6. 보조회로 결선 STEP.1",
+    "desc": [
+      "퓨즈(+)과 연결된 부품들의 핀번호를 확인하고<br>결선하세요. (EOCR 10번은 공통)"
+    ],
+    "img": "./images/t01-06.png",
+    "targetIds": [
+      "FUSE",
+      "EOCR",
+      "FR",
+      "TB_Top_L",
+      "FLS",
+      "X",
+      "T",
+      "MC1",
+      "MC2",
+      "TB_Bot_L",
+      "TB_Bot_R"
+    ]
+  },
+  "t7": {
+    "title": "기초7. 보조회로 STEP.2 (EOCR, FR)",
+    "desc": [
+      "EOCR과 FR 연결하기"
+    ],
+    "img": "./images/t01-07.png",
+    "targetIds": [
+      "FUSE",
+      "EOCR",
+      "FR",
+      "TB_Top_L",
+      "FLS",
+      "X",
+      "T",
+      "MC1",
+      "MC2",
+      "TB_Bot_L",
+      "TB_Bot_R"
+    ]
+  },
+  "t8": {
+    "title": "기초 8. 보조회로 3단계 (EOCR, SS, X, MC1, MC2 결선)",
+    "desc": [
+      "EOCR 4번에서 출발하여 많은 부품이 연결된 부분입니다.<br><br>실전에선 단자대자석 등으로 표시를 하여<br><br>실수없게 결선합니다.<br><br>시작부분 상관없이 가능한 최단거리로 모든 부분이 연결되면 됩니다."
+    ],
+    "img": "./images/t01-08.png",
+    "targetIds": [
+      "FUSE",
+      "EOCR",
+      "FR",
+      "TB_Top_L",
+      "FLS",
+      "X",
+      "T",
+      "MC1",
+      "MC2",
+      "TB_Bot_L",
+      "TB_Bot_R"
+    ]
+  },
+  "t9": {
+    "title": "기초 9. 보조회로 STEP.4 (SS, FLS 결선)",
+    "desc": [
+      "단자대와 FLS 결선입니다"
+    ],
+    "img": "./images/t01-09.png",
+    "targetIds": [
+      "TB_Top_L",
+      "TB_Top_R",
+      "MCCB",
+      "EOCR",
+      "FUSE"
+    ]
+  }
+}

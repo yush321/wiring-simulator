@@ -925,5 +925,398 @@ let DB_ANSWERS = {
       "EOCR",
       "FR"
     ]
+  },
+  "t8": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "EOCR_4",
+          "TB_Top_L_5",
+          "X_3",
+          "MC2_4",
+          "MC1_4"
+        ],
+        "visuals": [
+          [
+            "EOCR_4",
+            "TB_Top_L_5",
+            0
+          ],
+          [
+            "TB_Top_L_5",
+            "X_3",
+            5
+          ],
+          [
+            "X_3",
+            "MC2_4",
+            5
+          ],
+          [
+            "MC2_4",
+            "MC1_4",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "EOCR_4",
+          "TB_Top_L_5",
+          "X_3",
+          "MC2_4",
+          "MC1_4"
+        ],
+        "visuals": [
+          [
+            "EOCR_4",
+            "TB_Top_L_5",
+            0
+          ],
+          [
+            "TB_Top_L_5",
+            "X_3",
+            5
+          ],
+          [
+            "X_3",
+            "MC2_4",
+            5
+          ],
+          [
+            "MC2_4",
+            "MC1_4",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "EOCR_4",
+        "to": "TB_Top_L_5",
+        "offset": 0
+      },
+      {
+        "from": "TB_Top_L_5",
+        "to": "X_3",
+        "offset": 5
+      },
+      {
+        "from": "X_3",
+        "to": "MC2_4",
+        "offset": 5
+      },
+      {
+        "from": "MC2_4",
+        "to": "MC1_4",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_L",
+      "EOCR",
+      "X",
+      "MC1",
+      "MC2"
+    ]
+  },
+  "t9": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_L_6",
+          "FLS_5",
+          "FLS_3"
+        ],
+        "visuals": [
+          [
+            "TB_Top_L_6",
+            "FLS_5",
+            0
+          ],
+          [
+            "FLS_5",
+            "FLS_3",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_L_6",
+          "FLS_5",
+          "FLS_3"
+        ],
+        "visuals": [
+          [
+            "TB_Top_L_6",
+            "FLS_5",
+            0
+          ],
+          [
+            "FLS_5",
+            "FLS_3",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "TB_Top_L_6",
+        "to": "FLS_5",
+        "offset": 0
+      },
+      {
+        "from": "FLS_5",
+        "to": "FLS_3",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_L",
+      "FLS"
+    ]
+  },
+  "t10": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "FR_6",
+          "TB_Bot_L_1"
+        ],
+        "visuals": [
+          [
+            "FR_6",
+            "TB_Bot_L_1",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "FR_5",
+          "TB_Bot_L_3"
+        ],
+        "visuals": [
+          [
+            "FR_5",
+            "TB_Bot_L_3",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "FLS_7",
+          "TB_Bot_R_11"
+        ],
+        "visuals": [
+          [
+            "FLS_7",
+            "TB_Bot_R_11",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "4",
+        "color": "#8B4513",
+        "pins": [
+          "FLS_8",
+          "TB_Bot_R_12"
+        ],
+        "visuals": [
+          [
+            "FLS_8",
+            "TB_Bot_R_12",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "5",
+        "color": "#6f42c1",
+        "pins": [
+          "FLS_1",
+          "TB_Bot_R_13"
+        ],
+        "visuals": [
+          [
+            "FLS_1",
+            "TB_Bot_R_13",
+            -5
+          ]
+        ]
+      },
+      {
+        "name": "6",
+        "color": "#17a2b8",
+        "pins": [
+          "FLS_4",
+          "X_2"
+        ],
+        "visuals": [
+          [
+            "FLS_4",
+            "X_2",
+            0
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "FR_6",
+          "TB_Bot_L_1"
+        ],
+        "visuals": [
+          [
+            "FR_6",
+            "TB_Bot_L_1",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "FR_5",
+          "TB_Bot_L_3"
+        ],
+        "visuals": [
+          [
+            "FR_5",
+            "TB_Bot_L_3",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "FLS_7",
+          "TB_Bot_R_11"
+        ],
+        "visuals": [
+          [
+            "FLS_7",
+            "TB_Bot_R_11",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "4",
+        "color": "#8B4513",
+        "pins": [
+          "FLS_8",
+          "TB_Bot_R_12"
+        ],
+        "visuals": [
+          [
+            "FLS_8",
+            "TB_Bot_R_12",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "5",
+        "color": "#6f42c1",
+        "pins": [
+          "FLS_1",
+          "TB_Bot_R_13"
+        ],
+        "visuals": [
+          [
+            "FLS_1",
+            "TB_Bot_R_13",
+            -5
+          ]
+        ]
+      },
+      {
+        "name": "6",
+        "color": "#17a2b8",
+        "pins": [
+          "FLS_4",
+          "X_2"
+        ],
+        "visuals": [
+          [
+            "FLS_4",
+            "X_2",
+            0
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "FR_6",
+        "to": "TB_Bot_L_1",
+        "offset": 0
+      },
+      {
+        "from": "FR_5",
+        "to": "TB_Bot_L_3",
+        "offset": 5
+      },
+      {
+        "from": "FLS_7",
+        "to": "TB_Bot_R_11",
+        "offset": 0
+      },
+      {
+        "from": "FLS_8",
+        "to": "TB_Bot_R_12",
+        "offset": 5
+      },
+      {
+        "from": "FLS_1",
+        "to": "TB_Bot_R_13",
+        "offset": -5
+      },
+      {
+        "from": "FLS_4",
+        "to": "X_2",
+        "offset": 0
+      }
+    ],
+    "componentFilter": [
+      "X",
+      "FR",
+      "FLS",
+      "TB_Bot_L",
+      "TB_Bot_R"
+    ]
   }
 };

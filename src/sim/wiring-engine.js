@@ -46,6 +46,28 @@
         }
     }
 
+    function extractFileStampScore(fileName) {
+        const bare = String(fileName || '').replace(/\.json$/i, '');
+        const m = bare.match(/(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_T]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})$/);
+        if (!m) return -1;
+        return Number(`${m[1]}${m[2]}${m[3]}${m[4]}${m[5]}${m[6]}`);
+    }
+
+    function pickLatestDropinName(jsonNames, prefix) {
+        const re = new RegExp(`^${prefix}(?:[-_.].*)?\\.json$`, 'i');
+        const candidates = jsonNames
+            .filter(name => re.test(name || ''))
+            .map(name => ({
+                name,
+                score: extractFileStampScore(name)
+            }))
+            .sort((a, b) => {
+                if (a.score !== b.score) return a.score - b.score;
+                return a.name.localeCompare(b.name);
+            });
+        return candidates.length ? candidates[candidates.length - 1].name : null;
+    }
+
     async function discoverDropinFiles() {
         const base = './src/data/dropin/';
         const defaults = {
@@ -65,13 +87,9 @@
             const jsonNames = links
                 .map(v => v.split('/').pop())
                 .filter(name => /\.json$/i.test(name || ''));
-            const pick = prefix => jsonNames
-                .filter(name => new RegExp(`^${prefix}(?:-|\\.).*\\.json$`, 'i').test(name) || name.toLowerCase() === `${prefix}.json`)
-                .sort()
-                .pop();
-            const tutorialName = pick('tutorial');
-            const numberingName = pick('numbering');
-            const answersName = pick('answers');
+            const tutorialName = pickLatestDropinName(jsonNames, 'tutorial');
+            const numberingName = pickLatestDropinName(jsonNames, 'numbering');
+            const answersName = pickLatestDropinName(jsonNames, 'answers');
             return {
                 tutorial: tutorialName ? `${base}${tutorialName}` : defaults.tutorial,
                 numbering: numberingName ? `${base}${numberingName}` : defaults.numbering,
@@ -537,14 +555,24 @@
         const blob = new Blob([payload], { type: 'application/json;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, '0'),
+            String(now.getDate()).padStart(2, '0')
+        ].join('') + '-' + [
+            String(now.getHours()).padStart(2, '0'),
+            String(now.getMinutes()).padStart(2, '0'),
+            String(now.getSeconds()).padStart(2, '0')
+        ].join('');
+        const fileName = `answers-all-${stamp}.json`;
         a.href = url;
-        a.download = `answers-${stamp}.json`;
+        a.download = fileName;
         document.body.appendChild(a);
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        showSaveStatus('정답 JSON 다운로드 완료');
+        showSaveStatus(`정답 JSON 다운로드 완료 (${fileName})`);
     }
 
     function triggerAnswerJsonImport() {

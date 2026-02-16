@@ -1,4 +1,4 @@
-// Local data overrides.
+﻿// Local data overrides.
 // Edit this file manually, or generate it with a helper script.
 // Shape:
 // window.APP_DATA_OVERRIDES = {
@@ -8,4 +8,3 @@
 // };
 
 window.APP_DATA_OVERRIDES = window.APP_DATA_OVERRIDES || {};
-
