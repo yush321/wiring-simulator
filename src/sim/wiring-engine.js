@@ -602,12 +602,12 @@
     function exportAllData() {
         persistAnswerData();
         const json = JSON.stringify(DB_ANSWERS, null, 4);
-        exportArea.style.display = 'block'; exportArea.value = "let DB_ANSWERS = " + json + ";"; exportArea.select(); document.execCommand('copy'); alert("복사됨");
+        exportArea.style.display = 'block'; exportArea.value = json; exportArea.select(); document.execCommand('copy'); alert("복사됨");
     }
 
     function downloadAnswerJsonFile() {
         persistAnswerData();
-        const payload = `let DB_ANSWERS = ${JSON.stringify(DB_ANSWERS, null, 2)};`;
+        const payload = JSON.stringify(DB_ANSWERS, null, 2);
         const blob = new Blob([payload], { type: 'application/json;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

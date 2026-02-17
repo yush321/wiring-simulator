@@ -151,5 +151,19 @@
       "EOCR",
       "FUSE"
     ]
+  },
+  "t11": {
+    "title": "기초 11. 보조회로 STEP.6 (PB1, X, T, MC1)",
+    "desc": [
+      "릴레이(X)는 회로가 이어져있어 1번을 공통단자로 씁니다.<br><br>총 5곳을 결선합니다. <br>형광펜으로 표시하며 꼼꼼히 결선하세요."
+    ],
+    "img": "./images/t01-11.png",
+    "targetIds": [
+      "TB_Top_L",
+      "TB_Top_R",
+      "MCCB",
+      "EOCR",
+      "FUSE"
+    ]
   }
 }
