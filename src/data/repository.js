@@ -2079,6 +2079,7 @@ let DB_ANSWERS = {
     const saveStatus = document.getElementById('saveStatus');
     const groupIndexInput = document.getElementById('groupIndexInput');
     const exportArea = document.getElementById('exportArea');
+    const layoutCategorySelect = document.getElementById('layoutCategorySelect');
     const layoutSelect = document.getElementById('layoutSelect');
     const currentLayoutNumSpan = document.getElementById('currentLayoutNum');
     
@@ -2127,6 +2128,7 @@ let DB_ANSWERS = {
     const tutorialEditorModal = document.getElementById('tutorialEditorModal');
     const wiringEditorTitle = document.getElementById('wiringEditorTitle');
     const wiringEditorImage = document.getElementById('wiringEditorImage');
+    const wiringEditorCategory = document.getElementById('wiringEditorCategory');
     const wiringEditorPageCount = document.getElementById('wiringEditorPageCount');
     const wiringEditorPageTabs = document.getElementById('wiringEditorPageTabs');
     const wiringEditorActivePageLabel = document.getElementById('wiringEditorActivePageLabel');

@@ -102,7 +102,8 @@
             title: String(raw.title),
             desc: descList.map(v => String(v ?? '')),
             img: String(raw.img || ''),
-            targetIds: Array.isArray(raw.targetIds) ? raw.targetIds.map(v => String(v)) : []
+            targetIds: Array.isArray(raw.targetIds) ? raw.targetIds.map(v => String(v)) : [],
+            category: String(raw.category || '')
         };
     }
 
@@ -184,19 +185,23 @@
         }
     }
     function init() {
-        const grp1 = document.createElement('optgroup'); grp1.label = "--- 기초 튜토리얼 ---";
-        for(let k in TUTORIAL_CONFIG) {
-            const opt = document.createElement('option'); opt.value = k; opt.innerText = TUTORIAL_CONFIG[k].title;
-            grp1.appendChild(opt);
-        }
-        layoutSelect.appendChild(grp1);
+        if (typeof rebuildLayoutSelectOptions === 'function') {
+            rebuildLayoutSelectOptions(currentLayoutId || 't1');
+        } else {
+            const grp1 = document.createElement('optgroup'); grp1.label = "--- 기초 튜토리얼 ---";
+            for(let k in TUTORIAL_CONFIG) {
+                const opt = document.createElement('option'); opt.value = k; opt.innerText = TUTORIAL_CONFIG[k].title;
+                grp1.appendChild(opt);
+            }
+            layoutSelect.appendChild(grp1);
 
-        const grp2 = document.createElement('optgroup'); grp2.label = "--- 실전 연습 ---";
-        for(let i=1; i<=18; i++) {
-            const opt = document.createElement('option'); opt.value = i; opt.innerText = `공개도면 ${i}번`;
-            grp2.appendChild(opt);
+            const grp2 = document.createElement('optgroup'); grp2.label = "--- 실전 연습 ---";
+            for(let i=1; i<=18; i++) {
+                const opt = document.createElement('option'); opt.value = i; opt.innerText = `공개도면 ${i}번`;
+                grp2.appendChild(opt);
+            }
+            layoutSelect.appendChild(grp2);
         }
-        layoutSelect.appendChild(grp2);
 
         document.addEventListener('keydown', handleKeyInput);
         canvas.addEventListener('mousedown', (e) => handleInput(e.clientX, e.clientY));

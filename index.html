@@ -496,9 +496,9 @@
                 <div style="display:flex; gap:6px; align-items:center; flex:1;">
                     <button id="playBtn" class="btn-page btn-play" onclick="playTutorialFlowFromModal()">재생</button>
                     <select id="playSpeedSelect" style="padding:8px; border-radius:5px; border:1px solid #ced4da; font-weight:700;">
-                        <option value="800">느림</option>
-                        <option value="550" selected>보통</option>
-                        <option value="300">빠름</option>
+                        <option value="2200">느림 (0.25x)</option>
+                        <option value="1100" selected>보통 (0.5x)</option>
+                        <option value="1100">빠름 (0.5x)</option>
                     </select>
                 </div>
                 <button id="prevBtn" onclick="changePage(-1)">이전</button>
@@ -659,6 +659,10 @@
                 <input id="wiringEditorTitle" class="editor-wide" placeholder="튜토리얼 제목">
                 <input id="wiringEditorImage" class="editor-wide" placeholder="튜토리얼 이미지 경로 (예: ./images/images1.png)">
                 <div style="display:flex; gap:8px; align-items:center;">
+                    <label for="wiringEditorCategory" style="font-size:12px; color:#334155; min-width:70px;">카테고리</label>
+                    <select id="wiringEditorCategory" style="flex:1; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700;"></select>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
                     <input id="wiringEditorPageCount" type="number" min="1" max="300" value="1" style="width:90px;">
                     <button style="background:#0d6efd;" onclick="applyTutorialPageCount()">페이지 수 적용</button>
                 </div>
@@ -700,6 +704,7 @@
     <h2>전기기능사 마스터</h2>
     
     <div class="controls">
+        <select id="layoutCategorySelect" onchange="onLayoutCategoryChange()"></select>
         <select id="layoutSelect" onchange="changeLayout()"></select>
         <button class="btn-info" onclick="openModal()">📖 설명</button>
         <button id="btnNumbering" class="btn-numbering" onclick="toggleNumberingMode()">넘버링</button>

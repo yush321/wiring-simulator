@@ -57,7 +57,7 @@
         paused: false,
         edges: [],
         index: 0,
-        stepMs: 550,
+        stepMs: 1100,
         timer: null
     };
 
@@ -125,6 +125,160 @@
         URL.revokeObjectURL(url);
     }
 
+    function getTutorialNumericIndex(layoutId) {
+        const m = String(layoutId || '').match(/^t(\d+)$/i);
+        if (!m) return null;
+        const n = parseInt(m[1], 10);
+        return Number.isFinite(n) ? n : null;
+    }
+
+    function getDefaultTutorialCategory(layoutId) {
+        const idx = getTutorialNumericIndex(layoutId);
+        if (idx !== null && idx >= 1 && idx <= 5) return 'main_wiring';
+        if (idx !== null && idx >= 6 && idx <= 13) return 'public_1';
+        return 'basic_tutorial';
+    }
+
+    function getTutorialCategoryMeta(categoryId) {
+        const key = String(categoryId || '').trim();
+        if (key === 'main_wiring') return { id: 'main_wiring', label: '주결선', order: 10 };
+        if (key === 'basic_tutorial') return { id: 'basic_tutorial', label: '기초 튜토리얼', order: 900 };
+        const m = key.match(/^public_(\d+)$/);
+        if (m) {
+            const n = parseInt(m[1], 10);
+            if (Number.isFinite(n) && n >= 1 && n <= 18) {
+                return { id: `public_${n}`, label: `기초 튜토리얼 > 공개도면 ${n}`, order: 100 + n };
+            }
+        }
+        return { id: 'basic_tutorial', label: '기초 튜토리얼', order: 900 };
+    }
+
+    function normalizeTutorialCategory(categoryId, layoutId) {
+        const key = String(categoryId || '').trim();
+        if (!key) return getDefaultTutorialCategory(layoutId);
+        return getTutorialCategoryMeta(key).id;
+    }
+
+    function getTutorialCategoryChoices() {
+        const list = [{ id: 'main_wiring', label: '주결선' }];
+        for (let i = 1; i <= 18; i += 1) {
+            list.push({ id: `public_${i}`, label: `기초 튜토리얼 > 공개도면 ${i}` });
+        }
+        list.push({ id: 'basic_tutorial', label: '기초 튜토리얼 (기타)' });
+        return list;
+    }
+
+    function populateTutorialCategorySelectOptions(selectEl) {
+        if (!selectEl) return;
+        const keep = String(selectEl.value || '');
+        const choices = getTutorialCategoryChoices();
+        selectEl.innerHTML = choices
+            .map(item => `<option value="${item.id}">${item.label}</option>`)
+            .join('');
+        if (keep && choices.some(item => item.id === keep)) selectEl.value = keep;
+    }
+
+    function getTutorialSortValue(layoutId) {
+        const idx = getTutorialNumericIndex(layoutId);
+        if (idx !== null) return idx;
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    function getLayoutCategoryByLayoutId(layoutId) {
+        const key = String(layoutId || '').trim();
+        if (!key) return 'main_wiring';
+        const numeric = parseInt(key, 10);
+        if (/^\d+$/.test(key) && Number.isFinite(numeric) && numeric >= 1 && numeric <= 18) {
+            return `practice_${numeric}`;
+        }
+        const entry = cloneTutorialEntry(TUTORIAL_CONFIG[key], key);
+        const tutorialCategory = normalizeTutorialCategory(entry.category, key);
+        if (tutorialCategory === 'main_wiring') return 'main_wiring';
+        if (/^public_\d+$/.test(tutorialCategory)) return tutorialCategory;
+        return 'public_1';
+    }
+
+    function ensureLayoutCategoryOptions(selectedCategory) {
+        if (!layoutCategorySelect) return;
+        const keep = String(selectedCategory || layoutCategorySelect.value || 'main_wiring');
+        const choices = [{ id: 'main_wiring', label: '주결선' }];
+        for (let i = 1; i <= 18; i += 1) {
+            choices.push({ id: `public_${i}`, label: `기초튜토리얼 공개도면 ${i}` });
+        }
+        for (let i = 1; i <= 18; i += 1) {
+            choices.push({ id: `practice_${i}`, label: `공개도면 ${i}` });
+        }
+        layoutCategorySelect.innerHTML = choices
+            .map(item => `<option value="${item.id}">${item.label}</option>`)
+            .join('');
+        if (choices.some(item => item.id === keep)) layoutCategorySelect.value = keep;
+    }
+
+    function rebuildLayoutSelectOptions(selectedValue) {
+        if (!layoutSelect) return;
+        const desired = String(selectedValue || currentLayoutId || layoutSelect.value || '');
+        const hasExplicitSelectedValue = selectedValue !== undefined && selectedValue !== null && String(selectedValue).trim() !== '';
+        const categoryByDesired = hasExplicitSelectedValue && desired ? getLayoutCategoryByLayoutId(desired) : '';
+        const activeCategory = categoryByDesired || String(layoutCategorySelect?.value || 'main_wiring');
+        ensureLayoutCategoryOptions(activeCategory);
+
+        const currentCategory = String(layoutCategorySelect?.value || activeCategory || 'main_wiring');
+        layoutSelect.innerHTML = '';
+
+        if (currentCategory === 'main_wiring' || /^public_\d+$/.test(currentCategory)) {
+            const entries = Object.keys(TUTORIAL_CONFIG || {})
+                .map(layoutId => {
+                    const entry = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
+                    const category = normalizeTutorialCategory(entry.category, layoutId);
+                    return { layoutId, entry, category };
+                })
+                .filter(item => currentCategory === 'main_wiring'
+                    ? item.category === 'main_wiring'
+                    : item.category === currentCategory
+                )
+                .sort((a, b) => {
+                    const ma = String(a.category || '').match(/^public_(\d+)$/);
+                    const mb = String(b.category || '').match(/^public_(\d+)$/);
+                    const na = ma ? parseInt(ma[1], 10) : 999;
+                    const nb = mb ? parseInt(mb[1], 10) : 999;
+                    if (na !== nb) return na - nb;
+                    const sa = getTutorialSortValue(a.layoutId);
+                    const sb = getTutorialSortValue(b.layoutId);
+                    if (sa !== sb) return sa - sb;
+                    return String(a.layoutId).localeCompare(String(b.layoutId), 'ko');
+                });
+
+            entries.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = String(item.layoutId);
+                opt.innerText = String(item.entry.title || item.layoutId);
+                layoutSelect.appendChild(opt);
+            });
+        } else {
+            const m = currentCategory.match(/^practice_(\d+)$/);
+            const only = m ? parseInt(m[1], 10) : null;
+            for (let i = 1; i <= 18; i += 1) {
+                if (only !== null && i !== only) continue;
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.innerText = `공개도면 ${i}번`;
+                layoutSelect.appendChild(opt);
+            }
+        }
+
+        const allOptions = Array.from(layoutSelect.options || []);
+        if (desired && allOptions.some(opt => String(opt.value) === desired)) {
+            layoutSelect.value = desired;
+        } else if (allOptions.length) {
+            layoutSelect.selectedIndex = 0;
+        }
+    }
+
+    function onLayoutCategoryChange() {
+        rebuildLayoutSelectOptions();
+        if (layoutSelect && layoutSelect.value && typeof changeLayout === 'function') changeLayout();
+    }
+
     function cloneTutorialEntry(raw, layoutId) {
         const source = (raw && typeof raw === 'object') ? raw : {};
         const fallbackTitle = String(layoutId || '').startsWith('t') ? `튜토리얼 ${layoutId}` : `공개도면 ${layoutId}번`;
@@ -135,29 +289,13 @@
             title: String(source.title || fallbackTitle),
             desc: descList.length ? descList : [''],
             img: String(source.img || './images/images1.png'),
-            targetIds: Array.isArray(source.targetIds) ? source.targetIds.slice() : []
+            targetIds: Array.isArray(source.targetIds) ? source.targetIds.slice() : [],
+            category: normalizeTutorialCategory(source.category, layoutId)
         };
     }
 
-    function updateLayoutOptionTitle(layoutId, title) {
-        ensureLayoutOption(layoutId, title);
-    }
-
-    function ensureLayoutOption(layoutId, title) {
-        if (!layoutSelect) return;
-        const options = Array.from(layoutSelect.options || []);
-        const opt = options.find(item => String(item.value) === String(layoutId));
-        if (opt) {
-            opt.text = title;
-            return;
-        }
-        const created = document.createElement('option');
-        created.value = String(layoutId);
-        created.text = String(title || layoutId);
-        const tutorialGroup = Array.from(layoutSelect.querySelectorAll('optgroup'))
-            .find(group => String(group.label || '').includes('튜토리얼'));
-        if (tutorialGroup) tutorialGroup.appendChild(created);
-        else layoutSelect.appendChild(created);
+    function updateLayoutOptionTitle(layoutId) {
+        rebuildLayoutSelectOptions(layoutId);
     }
 
     function getNextTutorialLayoutId() {
@@ -296,11 +434,13 @@
     function createNewTutorialLayout() {
         const newLayoutId = getNextTutorialLayoutId();
         const currentEntry = cloneTutorialEntry(TUTORIAL_CONFIG[currentLayoutId], currentLayoutId);
+        const selectedCategory = normalizeTutorialCategory(wiringEditorCategory?.value, newLayoutId);
         const fresh = {
             title: `튜토리얼 ${newLayoutId}`,
             desc: [''],
             img: String(wiringEditorImage?.value || currentEntry.img || './images/images1.png'),
-            targetIds: Array.isArray(currentEntry.targetIds) ? currentEntry.targetIds.slice() : []
+            targetIds: Array.isArray(currentEntry.targetIds) ? currentEntry.targetIds.slice() : [],
+            category: selectedCategory
         };
         TUTORIAL_CONFIG[newLayoutId] = fresh;
         if (!DB_ANSWERS[newLayoutId]) {
@@ -308,12 +448,16 @@
         }
         persistTutorialConfig();
         if (typeof persistAnswerData === 'function') persistAnswerData();
-        ensureLayoutOption(newLayoutId, fresh.title);
+        rebuildLayoutSelectOptions(newLayoutId);
         if (layoutSelect) layoutSelect.value = newLayoutId;
         currentLayoutId = newLayoutId;
         if (typeof changeLayout === 'function') changeLayout();
         if (wiringEditorTitle) wiringEditorTitle.value = fresh.title;
         if (wiringEditorImage) wiringEditorImage.value = fresh.img;
+        if (wiringEditorCategory) {
+            populateTutorialCategorySelectOptions(wiringEditorCategory);
+            wiringEditorCategory.value = fresh.category;
+        }
         if (wiringEditorPageCount) wiringEditorPageCount.value = '1';
         tutorialEditorState.activePage = 0;
         renderTutorialEditorPages(1, fresh.desc);
@@ -326,10 +470,12 @@
         const title = String(wiringEditorTitle?.value || '').trim() || `튜토리얼 ${currentLayoutId}`;
         const img = String(wiringEditorImage?.value || '').trim() || './images/images1.png';
         const desc = tutorialEditorState.pages.map(v => String(v ?? '').trim());
+        const category = normalizeTutorialCategory(wiringEditorCategory?.value, currentLayoutId);
         return {
             title,
             img,
-            desc: desc.length ? desc : ['']
+            desc: desc.length ? desc : [''],
+            category
         };
     }
 
@@ -339,7 +485,8 @@
             ...base,
             title: draft.title || base.title,
             img: draft.img || base.img,
-            desc: Array.isArray(draft.desc) && draft.desc.length ? draft.desc : ['']
+            desc: Array.isArray(draft.desc) && draft.desc.length ? draft.desc : [''],
+            category: normalizeTutorialCategory(draft.category, layoutId)
         };
         TUTORIAL_CONFIG[layoutId] = next;
         return next;
@@ -374,6 +521,10 @@
         const entry = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
         if (wiringEditorTitle) wiringEditorTitle.value = entry.title;
         if (wiringEditorImage) wiringEditorImage.value = entry.img;
+        if (wiringEditorCategory) {
+            populateTutorialCategorySelectOptions(wiringEditorCategory);
+            wiringEditorCategory.value = entry.category;
+        }
         if (wiringEditorPageCount) wiringEditorPageCount.value = String(entry.desc.length || 1);
         tutorialEditorState.activePage = 0;
         renderTutorialEditorPages(entry.desc.length || 1, entry.desc);
@@ -400,9 +551,9 @@
     function saveTutorialEditor() {
         const layoutId = String(currentLayoutId || '');
         if (!layoutId) return;
-        const saved = applyTutorialDraft(layoutId, getTutorialEditorDraft());
+        applyTutorialDraft(layoutId, getTutorialEditorDraft());
         persistTutorialConfig();
-        updateLayoutOptionTitle(layoutId, saved.title);
+        updateLayoutOptionTitle(layoutId);
         setTutorialEditorStatus(`${layoutId} 튜토리얼 저장 완료`);
     }
 
@@ -461,16 +612,19 @@
                         entry.targetIds = existing.targetIds.slice();
                     }
                     TUTORIAL_CONFIG[key] = entry;
-                    updateLayoutOptionTitle(key, entry.title);
                 });
             }
 
             persistTutorialConfig();
-            updateLayoutOptionTitle(layoutId, TUTORIAL_CONFIG[layoutId]?.title || layoutId);
+            rebuildLayoutSelectOptions(layoutId);
 
             const entry = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
             if (wiringEditorTitle) wiringEditorTitle.value = entry.title;
             if (wiringEditorImage) wiringEditorImage.value = entry.img;
+            if (wiringEditorCategory) {
+                populateTutorialCategorySelectOptions(wiringEditorCategory);
+                wiringEditorCategory.value = entry.category;
+            }
             if (wiringEditorPageCount) wiringEditorPageCount.value = String(entry.desc.length || 1);
             tutorialEditorState.activePage = 0;
             renderTutorialEditorPages(entry.desc.length || 1, entry.desc);
@@ -492,15 +646,15 @@
 
         Object.keys(TUTORIAL_CONFIG).forEach(key => { delete TUTORIAL_CONFIG[key]; });
         Object.assign(TUTORIAL_CONFIG, JSON.parse(JSON.stringify(TUTORIAL_CONFIG_DEFAULT || {})));
-
-        Object.keys(TUTORIAL_CONFIG).forEach(layoutId => {
-            const title = TUTORIAL_CONFIG[layoutId]?.title;
-            if (title) updateLayoutOptionTitle(layoutId, title);
-        });
+        rebuildLayoutSelectOptions(currentLayoutId);
 
         const current = cloneTutorialEntry(TUTORIAL_CONFIG[currentLayoutId], currentLayoutId);
         if (wiringEditorTitle) wiringEditorTitle.value = current.title;
         if (wiringEditorImage) wiringEditorImage.value = current.img;
+        if (wiringEditorCategory) {
+            populateTutorialCategorySelectOptions(wiringEditorCategory);
+            wiringEditorCategory.value = current.category;
+        }
         if (wiringEditorPageCount) wiringEditorPageCount.value = String(current.desc.length || 1);
         tutorialEditorState.activePage = 0;
         renderTutorialEditorPages(current.desc.length || 1, current.desc);
@@ -785,8 +939,8 @@
 
         if (typeof resetWires === 'function') resetWires();
 
-        const selectedMs = parseInt(playSpeedSelect?.value || '550', 10);
-        tutorialPlaybackState.stepMs = Number.isFinite(selectedMs) && selectedMs > 50 ? selectedMs : 550;
+        const selectedMs = parseInt(playSpeedSelect?.value || '1100', 10);
+        tutorialPlaybackState.stepMs = Number.isFinite(selectedMs) && selectedMs > 50 ? selectedMs : 1100;
         tutorialPlaybackState.edges = edges.slice();
         tutorialPlaybackState.index = 0;
         tutorialPlaybackState.active = true;
