@@ -1418,7 +1418,14 @@
     }
 
     function getComponentById(componentId) {
-        return currentComponents.find(c => c.id === componentId) || PUBLIC_LAYOUT_BASE.find(c => c.id === componentId) || null;
+        if (currentComponents && currentComponents.length) {
+            const foundInCurrent = currentComponents.find(c => c.id === componentId);
+            if (foundInCurrent) return foundInCurrent;
+        }
+        const layoutBase = (typeof getPublicLayoutBase === 'function')
+            ? getPublicLayoutBase(currentLayoutId)
+            : PUBLIC_LAYOUT_BASE;
+        return (layoutBase || []).find(c => c.id === componentId) || null;
     }
 
     function buildRowsFromComponent(comp) {

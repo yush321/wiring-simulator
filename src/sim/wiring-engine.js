@@ -216,6 +216,9 @@
         currentLayoutNumSpan.innerText = currentLayoutId;
         const answer = ensureLayoutAnswer(currentLayoutId);
         const savedFilter = Array.isArray(answer?.componentFilter) ? answer.componentFilter : [];
+        const baseLayout = (typeof getPublicLayoutBase === 'function')
+            ? getPublicLayoutBase(currentLayoutId)
+            : JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
         
         const tutorial = TUTORIAL_CONFIG[currentLayoutId];
         const hasCustomFilter = savedFilter.length > 0;
@@ -224,17 +227,17 @@
 
         if (tutorial) {
             if (targetIds.length > 0) {
-                currentComponents = PUBLIC_LAYOUT_BASE.filter(comp => targetIds.includes(comp.id));
+                currentComponents = baseLayout.filter(comp => targetIds.includes(comp.id));
             } else {
-                currentComponents = JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
+                currentComponents = baseLayout;
             }
             currentComponents = JSON.parse(JSON.stringify(currentComponents));
             openModal();
         } else {
             if (targetIds.length > 0) {
-                currentComponents = JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE.filter(comp => targetIds.includes(comp.id))));
+                currentComponents = JSON.parse(JSON.stringify(baseLayout.filter(comp => targetIds.includes(comp.id))));
             } else {
-                currentComponents = JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
+                currentComponents = JSON.parse(JSON.stringify(baseLayout));
             }
         }
         
@@ -687,7 +690,10 @@
     function showSaveStatus(msg) { saveStatus.textContent = msg; setTimeout(() => { saveStatus.textContent = ""; }, 3000); }
 
     function getComponentLabelById(id) {
-        const found = PUBLIC_LAYOUT_BASE.find(c => c.id === id);
+        const layoutBase = (typeof getPublicLayoutBase === 'function')
+            ? getPublicLayoutBase(currentLayoutId)
+            : JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
+        const found = layoutBase.find(c => c.id === id);
         return found ? `${found.id} (${found.label})` : id;
     }
 
@@ -695,7 +701,10 @@
         if (!componentFilterList) return;
         const ans = ensureLayoutAnswer(currentLayoutId);
         const selected = new Set(Array.isArray(ans?.componentFilter) ? ans.componentFilter : []);
-        const comps = (PUBLIC_LAYOUT_BASE || []).map(c => ({ id: c.id, label: c.label || c.id }));
+        const layoutBase = (typeof getPublicLayoutBase === 'function')
+            ? getPublicLayoutBase(currentLayoutId)
+            : JSON.parse(JSON.stringify(PUBLIC_LAYOUT_BASE));
+        const comps = (layoutBase || []).map(c => ({ id: c.id, label: c.label || c.id }));
         componentFilterList.innerHTML = comps.map(item => `
             <label class="component-filter-item">
                 <input type="checkbox" data-comp-id="${item.id}" ${selected.has(item.id) ? 'checked' : ''}>

@@ -219,6 +219,150 @@
         { id: 'TB_Bot_L', label: '', x: 50, y: 600, w: 280, h: 50, type: 'terminal', startNum: 1, pins: [ {n:'Y', g:'YLBZ'}, {n:'C', g:'YLBZ'}, {n:'B', g:'YLBZ'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB3'}, {n:'흑', g:'TB3'}, {n:'회', g:'TB3'}, {n:'녹', g:'TB3'} ] },
         { id: 'TB_Bot_R', label: '', x: 370, y: 600, w: 280, h: 50, type: 'terminal', startNum: 11, pins: [ {n:'E1', g:'TB4'}, {n:'E2', g:'TB4'}, {n:'E3', g:'TB4'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'$', g:'$'}, {n:'갈', g:'TB2'}, {n:'흑', g:'TB2'}, {n:'회', g:'TB2'}, {n:'녹', g:'TB2'} ] }
     ];
+    const PUBLIC_LAYOUT_ROW_RULES = (() => {
+        const rules = {};
+        for (let i = 1; i <= 18; i++) {
+            rules[String(i)] = {
+                row2: ['FUSE', 'EOCR', 'MCCB', 'X', 'FR'],
+                row3: ['T', 'FLS', 'MC1', 'MC2']
+            };
+        }
+        rules["6"] = {
+            row2: ['EOCR', 'MCCB', 'FUSE', 'X', 'FR'],
+            row3: ['FLS', 'T', 'MC1', 'MC2']
+        };
+        return rules;
+    })();
+    const PUBLIC_LAYOUT_TERMINAL_OVERRIDES = {
+        "6": {
+            TB_Top_L: {
+                pins: [
+                    { n: '+', g: 'YLBZ' },
+                    { n: '-', g: 'YLBZ' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '갈', g: '' },
+                    { n: '검', g: '' }
+                ]
+            },
+            TB_Top_R: {
+                pins: [
+                    { n: '회', g: '' },
+                    { n: '녹', g: '' },
+                    { n: '$', g: '$' },
+                    { n: '+', g: 'RL' },
+                    { n: '-', g: '공통' },
+                    { n: '+', g: 'GL' },
+                    { n: '$', g: '$' },
+                    { n: 'M', g: '' },
+                    { n: 'N', g: '' },
+                    { n: 'A', g: '' }
+                ]
+            },
+            TB_Bot_L: {
+                pins: [
+                    { n: 'O', g: 'PB1' },
+                    { n: 'N', g: '' },
+                    { n: 'C', g: 'PB0' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '$', g: '$' },
+                    { n: '갈', g: '' },
+                    { n: '검', g: '' }
+                ]
+            },
+            TB_Bot_R: {
+                pins: [
+                    { n: '회', g: '' },
+                    { n: '녹', g: '' },
+                    { n: '$', g: '$' },
+                    { n: 'E1', g: '' },
+                    { n: 'E2', g: '' },
+                    { n: 'E3', g: 'PE' },
+                    { n: '갈', g: '' },
+                    { n: '검', g: '' },
+                    { n: '회', g: '' },
+                    { n: '녹', g: '' }
+                ]
+            }
+        }
+    };
+
+    function deepCloneLayout(layoutArr) {
+        return JSON.parse(JSON.stringify(layoutArr || []));
+    }
+
+    function placePublicRow(componentMap, ids, y) {
+        const rowIds = (ids || []).filter(Boolean);
+        if (!rowIds.length) return;
+        const items = rowIds
+            .map(id => componentMap.get(id))
+            .filter(Boolean);
+        if (!items.length) return;
+        const left = 50;
+        const right = 650;
+        const usableWidth = right - left;
+        const widthSum = items.reduce((acc, comp) => acc + (Number(comp.w) || 0), 0);
+        const gapCount = Math.max(1, items.length - 1);
+        const baseGap = Math.max(10, (usableWidth - widthSum) / gapCount);
+        let x = left;
+        items.forEach((comp, idx) => {
+            comp.x = Math.round(x);
+            comp.y = y;
+            x += (Number(comp.w) || 0) + (idx < items.length - 1 ? baseGap : 0);
+        });
+    }
+
+    function applyTerminalOverride(componentMap, override) {
+        if (!override || typeof override !== 'object') return;
+        Object.keys(override).forEach(compId => {
+            const comp = componentMap.get(compId);
+            const patch = override[compId];
+            if (!comp || !patch || typeof patch !== 'object') return;
+            if (Array.isArray(patch.pins) && Array.isArray(comp.pins)) {
+                patch.pins.forEach((p, idx) => {
+                    if (!comp.pins[idx] || !p || typeof p !== 'object') return;
+                    if (typeof p.n === 'string') comp.pins[idx].n = p.n;
+                    if (typeof p.g === 'string') comp.pins[idx].g = p.g;
+                });
+            }
+            if (Number.isFinite(patch.startNum)) comp.startNum = patch.startNum;
+        });
+    }
+
+    function buildPublicLayoutById(layoutId) {
+        const key = String(layoutId || '');
+        if (key === '1') return deepCloneLayout(PUBLIC_LAYOUT_BASE);
+        const rows = PUBLIC_LAYOUT_ROW_RULES[key];
+        const layout = deepCloneLayout(PUBLIC_LAYOUT_BASE);
+        const byId = new Map(layout.map(comp => [comp.id, comp]));
+        if (rows) {
+            placePublicRow(byId, rows.row2, 160);
+            placePublicRow(byId, rows.row3, 390);
+        }
+        applyTerminalOverride(byId, PUBLIC_LAYOUT_TERMINAL_OVERRIDES[key]);
+        return layout;
+    }
+
+    const PUBLIC_LAYOUT_BY_ID = (() => {
+        const out = { "1": deepCloneLayout(PUBLIC_LAYOUT_BASE) };
+        for (let i = 2; i <= 18; i++) {
+            out[String(i)] = buildPublicLayoutById(String(i));
+        }
+        return out;
+    })();
+
+    function getPublicLayoutBase(layoutId) {
+        const key = String(layoutId || '');
+        if (PUBLIC_LAYOUT_BY_ID[key]) return deepCloneLayout(PUBLIC_LAYOUT_BY_ID[key]);
+        return deepCloneLayout(PUBLIC_LAYOUT_BASE);
+    }
 
     // ==========================================
     // 2. 정답 데이터 (덮어씌우는 곳)
