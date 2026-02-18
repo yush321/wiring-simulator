@@ -659,8 +659,12 @@
                 <input id="wiringEditorTitle" class="editor-wide" placeholder="튜토리얼 제목">
                 <input id="wiringEditorImage" class="editor-wide" placeholder="튜토리얼 이미지 경로 (예: ./images/images1.png)">
                 <div style="display:flex; gap:8px; align-items:center;">
-                    <label for="wiringEditorCategory" style="font-size:12px; color:#334155; min-width:70px;">카테고리</label>
+                    <label for="wiringEditorCategory" style="font-size:12px; color:#334155; min-width:70px;">대분류</label>
                     <select id="wiringEditorCategory" style="flex:1; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700;"></select>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <label for="wiringEditorSubcategory" style="font-size:12px; color:#334155; min-width:70px;">소분류</label>
+                    <input id="wiringEditorSubcategory" placeholder="예: 1 (public 계열에서만 사용)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     <input id="wiringEditorPageCount" type="number" min="1" max="300" value="1" style="width:90px;">
@@ -750,6 +754,10 @@
         <div style="margin-top: 8px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <button style="background:#fd7e14;" onclick="saveTutorialFlowFromWires()">재생 순서 저장</button>
             <button style="background:#6b7280;" onclick="clearTutorialFlow()">재생 순서 초기화</button>
+        </div>
+        <div id="practiceFlowTargetWrap" style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+            <label for="practiceFlowTargetSelect" style="min-width:70px; color:#93c5fd; font-size:12px;">소분류 선택</label>
+            <select id="practiceFlowTargetSelect" style="flex:1; padding:6px; border-radius:6px; border:1px solid #475569; background:#111827; color:#e2e8f0;"></select>
         </div>
         <div style="margin-top: 8px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <button style="background:#6f42c1;" onclick="openNumberingEditorModal()">넘버링 편집기</button>

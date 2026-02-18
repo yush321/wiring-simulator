@@ -47,6 +47,7 @@
     }
 
     const TUTORIAL_STORAGE_KEY = 'tutorial_config_v1';
+    const TUTORIAL_NEW_CATEGORY_VALUE = '__new_category__';
     const TUTORIAL_CONFIG_DEFAULT = JSON.parse(JSON.stringify(TUTORIAL_CONFIG || {}));
     const tutorialEditorState = {
         pages: [''],
@@ -132,7 +133,17 @@
         return Number.isFinite(n) ? n : null;
     }
 
+    function getPracticeNumericIndex(layoutId) {
+        const m = String(layoutId || '').match(/^(\d+)$/);
+        if (!m) return null;
+        const n = parseInt(m[1], 10);
+        if (!Number.isFinite(n) || n < 1 || n > 18) return null;
+        return n;
+    }
+
     function getDefaultTutorialCategory(layoutId) {
+        const practiceIdx = getPracticeNumericIndex(layoutId);
+        if (practiceIdx !== null) return `public_${practiceIdx}`;
         const idx = getTutorialNumericIndex(layoutId);
         if (idx !== null && idx >= 1 && idx <= 5) return 'main_wiring';
         if (idx !== null && idx >= 6 && idx <= 13) return 'public_1';
@@ -141,22 +152,189 @@
 
     function getTutorialCategoryMeta(categoryId) {
         const key = String(categoryId || '').trim();
+        if (!key) return { id: 'basic_tutorial', label: '기초 튜토리얼', order: 900 };
         if (key === 'main_wiring') return { id: 'main_wiring', label: '주결선', order: 10 };
         if (key === 'basic_tutorial') return { id: 'basic_tutorial', label: '기초 튜토리얼', order: 900 };
-        const m = key.match(/^public_(\d+)$/);
+        const m = key.match(/^public_(\d+)(?::(.+))?$/);
         if (m) {
             const n = parseInt(m[1], 10);
             if (Number.isFinite(n) && n >= 1 && n <= 18) {
-                return { id: `public_${n}`, label: `기초 튜토리얼 > 공개도면 ${n}`, order: 100 + n };
+                const sub = String(m[2] || '').trim();
+                const subText = sub ? ` > 소분류 ${sub}` : '';
+                return { id: key, label: `기초 튜토리얼 > 공개도면 ${n}${subText}`, order: 100 + n };
             }
         }
-        return { id: 'basic_tutorial', label: '기초 튜토리얼', order: 900 };
+        return { id: key, label: `기초 튜토리얼 > ${key}`, order: 800 };
     }
 
     function normalizeTutorialCategory(categoryId, layoutId) {
         const key = String(categoryId || '').trim();
         if (!key) return getDefaultTutorialCategory(layoutId);
-        return getTutorialCategoryMeta(key).id;
+        if (key === TUTORIAL_NEW_CATEGORY_VALUE) return getDefaultTutorialCategory(layoutId);
+        return key;
+    }
+
+    function parseTutorialCategoryParts(categoryId, layoutId) {
+        const normalized = normalizeTutorialCategory(categoryId, layoutId);
+        const m = String(normalized || '').match(/^(public_\d+)(?::(.+))$/);
+        if (m) return { major: m[1], sub: String(m[2] || '').trim() };
+        return { major: normalized, sub: '' };
+    }
+
+    function composeTutorialCategory(majorId, subId, layoutId) {
+        const major = normalizeTutorialCategory(majorId, layoutId);
+        const sub = String(subId || '').trim();
+        if (/^public_\d+$/.test(major) && sub) return `${major}:${sub}`;
+        return major;
+    }
+
+    function getPublicMajorFromLayout(layoutId) {
+        const key = String(layoutId || '').trim();
+        const numeric = key.match(/^(\d+)$/);
+        if (numeric) {
+            const n = parseInt(numeric[1], 10);
+            if (Number.isFinite(n) && n >= 1 && n <= 18) return `public_${n}`;
+        }
+        const parts = parseTutorialCategoryParts(TUTORIAL_CONFIG[key]?.category, key);
+        return /^public_\d+$/.test(parts.major) ? parts.major : '';
+    }
+
+    function collectTutorialTargetsByMajor(major) {
+        if (!major) return [];
+        return Object.keys(TUTORIAL_CONFIG || {})
+            .filter(key => /^t\d+$/i.test(String(key)))
+            .map(key => {
+                const entry = TUTORIAL_CONFIG[key] || {};
+                const parts = parseTutorialCategoryParts(entry.category, key);
+                return {
+                    key: String(key),
+                    title: String(entry.title || key),
+                    major: String(parts.major || ''),
+                    sub: String(parts.sub || '')
+                };
+            })
+            .filter(item => item.major === major)
+            .sort((a, b) => {
+                const ai = parseInt(a.sub, 10);
+                const bi = parseInt(b.sub, 10);
+                const aNum = Number.isFinite(ai);
+                const bNum = Number.isFinite(bi);
+                if (aNum && bNum && ai !== bi) return ai - bi;
+                if (a.sub !== b.sub) return a.sub.localeCompare(b.sub, 'ko');
+                const ta = parseInt(a.key.replace(/^t/i, ''), 10);
+                const tb = parseInt(b.key.replace(/^t/i, ''), 10);
+                return ta - tb;
+            });
+    }
+
+    function getSelectedPracticeTutorialTargetLayoutId(layoutId) {
+        const major = getPublicMajorFromLayout(layoutId);
+        if (!major || !practiceFlowTargetSelect) return '';
+        const selected = String(practiceFlowTargetSelect.value || '').trim();
+        if (!/^t\d+$/i.test(selected)) return '';
+        const parts = parseTutorialCategoryParts(TUTORIAL_CONFIG[selected]?.category, selected);
+        return parts.major === major ? selected : '';
+    }
+
+    function refreshPracticeFlowTargetOptions(layoutId = currentLayoutId) {
+        if (!practiceFlowTargetSelect || !practiceFlowTargetWrap) return;
+        const major = getPublicMajorFromLayout(layoutId);
+        if (!major || /^t\d+$/i.test(String(layoutId || '').trim())) {
+            practiceFlowTargetWrap.style.display = 'none';
+            practiceFlowTargetSelect.innerHTML = '';
+            return;
+        }
+        practiceFlowTargetWrap.style.display = 'flex';
+        const targets = collectTutorialTargetsByMajor(major);
+        if (!targets.length) {
+            practiceFlowTargetSelect.innerHTML = '<option value="">소분류 없음</option>';
+            practiceFlowTargetSelect.disabled = true;
+            return;
+        }
+        practiceFlowTargetSelect.disabled = false;
+        const storageKey = `tutorial_flow_target_${major}`;
+        let selected = '';
+        try {
+            selected = String(localStorage.getItem(storageKey) || '').trim();
+        } catch (e) {
+            selected = '';
+        }
+        if (!targets.some(t => t.key === selected)) {
+            const sub1 = targets.find(t => t.sub === '1');
+            selected = sub1 ? sub1.key : targets[0].key;
+        }
+        practiceFlowTargetSelect.innerHTML = targets
+            .map(t => `<option value="${t.key}">소분류 ${t.sub || '-'} (${t.key}) - ${t.title}</option>`)
+            .join('');
+        practiceFlowTargetSelect.value = selected;
+        try {
+            localStorage.setItem(storageKey, selected);
+        } catch (e) {
+            // ignore storage errors
+        }
+        if (practiceFlowTargetSelect.dataset.boundChange !== '1') {
+            practiceFlowTargetSelect.addEventListener('change', () => {
+                const next = String(practiceFlowTargetSelect.value || '').trim();
+                if (!next) return;
+                try {
+                    localStorage.setItem(storageKey, next);
+                } catch (e) {
+                    // ignore storage errors
+                }
+            });
+            practiceFlowTargetSelect.dataset.boundChange = '1';
+        }
+    }
+
+    function rememberTutorialFlowTarget(layoutId, categoryId) {
+        const key = String(layoutId || '').trim();
+        if (!/^t\d+$/i.test(key)) return;
+        const parts = parseTutorialCategoryParts(categoryId, key);
+        const major = String(parts.major || '').trim();
+        if (!/^public_\d+$/.test(major)) return;
+        try {
+            localStorage.setItem(`tutorial_flow_target_${major}`, key);
+        } catch (e) {
+            // ignore storage errors
+        }
+        refreshPracticeFlowTargetOptions(currentLayoutId);
+    }
+
+    function ensureTutorialEditingLayoutId(preferredCategory = '', createIfMissing = true) {
+        const currentId = String(currentLayoutId || '').trim();
+        if (/^t\d+$/i.test(currentId)) return currentId;
+
+        const practiceIdx = getPracticeNumericIndex(currentId);
+        if (practiceIdx === null) return currentId;
+
+        const major = `public_${practiceIdx}`;
+        const parts = parseTutorialCategoryParts(preferredCategory || major, currentId);
+        const wantedSub = String(parts.sub || '').trim();
+        const tutorialKeys = Object.keys(TUTORIAL_CONFIG || {}).filter(key => /^t\d+$/i.test(String(key)));
+        const found = tutorialKeys.find(key => {
+            const cat = parseTutorialCategoryParts(TUTORIAL_CONFIG[key]?.category, key);
+            if (cat.major !== major) return false;
+            if (!wantedSub) return true;
+            return String(cat.sub || '').trim() === wantedSub;
+        });
+        if (found) return found;
+        if (!createIfMissing) return currentId;
+
+        const newLayoutId = getNextTutorialLayoutId();
+        const freshCategory = composeTutorialCategory(major, wantedSub || '1', newLayoutId);
+        TUTORIAL_CONFIG[newLayoutId] = {
+            title: `튜토리얼 ${newLayoutId}`,
+            desc: [''],
+            img: './images/images1.png',
+            targetIds: [],
+            category: freshCategory
+        };
+        if (!DB_ANSWERS[newLayoutId]) {
+            DB_ANSWERS[newLayoutId] = { targets: [], commons: [], nodes: [], tutorialFlow: [], componentFilter: [] };
+        }
+        persistTutorialConfig();
+        if (typeof persistAnswerData === 'function') persistAnswerData();
+        return newLayoutId;
     }
 
     function getTutorialCategoryChoices() {
@@ -165,6 +343,21 @@
             list.push({ id: `public_${i}`, label: `기초 튜토리얼 > 공개도면 ${i}` });
         }
         list.push({ id: 'basic_tutorial', label: '기초 튜토리얼 (기타)' });
+        const used = new Set(list.map(item => item.id));
+        Object.keys(TUTORIAL_CONFIG || {}).forEach(layoutId => {
+            const entry = TUTORIAL_CONFIG[layoutId] || {};
+            const category = normalizeTutorialCategory(entry.category, layoutId);
+            if (!category || used.has(category)) return;
+            const meta = getTutorialCategoryMeta(category);
+            list.push({ id: meta.id, label: meta.label, order: meta.order });
+            used.add(category);
+        });
+        list.sort((a, b) => {
+            const ma = getTutorialCategoryMeta(a.id);
+            const mb = getTutorialCategoryMeta(b.id);
+            if (ma.order !== mb.order) return ma.order - mb.order;
+            return String(ma.label).localeCompare(String(mb.label), 'ko');
+        });
         return list;
     }
 
@@ -175,7 +368,37 @@
         selectEl.innerHTML = choices
             .map(item => `<option value="${item.id}">${item.label}</option>`)
             .join('');
+        selectEl.insertAdjacentHTML('beforeend', `<option value="${TUTORIAL_NEW_CATEGORY_VALUE}">+ 새 카테고리 만들기</option>`);
+        if (keep && !choices.some(item => item.id === keep) && keep !== TUTORIAL_NEW_CATEGORY_VALUE) {
+            const meta = getTutorialCategoryMeta(keep);
+            selectEl.insertAdjacentHTML('beforeend', `<option value="${meta.id}">${meta.label}</option>`);
+        }
         if (keep && choices.some(item => item.id === keep)) selectEl.value = keep;
+        else if (keep && keep !== TUTORIAL_NEW_CATEGORY_VALUE) selectEl.value = keep;
+    }
+
+    function onTutorialCategoryChange() {
+        if (!wiringEditorCategory) return;
+        if (wiringEditorCategory.value === TUTORIAL_NEW_CATEGORY_VALUE) {
+            const input = prompt('새 카테고리 ID를 입력하세요. 예) public_6_extra');
+            const next = String(input || '').trim().replace(/\s+/g, '_');
+            if (!next) {
+                wiringEditorCategory.value = getDefaultTutorialCategory(currentLayoutId);
+            } else {
+                populateTutorialCategorySelectOptions(wiringEditorCategory);
+                if (!Array.from(wiringEditorCategory.options).some(opt => opt.value === next)) {
+                    const meta = getTutorialCategoryMeta(next);
+                    wiringEditorCategory.insertAdjacentHTML('beforeend', `<option value="${meta.id}">${meta.label}</option>`);
+                }
+                wiringEditorCategory.value = next;
+                setTutorialEditorStatus(`새 카테고리 생성: ${next}`);
+            }
+        }
+        if (wiringEditorSubcategory) {
+            const isPublicMajor = /^public_\d+$/.test(String(wiringEditorCategory.value || ''));
+            wiringEditorSubcategory.disabled = !isPublicMajor;
+            if (!isPublicMajor) wiringEditorSubcategory.value = '';
+        }
     }
 
     function getTutorialSortValue(layoutId) {
@@ -192,7 +415,8 @@
             return `practice_${numeric}`;
         }
         const entry = cloneTutorialEntry(TUTORIAL_CONFIG[key], key);
-        const tutorialCategory = normalizeTutorialCategory(entry.category, key);
+        const parts = parseTutorialCategoryParts(entry.category, key);
+        const tutorialCategory = parts.major;
         if (tutorialCategory === 'main_wiring') return 'main_wiring';
         if (/^public_\d+$/.test(tutorialCategory)) return tutorialCategory;
         return 'public_1';
@@ -229,7 +453,7 @@
             const entries = Object.keys(TUTORIAL_CONFIG || {})
                 .map(layoutId => {
                     const entry = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
-                    const category = normalizeTutorialCategory(entry.category, layoutId);
+                    const category = parseTutorialCategoryParts(entry.category, layoutId).major;
                     return { layoutId, entry, category };
                 })
                 .filter(item => currentCategory === 'main_wiring'
@@ -434,7 +658,11 @@
     function createNewTutorialLayout() {
         const newLayoutId = getNextTutorialLayoutId();
         const currentEntry = cloneTutorialEntry(TUTORIAL_CONFIG[currentLayoutId], currentLayoutId);
-        const selectedCategory = normalizeTutorialCategory(wiringEditorCategory?.value, newLayoutId);
+        const selectedCategory = composeTutorialCategory(
+            wiringEditorCategory?.value,
+            wiringEditorSubcategory?.value,
+            newLayoutId
+        );
         const fresh = {
             title: `튜토리얼 ${newLayoutId}`,
             desc: [''],
@@ -456,7 +684,12 @@
         if (wiringEditorImage) wiringEditorImage.value = fresh.img;
         if (wiringEditorCategory) {
             populateTutorialCategorySelectOptions(wiringEditorCategory);
-            wiringEditorCategory.value = fresh.category;
+            const cat = parseTutorialCategoryParts(fresh.category, newLayoutId);
+            wiringEditorCategory.value = cat.major;
+            if (wiringEditorSubcategory) {
+                wiringEditorSubcategory.value = cat.sub;
+                wiringEditorSubcategory.disabled = !/^public_\d+$/.test(cat.major);
+            }
         }
         if (wiringEditorPageCount) wiringEditorPageCount.value = '1';
         tutorialEditorState.activePage = 0;
@@ -470,7 +703,11 @@
         const title = String(wiringEditorTitle?.value || '').trim() || `튜토리얼 ${currentLayoutId}`;
         const img = String(wiringEditorImage?.value || '').trim() || './images/images1.png';
         const desc = tutorialEditorState.pages.map(v => String(v ?? '').trim());
-        const category = normalizeTutorialCategory(wiringEditorCategory?.value, currentLayoutId);
+        const category = composeTutorialCategory(
+            wiringEditorCategory?.value,
+            wiringEditorSubcategory?.value,
+            currentLayoutId
+        );
         return {
             title,
             img,
@@ -517,13 +754,26 @@
             alert('관리자 모드에서만 편집기를 열 수 있어.');
             return;
         }
-        const layoutId = String(currentLayoutId || '');
+        const preferredCategory = composeTutorialCategory(
+            wiringEditorCategory?.value || getDefaultTutorialCategory(currentLayoutId),
+            wiringEditorSubcategory?.value,
+            currentLayoutId
+        );
+        const layoutId = ensureTutorialEditingLayoutId(preferredCategory, true);
+        currentLayoutId = layoutId;
+        rebuildLayoutSelectOptions(layoutId);
+        if (layoutSelect) layoutSelect.value = layoutId;
         const entry = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
         if (wiringEditorTitle) wiringEditorTitle.value = entry.title;
         if (wiringEditorImage) wiringEditorImage.value = entry.img;
         if (wiringEditorCategory) {
             populateTutorialCategorySelectOptions(wiringEditorCategory);
-            wiringEditorCategory.value = entry.category;
+            const cat = parseTutorialCategoryParts(entry.category, layoutId);
+            wiringEditorCategory.value = cat.major;
+            if (wiringEditorSubcategory) {
+                wiringEditorSubcategory.value = cat.sub;
+                wiringEditorSubcategory.disabled = !/^public_\d+$/.test(cat.major);
+            }
         }
         if (wiringEditorPageCount) wiringEditorPageCount.value = String(entry.desc.length || 1);
         tutorialEditorState.activePage = 0;
@@ -540,6 +790,10 @@
             wiringEditorImage.addEventListener('input', () => renderTutorialPreview());
             wiringEditorImage.dataset.boundInput = '1';
         }
+        if (wiringEditorCategory && wiringEditorCategory.dataset.boundChange !== '1') {
+            wiringEditorCategory.addEventListener('change', onTutorialCategoryChange);
+            wiringEditorCategory.dataset.boundChange = '1';
+        }
         setTutorialEditorStatus('');
         if (tutorialEditorModal) tutorialEditorModal.style.display = 'flex';
     }
@@ -549,11 +803,20 @@
     }
 
     function saveTutorialEditor() {
-        const layoutId = String(currentLayoutId || '');
+        const preferredCategory = composeTutorialCategory(
+            wiringEditorCategory?.value,
+            wiringEditorSubcategory?.value,
+            currentLayoutId
+        );
+        const layoutId = ensureTutorialEditingLayoutId(preferredCategory, true);
         if (!layoutId) return;
-        applyTutorialDraft(layoutId, getTutorialEditorDraft());
+        currentLayoutId = layoutId;
+        const draft = getTutorialEditorDraft();
+        applyTutorialDraft(layoutId, draft);
+        rememberTutorialFlowTarget(layoutId, draft.category);
         persistTutorialConfig();
         updateLayoutOptionTitle(layoutId);
+        if (layoutSelect) layoutSelect.value = layoutId;
         setTutorialEditorStatus(`${layoutId} 튜토리얼 저장 완료`);
     }
 
@@ -623,7 +886,12 @@
             if (wiringEditorImage) wiringEditorImage.value = entry.img;
             if (wiringEditorCategory) {
                 populateTutorialCategorySelectOptions(wiringEditorCategory);
-                wiringEditorCategory.value = entry.category;
+                const cat = parseTutorialCategoryParts(entry.category, layoutId);
+                wiringEditorCategory.value = cat.major;
+                if (wiringEditorSubcategory) {
+                    wiringEditorSubcategory.value = cat.sub;
+                    wiringEditorSubcategory.disabled = !/^public_\d+$/.test(cat.major);
+                }
             }
             if (wiringEditorPageCount) wiringEditorPageCount.value = String(entry.desc.length || 1);
             tutorialEditorState.activePage = 0;
@@ -653,7 +921,12 @@
         if (wiringEditorImage) wiringEditorImage.value = current.img;
         if (wiringEditorCategory) {
             populateTutorialCategorySelectOptions(wiringEditorCategory);
-            wiringEditorCategory.value = current.category;
+            const cat = parseTutorialCategoryParts(current.category, currentLayoutId);
+            wiringEditorCategory.value = cat.major;
+            if (wiringEditorSubcategory) {
+                wiringEditorSubcategory.value = cat.sub;
+                wiringEditorSubcategory.disabled = !/^public_\d+$/.test(cat.major);
+            }
         }
         if (wiringEditorPageCount) wiringEditorPageCount.value = String(current.desc.length || 1);
         tutorialEditorState.activePage = 0;
@@ -762,36 +1035,72 @@
         document.getElementById(id).style.display = 'none';
     }
 
+    function getPlaybackAnswerCandidates(layoutId) {
+        const key = String(layoutId || '').trim();
+        const out = [];
+        const push = v => {
+            const s = String(v || '').trim();
+            if (!s || out.includes(s)) return;
+            out.push(s);
+        };
+        push(key);
+
+        if (/^t\d+$/i.test(key)) {
+            const parts = parseTutorialCategoryParts(TUTORIAL_CONFIG[key]?.category, key);
+            const m = String(parts.major || '').match(/^public_(\d+)$/);
+            if (m) push(m[1]);
+        } else if (/^\d+$/.test(key)) {
+            const selected = getSelectedPracticeTutorialTargetLayoutId(key);
+            if (selected) push(selected);
+            const n = parseInt(key, 10);
+            if (Number.isFinite(n) && n >= 1 && n <= 18) {
+                const major = `public_${n}`;
+                Object.keys(TUTORIAL_CONFIG || {})
+                    .filter(k => /^t\d+$/i.test(String(k)))
+                    .forEach(k => {
+                        const parts = parseTutorialCategoryParts(TUTORIAL_CONFIG[k]?.category, k);
+                        if (parts.major === major) push(k);
+                    });
+            }
+        }
+        return out;
+    }
+
     function getLayoutPlaybackEdges(layoutId) {
-        const ans = DB_ANSWERS[layoutId] || {};
-        if (Array.isArray(ans.tutorialFlow) && ans.tutorialFlow.length) {
-            return ans.tutorialFlow
-                .map(item => {
-                    if (Array.isArray(item) && item.length >= 2) {
-                        return [String(item[0]), String(item[1])];
-                    }
-                    if (item && typeof item === 'object' && item.from && item.to) {
-                        return [String(item.from), String(item.to)];
-                    }
-                    return null;
-                })
-                .filter(v => Array.isArray(v) && v[0] && v[1]);
-        }
+        const candidates = getPlaybackAnswerCandidates(layoutId);
+        for (const key of candidates) {
+            const ans = DB_ANSWERS[key] || {};
+            if (Array.isArray(ans.tutorialFlow) && ans.tutorialFlow.length) {
+                const edges = ans.tutorialFlow
+                    .map(item => {
+                        if (Array.isArray(item) && item.length >= 2) {
+                            return [String(item[0]), String(item[1])];
+                        }
+                        if (item && typeof item === 'object' && item.from && item.to) {
+                            return [String(item.from), String(item.to)];
+                        }
+                        return null;
+                    })
+                    .filter(v => Array.isArray(v) && v[0] && v[1]);
+                if (edges.length) return edges;
+            }
 
-        if (Array.isArray(ans.nodes) && ans.nodes.length) {
-            return ans.nodes.flatMap(node =>
-                (node.visuals || [])
+            if (Array.isArray(ans.nodes) && ans.nodes.length) {
+                const edges = ans.nodes.flatMap(node =>
+                    (node.visuals || [])
+                        .filter(v => Array.isArray(v) && v.length >= 2)
+                        .map(v => [String(v[0]), String(v[1])])
+                );
+                if (edges.length) return edges;
+            }
+
+            if (Array.isArray(ans.targets) && ans.targets.length) {
+                const edges = ans.targets
                     .filter(v => Array.isArray(v) && v.length >= 2)
-                    .map(v => [String(v[0]), String(v[1])])
-            );
+                    .map(v => [String(v[0]), String(v[1])]);
+                if (edges.length) return edges;
+            }
         }
-
-        if (Array.isArray(ans.targets) && ans.targets.length) {
-            return ans.targets
-                .filter(v => Array.isArray(v) && v.length >= 2)
-                .map(v => [String(v[0]), String(v[1])]);
-        }
-
         return [];
     }
 

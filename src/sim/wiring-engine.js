@@ -55,6 +55,49 @@
         return DB_ANSWERS[key];
     }
 
+    function resolveTutorialMirrorLayoutId(layoutId) {
+        const key = String(layoutId || '').trim();
+        if (!/^\d+$/.test(key)) return '';
+        const n = parseInt(key, 10);
+        if (!Number.isFinite(n) || n < 1 || n > 18) return '';
+        const major = `public_${n}`;
+        const matches = Object.keys(TUTORIAL_CONFIG || {})
+            .filter(k => /^t\d+$/i.test(String(k)))
+            .filter(k => {
+                const cat = String(TUTORIAL_CONFIG[k]?.category || '').trim();
+                return cat === major || cat.startsWith(`${major}:`);
+            })
+            .sort((a, b) => {
+                const na = parseInt(String(a).replace(/^t/i, ''), 10);
+                const nb = parseInt(String(b).replace(/^t/i, ''), 10);
+                return na - nb;
+            });
+        if (!matches.length) return '';
+        const sub1 = matches.find(k => String(TUTORIAL_CONFIG[k]?.category || '').trim() === `${major}:1`);
+        return sub1 || matches[0];
+    }
+
+    function resolveRememberedTutorialTarget(layoutId) {
+        const key = String(layoutId || '').trim();
+        if (!/^\d+$/.test(key)) return '';
+        if (typeof getSelectedPracticeTutorialTargetLayoutId === 'function') {
+            const selected = String(getSelectedPracticeTutorialTargetLayoutId(key) || '').trim();
+            if (/^t\d+$/i.test(selected)) return selected;
+        }
+        const n = parseInt(key, 10);
+        if (!Number.isFinite(n) || n < 1 || n > 18) return '';
+        const major = `public_${n}`;
+        try {
+            const remembered = String(localStorage.getItem(`tutorial_flow_target_${major}`) || '').trim();
+            if (!/^t\d+$/i.test(remembered)) return '';
+            const cat = String(TUTORIAL_CONFIG[remembered]?.category || '').trim();
+            if (cat === major || cat.startsWith(`${major}:`)) return remembered;
+            return '';
+        } catch (e) {
+            return '';
+        }
+    }
+
     function parseLooseJsonPayload(rawText) {
         const text = String(rawText || '').trim();
         if (!text) return null;
@@ -213,6 +256,7 @@
     function changeLayout() {
         if (typeof stopTutorialFlowPlayback === 'function') stopTutorialFlowPlayback();
         currentLayoutId = layoutSelect.value;
+        if (typeof refreshPracticeFlowTargetOptions === 'function') refreshPracticeFlowTargetOptions(currentLayoutId);
         currentLayoutNumSpan.innerText = currentLayoutId;
         const answer = ensureLayoutAnswer(currentLayoutId);
         const savedFilter = Array.isArray(answer?.componentFilter) ? answer.componentFilter : [];
@@ -831,7 +875,11 @@
 
     function saveTutorialFlowFromWires() {
         if (!isAdminMode) return alert("관리자 모드에서만 저장 가능합니다.");
-        const currentAnswers = ensureLayoutAnswer(currentLayoutId);
+        const currentKey = String(currentLayoutId || '');
+        const rememberedTarget = resolveRememberedTutorialTarget(currentKey);
+        const mirrorTarget = resolveTutorialMirrorLayoutId(currentKey);
+        const targetKey = rememberedTarget || mirrorTarget || currentKey;
+        const currentAnswers = ensureLayoutAnswer(targetKey);
         if (!currentAnswers) return alert("현재 도면 데이터가 없습니다.");
         if (wires.length === 0) return alert("저장할 선이 없습니다.");
 
@@ -856,8 +904,19 @@
         currentAnswers.targets = [];
         currentAnswers.commons = nodes.map(n => ({ ...n }));
         currentAnswers.tutorialFlow = flow;
+
+        const mirrorKey = currentKey;
+        if (mirrorKey && mirrorKey !== targetKey) {
+            const mirrorAnswers = ensureLayoutAnswer(mirrorKey);
+            if (mirrorAnswers) {
+                mirrorAnswers.nodes = nodes.map(n => ({ ...n, pins: Array.isArray(n.pins) ? n.pins.slice() : [], visuals: Array.isArray(n.visuals) ? n.visuals.map(v => Array.isArray(v) ? v.slice() : v) : [] }));
+                mirrorAnswers.targets = [];
+                mirrorAnswers.commons = mirrorAnswers.nodes.map(n => ({ ...n }));
+                mirrorAnswers.tutorialFlow = flow.map(v => ({ ...v }));
+            }
+        }
         persistAnswerData();
-        showSaveStatus(`${currentLayoutId}: 정답노드 ${nodes.length}개 + 재생순서 ${flow.length}개 저장됨`);
+        showSaveStatus(`${currentLayoutId} -> ${targetKey}: 정답노드 ${nodes.length}개 + 재생순서 ${flow.length}개 저장됨`);
     }
 
     function clearTutorialFlow() {

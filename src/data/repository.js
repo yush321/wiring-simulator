@@ -198,6 +198,15 @@
       "EOCR",
       "FUSE"
     ]
+  },
+    "t14": {
+    "title": "STEP.1 FUSE EOCR",
+    "desc": [
+      "<span style=\"color:#dc3545;\">퓨즈(+)</span>와 EOCR 전원단(<span style=\"color:#dc3545;\">6번</span>)과 A,B접점의 공통단(<span style=\"color:#dc3545;\">10번</span>)을 결선"
+    ],
+    "img": "./images/t06-01.png",
+    "targetIds": [],
+    "category": "public_6:1"
   }
 };
 
@@ -359,7 +368,13 @@
     })();
 
     function getPublicLayoutBase(layoutId) {
-        const key = String(layoutId || '');
+        const raw = String(layoutId || '').trim();
+        let key = raw;
+        if (!/^\d+$/.test(key)) {
+            const category = String(TUTORIAL_CONFIG?.[raw]?.category || '').trim();
+            const m = category.match(/^public_(\d+)/);
+            if (m) key = String(parseInt(m[1], 10));
+        }
         if (PUBLIC_LAYOUT_BY_ID[key]) return deepCloneLayout(PUBLIC_LAYOUT_BY_ID[key]);
         return deepCloneLayout(PUBLIC_LAYOUT_BASE);
     }
@@ -2210,6 +2225,68 @@ let DB_ANSWERS = {
       "TB_Bot_L",
       "TB_Bot_R"
     ]
+  },
+  "t14": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "FUSE_+2",
+          "EOCR_10",
+          "EOCR_6"
+        ],
+        "visuals": [
+          [
+            "FUSE_+2",
+            "EOCR_10",
+            0
+          ],
+          [
+            "EOCR_10",
+            "EOCR_6",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "FUSE_+2",
+          "EOCR_10",
+          "EOCR_6"
+        ],
+        "visuals": [
+          [
+            "FUSE_+2",
+            "EOCR_10",
+            0
+          ],
+          [
+            "EOCR_10",
+            "EOCR_6",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "FUSE_+2",
+        "to": "EOCR_10",
+        "offset": 0
+      },
+      {
+        "from": "EOCR_10",
+        "to": "EOCR_6",
+        "offset": 5
+      }
+    ],
+    "componentFilter": []
   }
 };
     // ==========================================
@@ -2225,6 +2302,8 @@ let DB_ANSWERS = {
     const exportArea = document.getElementById('exportArea');
     const layoutCategorySelect = document.getElementById('layoutCategorySelect');
     const layoutSelect = document.getElementById('layoutSelect');
+    const practiceFlowTargetWrap = document.getElementById('practiceFlowTargetWrap');
+    const practiceFlowTargetSelect = document.getElementById('practiceFlowTargetSelect');
     const currentLayoutNumSpan = document.getElementById('currentLayoutNum');
     
     const infoModal = document.getElementById('infoModal');
@@ -2273,6 +2352,7 @@ let DB_ANSWERS = {
     const wiringEditorTitle = document.getElementById('wiringEditorTitle');
     const wiringEditorImage = document.getElementById('wiringEditorImage');
     const wiringEditorCategory = document.getElementById('wiringEditorCategory');
+    const wiringEditorSubcategory = document.getElementById('wiringEditorSubcategory');
     const wiringEditorPageCount = document.getElementById('wiringEditorPageCount');
     const wiringEditorPageTabs = document.getElementById('wiringEditorPageTabs');
     const wiringEditorActivePageLabel = document.getElementById('wiringEditorActivePageLabel');
