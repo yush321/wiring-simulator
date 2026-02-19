@@ -207,7 +207,35 @@
     "img": "./images/t06-01.png",
     "targetIds": [],
     "category": "public_6:1"
+  },
+  "t15": {
+    "title": "STEP.2 EOCR SS X",
+    "desc": [
+      "EOCR B접점(<span style=\"color:#dc3545;\">4번</span>) 과 단자대 SS 공통단(<span style=\"color:#dc3545;\">N</span>), 릴레이의 A접점(<span style=\"color:#dc3545;\">3번</span>)"
+    ],
+    "img": "./images/t06-02.png",
+    "targetIds": [],
+    "category": "public_6:2"
+  },
+  "t16": {
+    "title": "STEP.3 SS FLS",
+    "desc": [
+      "SS(A), FLS 전원부(5번), A접점(3번)을 결선합니다"
+    ],
+    "img": "./images/t06-03.png",
+    "targetIds": [],
+    "category": "public_6:3"
+  },
+  "t17": {
+    "title": "STEP.4 EOCR X FLS YL BZ",
+    "desc": [
+      "EOCR 이상전류 발생시 YL점등과 부저를 작동시킵니다.<br>(YLBZ는 배관작업시 같은극끼리 결선, 제어판결선을 간결하게 합니다)<br><br>FLS와 단자대를 결선하고 <b>단자대 반대편에 수위감지선</b>을 달아줍니다.<br><br>(<span style=\"color:#dc3545;\">E3는 도면내 모든 접지선 4개를 연결한 마지막 지점이됩니다.</span>)"
+    ],
+    "img": "./images/t06-04.png",
+    "targetIds": [],
+    "category": "public_6:4"
   }
+
 };
 
 ///////////////////////////////////////////"결선 붙여넣기 끝"
@@ -2272,7 +2300,7 @@ let DB_ANSWERS = {
             5
           ]
         ]
-      }
+      },
     ],
     "tutorialFlow": [
       {
@@ -2287,7 +2315,385 @@ let DB_ANSWERS = {
       }
     ],
     "componentFilter": []
+  },
+    "t15": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "EOCR_4",
+          "X_3",
+          "TB_Top_R_19"
+        ],
+        "visuals": [
+          [
+            "EOCR_4",
+            "X_3",
+            0
+          ],
+          [
+            "X_3",
+            "TB_Top_R_19",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "EOCR_4",
+          "X_3",
+          "TB_Top_R_19"
+        ],
+        "visuals": [
+          [
+            "EOCR_4",
+            "X_3",
+            0
+          ],
+          [
+            "X_3",
+            "TB_Top_R_19",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "EOCR_4",
+        "to": "X_3",
+        "offset": 0
+      },
+      {
+        "from": "X_3",
+        "to": "TB_Top_R_19",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_L",
+      "TB_Top_R",
+      "EOCR",
+      "X"
+    ]
+  },
+  "t16": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_R_20",
+          "FLS_3",
+          "FLS_5"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_20",
+            "FLS_3",
+            0
+          ],
+          [
+            "FLS_3",
+            "FLS_5",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_R_20",
+          "FLS_3",
+          "FLS_5"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_20",
+            "FLS_3",
+            0
+          ],
+          [
+            "FLS_3",
+            "FLS_5",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "TB_Top_R_20",
+        "to": "FLS_3",
+        "offset": 0
+      },
+      {
+        "from": "FLS_3",
+        "to": "FLS_5",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_L",
+      "TB_Top_R",
+      "FLS"
+    ]
+  },
+    "t17": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "EOCR_5",
+          "TB_Top_L_1"
+        ],
+        "visuals": [
+          [
+            "EOCR_5",
+            "TB_Top_L_1",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "FLS_4",
+          "X_2"
+        ],
+        "visuals": [
+          [
+            "FLS_4",
+            "X_2",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "FLS_7",
+          "TB_Bot_R_14"
+        ],
+        "visuals": [
+          [
+            "FLS_7",
+            "TB_Bot_R_14",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "4",
+        "color": "#8B4513",
+        "pins": [
+          "FLS_8",
+          "TB_Bot_R_15"
+        ],
+        "visuals": [
+          [
+            "FLS_8",
+            "TB_Bot_R_15",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "5",
+        "color": "#6f42c1",
+        "pins": [
+          "FLS_1",
+          "TB_Bot_R_16",
+          "TB_Bot_R_12",
+          "TB_Bot_R_20",
+          "TB_Top_R_12"
+        ],
+        "visuals": [
+          [
+            "FLS_1",
+            "TB_Bot_R_16",
+            -5
+          ],
+          [
+            "TB_Top_R_12",
+            "TB_Bot_R_20",
+            0
+          ],
+          [
+            "TB_Bot_R_20",
+            "TB_Bot_R_12",
+            -10
+          ],
+          [
+            "TB_Bot_R_12",
+            "TB_Bot_R_16",
+            -10
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "EOCR_5",
+          "TB_Top_L_1"
+        ],
+        "visuals": [
+          [
+            "EOCR_5",
+            "TB_Top_L_1",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "FLS_4",
+          "X_2"
+        ],
+        "visuals": [
+          [
+            "FLS_4",
+            "X_2",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "FLS_7",
+          "TB_Bot_R_14"
+        ],
+        "visuals": [
+          [
+            "FLS_7",
+            "TB_Bot_R_14",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "4",
+        "color": "#8B4513",
+        "pins": [
+          "FLS_8",
+          "TB_Bot_R_15"
+        ],
+        "visuals": [
+          [
+            "FLS_8",
+            "TB_Bot_R_15",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "5",
+        "color": "#6f42c1",
+        "pins": [
+          "FLS_1",
+          "TB_Bot_R_16",
+          "TB_Bot_R_12",
+          "TB_Bot_R_20",
+          "TB_Top_R_12"
+        ],
+        "visuals": [
+          [
+            "FLS_1",
+            "TB_Bot_R_16",
+            -5
+          ],
+          [
+            "TB_Top_R_12",
+            "TB_Bot_R_20",
+            0
+          ],
+          [
+            "TB_Bot_R_20",
+            "TB_Bot_R_12",
+            -10
+          ],
+          [
+            "TB_Bot_R_12",
+            "TB_Bot_R_16",
+            -10
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "EOCR_5",
+        "to": "TB_Top_L_1",
+        "offset": 0
+      },
+      {
+        "from": "FLS_4",
+        "to": "X_2",
+        "offset": 0
+      },
+      {
+        "from": "FLS_7",
+        "to": "TB_Bot_R_14",
+        "offset": 0
+      },
+      {
+        "from": "FLS_8",
+        "to": "TB_Bot_R_15",
+        "offset": 5
+      },
+      {
+        "from": "FLS_1",
+        "to": "TB_Bot_R_16",
+        "offset": -5
+      },
+      {
+        "from": "TB_Top_R_12",
+        "to": "TB_Bot_R_20",
+        "offset": 0
+      },
+      {
+        "from": "TB_Bot_R_20",
+        "to": "TB_Bot_R_12",
+        "offset": -10
+      },
+      {
+        "from": "TB_Bot_R_12",
+        "to": "TB_Bot_R_16",
+        "offset": -10
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_L",
+      "TB_Top_R",
+      "EOCR",
+      "X",
+      "FLS",
+      "TB_Bot_L",
+      "TB_Bot_R"
+    ]
   }
+  
 };
     // ==========================================
     // 3. 변수 및 초기화
