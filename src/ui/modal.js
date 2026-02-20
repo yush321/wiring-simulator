@@ -544,6 +544,25 @@
         }
     }
 
+    function sanitizeTutorialStoragePatch(raw) {
+        const src = (raw && typeof raw === 'object') ? raw : {};
+        const out = {};
+
+        if (typeof src.title === 'string' && src.title.trim()) out.title = src.title;
+        if (typeof src.img === 'string' && src.img.trim()) out.img = src.img;
+        if (typeof src.category === 'string' && src.category.trim()) out.category = src.category;
+        if (Array.isArray(src.targetIds)) out.targetIds = src.targetIds.slice();
+
+        if (Array.isArray(src.desc)) {
+            const pages = src.desc.map(v => String(v ?? ''));
+            if (pages.some(v => v.trim().length > 0)) out.desc = pages;
+        } else if (typeof src.desc === 'string' && src.desc.trim()) {
+            out.desc = [src.desc];
+        }
+
+        return out;
+    }
+
     function loadTutorialConfigFromStorage() {
         try {
             const raw = localStorage.getItem(TUTORIAL_STORAGE_KEY);
@@ -551,9 +570,10 @@
             const parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return;
             Object.keys(parsed).forEach(layoutId => {
+                const patch = sanitizeTutorialStoragePatch(parsed[layoutId]);
                 const merged = cloneTutorialEntry({
                     ...(TUTORIAL_CONFIG[layoutId] || {}),
-                    ...(parsed[layoutId] || {})
+                    ...patch
                 }, layoutId);
                 const baseTargetIds = Array.isArray(TUTORIAL_CONFIG[layoutId]?.targetIds)
                     ? TUTORIAL_CONFIG[layoutId].targetIds.slice()

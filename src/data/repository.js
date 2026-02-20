@@ -234,6 +234,51 @@
     "img": "./images/t06-04.png",
     "targetIds": [],
     "category": "public_6:4"
+  },
+  "t18": {
+    "title": "STEP.5 PB1,X,T,FR",
+    "desc": [
+      "<span style=\"color:#dc3545;\">공통단자</span>를 연습하기 좋은 도면입니다.<br><br>회로를 형광펜으로 그리는 중 <span style=\"color:#dc3545;\">같은부품이 2개</span> 존재한다면 공통단자를 찾아보세요."
+    ],
+    "img": "./images/t06-05.png",
+    "targetIds": [],
+    "category": "public_6:5"
+  },
+  "t19": {
+    "title": "STEP.6 FR, MC1, RL",
+    "desc": [
+      "FR B접점(5번), MC1 전원단(6번), RL(+)를 결선합니다.<br><br>동작시험시 FR 점등에 따라 간헐적으로 MC1과 RL을 동작시킵니다."
+    ],
+    "img": "./images/t06-06.png",
+    "targetIds": [],
+    "category": "public_6:6"
+  },
+  "t20": {
+    "title": "STEP.7 FR, T, MC2, Gl",
+    "desc": [
+      "한시동작 순시복귀B(일정시간뒤 동작 타이머 소자시 즉시복귀)와<br>FR A접(6번), MC2(6번), GL(+)를 결선합니다.<br><br>동작시험시 타이머B접점으로 MC2와 GL은 즉시 동작하고 <br><br>일정시간뒤 타이머는 개방되어 FR이 간헐적으로 단락시에만 MC2,GL을 동작시킵니다."
+    ],
+    "img": "./images/t06-07.png",
+    "targetIds": [],
+    "category": "public_6:7"
+  },
+  "t21": {
+    "title": "STEP.8 SS,PB0,1, X, T, FR",
+    "desc": [
+      "도면우측 자잘한 결선을 펜으로 표시해가며 꼼꼼히 결선합니다."
+    ],
+    "img": "./images/t06-08.png",
+    "targetIds": [],
+    "category": "public_6:8"
+  },
+  "t22": {
+    "title": "STEP.9 Final FUSE(-)",
+    "desc": [
+      "퓨즈(-)에서 나온 전선이 가급적 최단길이로 연결되도록 결선합니다.<br>(결선후 벨테스터로 퓨즈(-)와 부품하나씩 체크하세요)"
+    ],
+    "img": "./images/t06-09.png",
+    "targetIds": [],
+    "category": "public_6:9"
   }
 
 };
@@ -2689,6 +2734,414 @@ let DB_ANSWERS = {
       "EOCR",
       "X",
       "FLS",
+      "TB_Bot_L",
+      "TB_Bot_R"
+    ]
+  },
+  "t18": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Bot_L_1",
+          "T_8",
+          "T_3",
+          "X_1",
+          "FR_8"
+        ],
+        "visuals": [
+          [
+            "TB_Bot_L_1",
+            "T_8",
+            0
+          ],
+          [
+            "T_8",
+            "T_3",
+            5
+          ],
+          [
+            "T_3",
+            "X_1",
+            5
+          ],
+          [
+            "X_1",
+            "FR_8",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Bot_L_1",
+          "T_8",
+          "T_3",
+          "X_1",
+          "FR_8"
+        ],
+        "visuals": [
+          [
+            "TB_Bot_L_1",
+            "T_8",
+            0
+          ],
+          [
+            "T_8",
+            "T_3",
+            5
+          ],
+          [
+            "T_3",
+            "X_1",
+            5
+          ],
+          [
+            "X_1",
+            "FR_8",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "TB_Bot_L_1",
+        "to": "T_8",
+        "offset": 0
+      },
+      {
+        "from": "T_8",
+        "to": "T_3",
+        "offset": 5
+      },
+      {
+        "from": "T_3",
+        "to": "X_1",
+        "offset": 5
+      },
+      {
+        "from": "X_1",
+        "to": "FR_8",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "X",
+      "FR",
+      "T",
+      "TB_Bot_L"
+    ]
+  },
+  "t19": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_R_14",
+          "FR_5",
+          "MC1_6"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_14",
+            "FR_5",
+            0
+          ],
+          [
+            "FR_5",
+            "MC1_6",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_R_14",
+          "FR_5",
+          "MC1_6"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_14",
+            "FR_5",
+            0
+          ],
+          [
+            "FR_5",
+            "MC1_6",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "TB_Top_R_14",
+        "to": "FR_5",
+        "offset": 0
+      },
+      {
+        "from": "FR_5",
+        "to": "MC1_6",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_R",
+      "FR",
+      "MC1"
+    ]
+  },
+  "t20": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "T_5",
+          "MC2_6",
+          "FR_6",
+          "TB_Top_R_16"
+        ],
+        "visuals": [
+          [
+            "T_5",
+            "MC2_6",
+            0
+          ],
+          [
+            "MC2_6",
+            "FR_6",
+            5
+          ],
+          [
+            "FR_6",
+            "TB_Top_R_16",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "T_5",
+          "MC2_6",
+          "FR_6",
+          "TB_Top_R_16"
+        ],
+        "visuals": [
+          [
+            "T_5",
+            "MC2_6",
+            0
+          ],
+          [
+            "MC2_6",
+            "FR_6",
+            5
+          ],
+          [
+            "FR_6",
+            "TB_Top_R_16",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "T_5",
+        "to": "MC2_6",
+        "offset": 0
+      },
+      {
+        "from": "MC2_6",
+        "to": "FR_6",
+        "offset": 5
+      },
+      {
+        "from": "FR_6",
+        "to": "TB_Top_R_16",
+        "offset": 5
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_R",
+      "FR",
+      "T",
+      "MC2"
+    ]
+  },
+  "t21": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_R_18",
+          "TB_Bot_L_3"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_18",
+            "TB_Bot_L_3",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "TB_Bot_L_2",
+          "T_1"
+        ],
+        "visuals": [
+          [
+            "TB_Bot_L_2",
+            "T_1",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "X_4",
+          "T_2"
+        ],
+        "visuals": [
+          [
+            "X_4",
+            "T_2",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "4",
+        "color": "#8B4513",
+        "pins": [
+          "T_6",
+          "FR_2"
+        ],
+        "visuals": [
+          [
+            "T_6",
+            "FR_2",
+            0
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "TB_Top_R_18",
+          "TB_Bot_L_3"
+        ],
+        "visuals": [
+          [
+            "TB_Top_R_18",
+            "TB_Bot_L_3",
+            0
+          ]
+        ]
+      },
+      {
+        "name": "2",
+        "color": "#28a745",
+        "pins": [
+          "TB_Bot_L_2",
+          "T_1"
+        ],
+        "visuals": [
+          [
+            "TB_Bot_L_2",
+            "T_1",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "3",
+        "color": "#fd7e14",
+        "pins": [
+          "X_4",
+          "T_2"
+        ],
+        "visuals": [
+          [
+            "X_4",
+            "T_2",
+            5
+          ]
+        ]
+      },
+      {
+        "name": "4",
+        "color": "#8B4513",
+        "pins": [
+          "T_6",
+          "FR_2"
+        ],
+        "visuals": [
+          [
+            "T_6",
+            "FR_2",
+            0
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "TB_Top_R_18",
+        "to": "TB_Bot_L_3",
+        "offset": 0
+      },
+      {
+        "from": "TB_Bot_L_2",
+        "to": "T_1",
+        "offset": 5
+      },
+      {
+        "from": "X_4",
+        "to": "T_2",
+        "offset": 5
+      },
+      {
+        "from": "T_6",
+        "to": "FR_2",
+        "offset": 0
+      }
+    ],
+    "componentFilter": [
+      "TB_Top_R",
+      "X",
+      "FR",
+      "T",
       "TB_Bot_L",
       "TB_Bot_R"
     ]
