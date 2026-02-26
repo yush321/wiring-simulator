@@ -3145,6 +3145,187 @@ let DB_ANSWERS = {
       "TB_Bot_L",
       "TB_Bot_R"
     ]
+  },
+  "t22": {
+    "targets": [],
+    "commons": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "FUSE_-2",
+          "EOCR_12",
+          "TB_Top_L_2",
+          "TB_Top_R_15",
+          "FR_7",
+          "X_7",
+          "FLS_6",
+          "T_7",
+          "MC1_12",
+          "MC2_12"
+        ],
+        "visuals": [
+          [
+            "FUSE_-2",
+            "EOCR_12",
+            0
+          ],
+          [
+            "EOCR_12",
+            "TB_Top_L_2",
+            5
+          ],
+          [
+            "TB_Top_L_2",
+            "TB_Top_R_15",
+            5
+          ],
+          [
+            "TB_Top_R_15",
+            "FR_7",
+            5
+          ],
+          [
+            "FR_7",
+            "X_7",
+            5
+          ],
+          [
+            "X_7",
+            "FLS_6",
+            10
+          ],
+          [
+            "FLS_6",
+            "T_7",
+            -5
+          ],
+          [
+            "T_7",
+            "MC1_12",
+            5
+          ],
+          [
+            "MC1_12",
+            "MC2_12",
+            5
+          ]
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "1",
+        "color": "#007bff",
+        "pins": [
+          "FUSE_-2",
+          "EOCR_12",
+          "TB_Top_L_2",
+          "TB_Top_R_15",
+          "FR_7",
+          "X_7",
+          "FLS_6",
+          "T_7",
+          "MC1_12",
+          "MC2_12"
+        ],
+        "visuals": [
+          [
+            "FUSE_-2",
+            "EOCR_12",
+            0
+          ],
+          [
+            "EOCR_12",
+            "TB_Top_L_2",
+            5
+          ],
+          [
+            "TB_Top_L_2",
+            "TB_Top_R_15",
+            5
+          ],
+          [
+            "TB_Top_R_15",
+            "FR_7",
+            5
+          ],
+          [
+            "FR_7",
+            "X_7",
+            5
+          ],
+          [
+            "X_7",
+            "FLS_6",
+            10
+          ],
+          [
+            "FLS_6",
+            "T_7",
+            -5
+          ],
+          [
+            "T_7",
+            "MC1_12",
+            5
+          ],
+          [
+            "MC1_12",
+            "MC2_12",
+            5
+          ]
+        ]
+      }
+    ],
+    "tutorialFlow": [
+      {
+        "from": "FUSE_-2",
+        "to": "EOCR_12",
+        "offset": 0
+      },
+      {
+        "from": "EOCR_12",
+        "to": "TB_Top_L_2",
+        "offset": 5
+      },
+      {
+        "from": "TB_Top_L_2",
+        "to": "TB_Top_R_15",
+        "offset": 5
+      },
+      {
+        "from": "TB_Top_R_15",
+        "to": "FR_7",
+        "offset": 5
+      },
+      {
+        "from": "FR_7",
+        "to": "X_7",
+        "offset": 5
+      },
+      {
+        "from": "X_7",
+        "to": "FLS_6",
+        "offset": 10
+      },
+      {
+        "from": "FLS_6",
+        "to": "T_7",
+        "offset": -5
+      },
+      {
+        "from": "T_7",
+        "to": "MC1_12",
+        "offset": 5
+      },
+      {
+        "from": "MC1_12",
+        "to": "MC2_12",
+        "offset": 5
+      }
+    ],
+    "componentFilter": []
   }
   
 };
