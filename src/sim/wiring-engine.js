@@ -228,6 +228,7 @@
         }
     }
     function init() {
+        if (typeof initTopToolbarUI === 'function') initTopToolbarUI();
         if (typeof rebuildLayoutSelectOptions === 'function') {
             rebuildLayoutSelectOptions(currentLayoutId || 't1');
         } else {
@@ -248,9 +249,14 @@
 
         document.addEventListener('keydown', handleKeyInput);
         canvas.addEventListener('mousedown', (e) => handleInput(e.clientX, e.clientY));
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+        canvas.addEventListener('touchstart', (e) => {
+            if (!e.touches || e.touches.length !== 1) return;
+            e.preventDefault();
+            handleInput(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
         if (shouldLoadAnswerStorageOverride()) loadAnswerDataFromStorage();
         changeLayout();
+        if (typeof syncWiringCategoryPresetButtons === 'function') syncWiringCategoryPresetButtons();
     }
 
     function changeLayout() {
@@ -319,6 +325,7 @@
     }
 
     function handleKeyInput(e) {
+        if (isNumberingMode) return;
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undoLastAction(); return; }
         // T/F shortcut removed. Admin saving is now done by one explicit button.
     }

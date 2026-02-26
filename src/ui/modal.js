@@ -424,13 +424,17 @@
 
     function ensureLayoutCategoryOptions(selectedCategory) {
         if (!layoutCategorySelect) return;
-        const keep = String(selectedCategory || layoutCategorySelect.value || 'main_wiring');
-        const choices = [{ id: 'main_wiring', label: '주결선' }];
-        for (let i = 1; i <= 18; i += 1) {
-            choices.push({ id: `public_${i}`, label: `기초튜토리얼 공개도면 ${i}` });
-        }
+        const keep = String(selectedCategory || layoutCategorySelect.value || 'practice_all');
+        const choices = [
+            { id: 'practice_all', label: '공개도면 전체' }
+        ];
         for (let i = 1; i <= 18; i += 1) {
             choices.push({ id: `practice_${i}`, label: `공개도면 ${i}` });
+        }
+        choices.push({ id: 'main_wiring', label: '주결선' });
+        choices.push({ id: 'public_all', label: '보조결선 전체' });
+        for (let i = 1; i <= 18; i += 1) {
+            choices.push({ id: `public_${i}`, label: `기초튜토리얼 공개도면 ${i}` });
         }
         layoutCategorySelect.innerHTML = choices
             .map(item => `<option value="${item.id}">${item.label}</option>`)
@@ -449,17 +453,18 @@
         const currentCategory = String(layoutCategorySelect?.value || activeCategory || 'main_wiring');
         layoutSelect.innerHTML = '';
 
-        if (currentCategory === 'main_wiring' || /^public_\d+$/.test(currentCategory)) {
+        if (currentCategory === 'main_wiring' || currentCategory === 'public_all' || /^public_\d+$/.test(currentCategory)) {
             const entries = Object.keys(TUTORIAL_CONFIG || {})
                 .map(layoutId => {
                     const entry = cloneTutorialEntry(TUTORIAL_CONFIG[layoutId], layoutId);
                     const category = parseTutorialCategoryParts(entry.category, layoutId).major;
                     return { layoutId, entry, category };
                 })
-                .filter(item => currentCategory === 'main_wiring'
-                    ? item.category === 'main_wiring'
-                    : item.category === currentCategory
-                )
+                .filter(item => {
+                    if (currentCategory === 'main_wiring') return item.category === 'main_wiring';
+                    if (currentCategory === 'public_all') return /^public_\d+$/.test(item.category);
+                    return item.category === currentCategory;
+                })
                 .sort((a, b) => {
                     const ma = String(a.category || '').match(/^public_(\d+)$/);
                     const mb = String(b.category || '').match(/^public_(\d+)$/);
@@ -480,7 +485,7 @@
             });
         } else {
             const m = currentCategory.match(/^practice_(\d+)$/);
-            const only = m ? parseInt(m[1], 10) : null;
+            const only = currentCategory === 'practice_all' ? null : (m ? parseInt(m[1], 10) : null);
             for (let i = 1; i <= 18; i += 1) {
                 if (only !== null && i !== only) continue;
                 const opt = document.createElement('option');
@@ -500,7 +505,168 @@
 
     function onLayoutCategoryChange() {
         rebuildLayoutSelectOptions();
+        if (typeof syncWiringCategoryPresetButtons === 'function') syncWiringCategoryPresetButtons();
         if (layoutSelect && layoutSelect.value && typeof changeLayout === 'function') changeLayout();
+    }
+
+    function getWiringCategoryPresetByCategoryId(categoryId) {
+        const key = String(categoryId || '').trim();
+        if (key === 'main_wiring') return 'main';
+        if (key === 'practice_all' || /^practice_\d+$/.test(key)) return 'public_exam';
+        return 'aux';
+    }
+
+    function pickCategoryValueByPreset(preset) {
+        const raw = String(preset || '').trim();
+        const options = Array.from(layoutCategorySelect?.options || []).map(opt => String(opt.value));
+        const current = String(layoutCategorySelect?.value || '');
+        const selectedLayout = String(layoutSelect?.value || currentLayoutId || '').trim();
+        let selectedPublicIndex = null;
+        if (/^\d+$/.test(selectedLayout)) {
+            const n = parseInt(selectedLayout, 10);
+            if (Number.isFinite(n) && n >= 1 && n <= 18) selectedPublicIndex = n;
+        } else if (/^t\d+$/i.test(selectedLayout)) {
+            const major = getPublicMajorFromLayout(selectedLayout);
+            const m = String(major || '').match(/^public_(\d+)$/);
+            if (m) {
+                const n = parseInt(m[1], 10);
+                if (Number.isFinite(n) && n >= 1 && n <= 18) selectedPublicIndex = n;
+            }
+        }
+        if (!options.length) return '';
+        if (raw === 'main') return options.includes('main_wiring') ? 'main_wiring' : options[0];
+        if (raw === 'public_exam') {
+            if (selectedPublicIndex !== null && options.includes(`practice_${selectedPublicIndex}`)) {
+                return `practice_${selectedPublicIndex}`;
+            }
+            const mFromAux = current.match(/^public_(\d+)$/);
+            if (mFromAux && options.includes(`practice_${mFromAux[1]}`)) return `practice_${mFromAux[1]}`;
+            if (/^practice_\d+$/.test(current) && options.includes(current)) return current;
+            if (options.includes('practice_all')) return 'practice_all';
+            const found = options.find(v => /^practice_\d+$/.test(v));
+            return found || options[0];
+        }
+        if (selectedPublicIndex !== null && options.includes(`public_${selectedPublicIndex}`)) {
+            return `public_${selectedPublicIndex}`;
+        }
+        const mFromPractice = current.match(/^practice_(\d+)$/);
+        if (mFromPractice && options.includes(`public_${mFromPractice[1]}`)) return `public_${mFromPractice[1]}`;
+        if (/^public_\d+$/.test(current) && options.includes(current)) return current;
+        if (options.includes('public_all')) return 'public_all';
+        const found = options.find(v => /^public_\d+$/.test(v));
+        return found || options[0];
+    }
+
+    function syncWiringCategoryPresetButtons() {
+        const preset = getWiringCategoryPresetByCategoryId(layoutCategorySelect?.value);
+        const map = [
+            ['btnWiringMain', 'main'],
+            ['btnWiringAux', 'aux'],
+            ['btnWiringPublic', 'public_exam']
+        ];
+        map.forEach(([id, key]) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            if (preset === key) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+
+    function setWiringCategoryPreset(preset) {
+        if (!layoutCategorySelect) return;
+        ensureLayoutCategoryOptions(layoutCategorySelect.value || 'main_wiring');
+        const target = pickCategoryValueByPreset(preset);
+        if (!target) return;
+        layoutCategorySelect.value = target;
+        onLayoutCategoryChange();
+        syncWiringCategoryPresetButtons();
+    }
+
+    function setPrimaryMode(mode) {
+        const next = String(mode || '').trim() === 'numbering' ? 'numbering' : 'wiring';
+        const wiringWrap = document.getElementById('wiringControls');
+        const numberingWrap = document.getElementById('numberingControls');
+        const btnWiring = document.getElementById('btnPrimaryWiring');
+        const btnNumberingPrimary = document.getElementById('btnPrimaryNumbering');
+
+        if (wiringWrap) wiringWrap.style.display = next === 'wiring' ? 'flex' : 'none';
+        if (numberingWrap) numberingWrap.style.display = next === 'numbering' ? 'flex' : 'none';
+        if (btnWiring) btnWiring.classList.toggle('active', next === 'wiring');
+        if (btnNumberingPrimary) btnNumberingPrimary.classList.toggle('active', next === 'numbering');
+
+        if (next === 'numbering') {
+            if (!isNumberingMode && typeof toggleNumberingMode === 'function') toggleNumberingMode();
+        } else if (isNumberingMode && typeof toggleNumberingMode === 'function') {
+            toggleNumberingMode();
+        }
+    }
+
+    function initTopToolbarUI() {
+        const root = document.querySelector('.controls');
+        if (!root || root.dataset.uiEnhanced === '1') return;
+
+        const infoBtn = root.querySelector('.btn-info');
+        const undoBtn = root.querySelector('.btn-undo');
+        const resetBtn = root.querySelector('.btn-reset');
+        const adminBtn = root.querySelector('.btn-admin');
+        const checkBtn = document.getElementById('btnCheck');
+        const numberingBtn = document.getElementById('btnNumbering');
+        if (!layoutCategorySelect || !layoutSelect || !infoBtn || !undoBtn || !resetBtn || !adminBtn || !checkBtn || !numberingBtn) return;
+
+        root.classList.add('app-toolbar');
+        root.innerHTML = '';
+
+        const primaryTabs = document.createElement('div');
+        primaryTabs.className = 'primary-tabs';
+        primaryTabs.innerHTML = `
+            <button id="btnPrimaryWiring" class="tab-btn active" onclick="setPrimaryMode('wiring')">결선</button>
+            <button id="btnPrimaryNumbering" class="tab-btn numbering" onclick="setPrimaryMode('numbering')">넘버링</button>
+        `;
+
+        const wiringControls = document.createElement('div');
+        wiringControls.id = 'wiringControls';
+        wiringControls.className = 'toolbar-row';
+        wiringControls.innerHTML = `
+            <div class="wiring-segmented">
+                <button id="btnWiringPublic" class="seg-btn" onclick="setWiringCategoryPreset('public_exam')">공개도면</button>
+                <button id="btnWiringMain" class="seg-btn active" onclick="setWiringCategoryPreset('main')">주결선</button>
+                <button id="btnWiringAux" class="seg-btn" onclick="setWiringCategoryPreset('aux')">보조결선</button>
+            </div>
+        `;
+        layoutCategorySelect.classList.add('hidden-native');
+        wiringControls.appendChild(layoutCategorySelect);
+        wiringControls.appendChild(layoutSelect);
+        infoBtn.textContent = '설명';
+        undoBtn.textContent = '되돌리기';
+        wiringControls.appendChild(infoBtn);
+        wiringControls.appendChild(undoBtn);
+        wiringControls.appendChild(resetBtn);
+        wiringControls.appendChild(checkBtn);
+
+        const numberingControls = document.createElement('div');
+        numberingControls.id = 'numberingControls';
+        numberingControls.className = 'toolbar-row';
+        numberingControls.style.display = 'none';
+        numberingBtn.textContent = '넘버링 시작';
+        const hint = document.createElement('span');
+        hint.className = 'toolbar-hint';
+        hint.textContent = '넘버링은 결선 튜토리얼과 분리된 전용 학습 모드입니다.';
+        numberingControls.appendChild(numberingBtn);
+        numberingControls.appendChild(hint);
+
+        const adminRow = document.createElement('div');
+        adminRow.className = 'toolbar-row';
+        adminBtn.textContent = '관리자';
+        adminRow.appendChild(adminBtn);
+
+        root.appendChild(primaryTabs);
+        root.appendChild(wiringControls);
+        root.appendChild(numberingControls);
+        root.appendChild(adminRow);
+        root.dataset.uiEnhanced = '1';
+
+        syncWiringCategoryPresetButtons();
+        setPrimaryMode(isNumberingMode ? 'numbering' : 'wiring');
     }
 
     function cloneTutorialEntry(raw, layoutId) {
@@ -1321,6 +1487,48 @@
         return shuffleArray(Array.from(pick)).slice(0, 6);
     }
 
+    const DEFAULT_NUMBERING_IMAGE = './images/images1.png';
+    const NUMBERING_TUTORIAL_LAYOUT_KEY = 'numbering_tutorial_layout_v1';
+
+    function getNumberingScenarioKeys() {
+        return Object.keys(NUMBERING_SCENARIOS || {})
+            .filter(key => {
+                const s = NUMBERING_SCENARIOS[key];
+                return !!(s && Array.isArray(s.stages) && s.stages.length > 0);
+            })
+            .sort((a, b) => String(a).localeCompare(String(b), 'ko'));
+    }
+
+    function resolveNumberingLayoutId() {
+        const keys = getNumberingScenarioKeys();
+        if (!keys.length) return '';
+        let saved = '';
+        try {
+            saved = String(localStorage.getItem(NUMBERING_TUTORIAL_LAYOUT_KEY) || '').trim();
+        } catch (e) {
+            saved = '';
+        }
+        if (saved && keys.includes(saved)) return saved;
+        if (keys.includes('t1')) return 't1';
+        return keys[0];
+    }
+
+    function rememberNumberingLayoutId(layoutId) {
+        const key = String(layoutId || '').trim();
+        if (!key) return;
+        try {
+            localStorage.setItem(NUMBERING_TUTORIAL_LAYOUT_KEY, key);
+        } catch (e) {
+            // ignore storage errors
+        }
+    }
+
+    function getNumberingBaseImage(layoutId) {
+        const key = String(layoutId || '').trim();
+        const candidate = String(NUMBERING_SCENARIOS?.[key]?.image || '').trim();
+        return candidate || DEFAULT_NUMBERING_IMAGE;
+    }
+
     function getScenarioForLayout(layoutId) {
         const s = NUMBERING_SCENARIOS[layoutId];
         if (!s || !Array.isArray(s.stages)) return null;
@@ -1329,7 +1537,7 @@
 
     function createFallbackStages() {
         const pinList = getTutorialPinList();
-        const targetImage = TUTORIAL_CONFIG[currentLayoutId]?.img || './images/images1.png';
+        const targetImage = getNumberingBaseImage(currentLayoutId);
 
         return currentComponents
             .filter(comp => !comp.id.startsWith('TB_'))
@@ -1405,16 +1613,13 @@
         }).filter(stage => stage.questions.length > 0);
     }
 
-    function createNumberingStages() {
-        const scenario = getScenarioForLayout(currentLayoutId);
-        if (scenario) {
-            const fallbackImage = scenario.image || TUTORIAL_CONFIG[currentLayoutId]?.img || './images/images1.png';
-            // If an authored scenario exists, use only authored questions.
-            // Do not silently fallback to auto-generated questions, because it causes
-            // answer/area mismatch against admin-authored intent.
-            return normalizeScenarioStages(scenario.stages, fallbackImage);
-        }
-        return createFallbackStages();
+    function createNumberingStages(layoutId) {
+        const scenario = getScenarioForLayout(layoutId);
+        if (!scenario) return [];
+        const fallbackImage = scenario.image || getNumberingBaseImage(layoutId);
+        // Strict isolation: numbering runs only from authored numbering scenario data.
+        // Do not derive stages from current tutorial components/pins.
+        return normalizeScenarioStages(scenario.stages, fallbackImage);
     }
 
     function getCurrentNumberingQuestion() {
@@ -1972,9 +2177,13 @@
         numberingGuideText.textContent = stage.guide;
         numberingStageInfo.textContent = `단계 ${numberingSession.stageIndex + 1}/${numberingSession.stages.length} · ${stage.title}`;
 
-        numberingImage.src = stage.image;
+        const stageImage = String(stage.image || getNumberingBaseImage(numberingSession?.layoutId));
+        numberingImage.src = stageImage;
         numberingImage.alt = `${stage.componentId} 넘버링 참고 이미지`;
         numberingImage.onload = () => {
+            if (!numberingSession) return;
+            const active = numberingSession.stages[numberingSession.stageIndex];
+            if (active !== stage) return;
             applyNumberingFocusRect(stage);
             renderNumberingAnswerOverlay(stage, progress);
         };
@@ -2148,9 +2357,15 @@
     }
 
     function openNumberingModal() {
-        const stages = createNumberingStages();
+        const numberingLayoutId = resolveNumberingLayoutId();
+        const stages = createNumberingStages(numberingLayoutId);
+        numberingAnswers = {};
+        clearNumberingAnswerOverlay();
+        if (numberingReverseState) numberingReverseState.textContent = '';
+        hideNumberingFocusRect();
 
         numberingSession = {
+            layoutId: numberingLayoutId,
             stages,
             stageIndex: 0,
             totalQuestions: stages.reduce((sum, stage) => sum + stage.questions.length, 0),
@@ -2163,7 +2378,7 @@
         if (!stages.length) {
             numberingGuideText.textContent = '현재 화면에서 학습할 넘버링 대상이 없습니다.';
             numberingStageInfo.textContent = '단계 없음';
-            numberingQuestion.textContent = '튜토리얼 도면을 선택한 뒤 다시 시도하세요.';
+            numberingQuestion.textContent = '넘버링 시나리오 데이터가 비어 있습니다.';
             numberingChoices.innerHTML = '';
             numberingInputWrap.style.display = 'none';
             numberingResult.textContent = '넘버링 시작 불가';
@@ -2173,6 +2388,7 @@
             return;
         }
 
+        rememberNumberingLayoutId(numberingLayoutId);
         numberingResult.textContent = '핀 번호를 연속 입력하세요. 단계 설정(역순 허용/채점 방향)에 따라 자동 판별됩니다.';
         renderNumberingStep();
         numberingModal.style.display = 'flex';
@@ -2231,6 +2447,10 @@
         hideNumberingFocusRect();
         clearNumberingAnswerOverlay();
         if (numberingReverseState) numberingReverseState.textContent = '';
+        if (numberingImage) {
+            numberingImage.onload = null;
+            numberingImage.src = getNumberingBaseImage(numberingSession?.layoutId || resolveNumberingLayoutId());
+        }
 
         if (turnOff && isNumberingMode) {
             isNumberingMode = false;
@@ -2238,12 +2458,22 @@
             statusMsg.style.color = '#fff';
             statusMsg.textContent = '대기 중';
         }
+        if (turnOff) {
+            const wiringWrap = document.getElementById('wiringControls');
+            const numberingWrap = document.getElementById('numberingControls');
+            const btnWiring = document.getElementById('btnPrimaryWiring');
+            const btnNumberingPrimary = document.getElementById('btnPrimaryNumbering');
+            if (wiringWrap) wiringWrap.style.display = 'flex';
+            if (numberingWrap) numberingWrap.style.display = 'none';
+            if (btnWiring) btnWiring.classList.add('active');
+            if (btnNumberingPrimary) btnNumberingPrimary.classList.remove('active');
+        }
     }
 
     function ensureEditorScenario() {
         if (!NUMBERING_SCENARIOS[currentLayoutId]) {
             NUMBERING_SCENARIOS[currentLayoutId] = {
-                image: TUTORIAL_CONFIG[currentLayoutId]?.img || './images/images1.png',
+                image: getNumberingBaseImage(currentLayoutId),
                 stages: []
             };
         }
@@ -2645,7 +2875,7 @@
 
     function createScenarioTemplate() {
         return {
-            image: (editorImageUrl?.value || '').trim() || TUTORIAL_CONFIG[currentLayoutId]?.img || './images/images1.png',
+            image: (editorImageUrl?.value || '').trim() || getNumberingBaseImage(currentLayoutId),
             stages: [
                 {
                     title: '예시 단계 1',

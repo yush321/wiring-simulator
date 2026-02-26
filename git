@@ -1,3 +1,3 @@
 git add .
-git commit -m "gpt 도면6"
+git commit -m "gpt 도면6-4"
 git push -f origin main
