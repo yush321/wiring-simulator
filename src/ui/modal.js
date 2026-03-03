@@ -1193,6 +1193,8 @@
     }
 
     function openModal() {
+        if (document?.body?.classList?.contains('prelaunch')) return;
+        if (document?.body?.classList?.contains('home-mode')) return;
         currentLayoutId = document.getElementById('layoutSelect')?.value || currentLayoutId;
         currentModalPage = 0;
 

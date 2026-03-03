@@ -12,6 +12,402 @@
             padding: 10px; margin: 0; overscroll-behavior: none; user-select: none;
         }
         h2 { margin: 10px 0; font-size: 1.2rem; text-align: center; color: #fff; }
+        body.prelaunch {
+            background: #f1ecd8;
+            color: #0f172a;
+        }
+        body.prelaunch .app-core { display: none !important; }
+        body.home-mode {
+            background: radial-gradient(circle at 10% 10%, #1e293b, #0f172a 55%, #020617);
+            color: #e2e8f0;
+        }
+        body.home-mode .app-core { display: none !important; }
+        body.home-mode #homeScreen { display: block; }
+        .hero-shell {
+            width: min(92vw, 430px);
+            min-height: calc(100vh - 20px);
+            display: grid;
+            align-content: center;
+            gap: 16px;
+            padding: 20px 8px;
+            box-sizing: border-box;
+        }
+        .hero-logo {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto;
+            border-radius: 16px;
+            background: #f4ba09;
+            color: #684500;
+            display: grid;
+            place-items: center;
+            font-size: 34px;
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(244, 186, 9, 0.34);
+        }
+        .hero-title {
+            text-align: center;
+            font-size: 38px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.7px;
+            line-height: 1.1;
+            margin: 0;
+        }
+        .hero-subtitle {
+            text-align: center;
+            color: #334155;
+            margin: 0;
+            font-size: 16px;
+        }
+        .hero-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 6px;
+        }
+        .hero-feature {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .hero-feature .icon {
+            width: 36px;
+            height: 36px;
+            margin: 0 auto 8px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .hero-feature .label {
+            color: #1e293b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .hero-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.13);
+            padding: 18px;
+            box-sizing: border-box;
+        }
+        .hero-card h3 {
+            margin: 2px 0 16px;
+            text-align: center;
+            color: #0f172a;
+            font-size: 26px;
+        }
+        .hero-login-btn {
+            width: 100%;
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            box-sizing: border-box;
+        }
+        .hero-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #64748b;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        .hero-divider::before,
+        .hero-divider::after {
+            content: '';
+            flex: 1;
+            border-top: 1px solid #e2e8f0;
+        }
+        .hero-field-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin: 8px 0 6px;
+        }
+        .hero-input {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #0f172a;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+        }
+        .hero-start {
+            width: 100%;
+            background: #f4ba09;
+            color: #111827;
+            border-radius: 10px;
+            padding: 13px;
+            font-size: 16px;
+            font-weight: 900;
+            margin-top: 8px;
+            box-sizing: border-box;
+        }
+        .hero-links {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .hero-links a { color: #b45309; text-decoration: none; font-weight: 700; }
+        .hero-policy {
+            color: #64748b;
+            font-size: 11px;
+            text-align: center;
+            line-height: 1.5;
+            margin: 0 6px;
+        }
+        #homeScreen { display: none; }
+        .home-shell {
+            width: min(94vw, 860px);
+            margin-top: 10px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            box-shadow: 0 20px 45px rgba(2, 6, 23, 0.5);
+            padding: 14px;
+            position: relative;
+        }
+        .home-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .home-brand {
+            font-size: 15px;
+            font-weight: 800;
+            color: #f8fafc;
+            letter-spacing: 0.2px;
+        }
+        .hamburger-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(30, 41, 59, 0.9);
+            display: grid;
+            place-items: center;
+            padding: 0;
+        }
+        .hamburger-btn span,
+        .hamburger-btn::before,
+        .hamburger-btn::after {
+            content: '';
+            display: block;
+            width: 18px;
+            height: 2px;
+            background: #e2e8f0;
+            border-radius: 99px;
+        }
+        .hamburger-btn span { margin: 3px 0; }
+        .home-summary {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .progress-card {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(125, 211, 252, 0.25);
+            border-radius: 14px;
+            padding: 12px;
+        }
+        .progress-card h4 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: #cbd5e1;
+            font-weight: 700;
+        }
+        .ring-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .ring {
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            color: #f8fafc;
+            background: conic-gradient(var(--ring-color) calc(var(--value) * 1%), rgba(71, 85, 105, 0.35) 0);
+            position: relative;
+        }
+        .ring::after {
+            content: '';
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        .ring b {
+            position: relative;
+            z-index: 1;
+            font-size: 12px;
+        }
+        .ring-meta {
+            color: #94a3b8;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .home-actions {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .home-continue-btn {
+            border-radius: 12px;
+            padding: 13px 12px;
+            font-size: 14px;
+            font-weight: 800;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+        .home-continue-btn.wiring {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            color: #fff;
+        }
+        .home-continue-btn.numbering {
+            background: linear-gradient(135deg, #7c3aed, #a21caf);
+            color: #fff;
+        }
+        .home-drawer-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.55);
+            z-index: 1300;
+        }
+        .home-drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: min(84vw, 320px);
+            height: 100vh;
+            background: #0f172a;
+            border-right: 1px solid rgba(148, 163, 184, 0.25);
+            box-shadow: 12px 0 30px rgba(2, 6, 23, 0.45);
+            transform: translateX(-105%);
+            transition: transform 0.22s ease;
+            z-index: 1301;
+            padding: 16px 14px;
+            box-sizing: border-box;
+        }
+        .home-drawer.open { transform: translateX(0); }
+        .app-menu-fab {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(15, 23, 42, 0.92);
+            z-index: 1205;
+            display: none;
+            place-items: center;
+            padding: 0;
+        }
+        .app-menu-fab span,
+        .app-menu-fab::before,
+        .app-menu-fab::after {
+            content: '';
+            display: block;
+            width: 18px;
+            height: 2px;
+            background: #e2e8f0;
+            border-radius: 99px;
+        }
+        .app-menu-fab span { margin: 3px 0; }
+        body:not(.prelaunch):not(.home-mode) .app-menu-fab {
+            display: grid;
+        }
+        .home-drawer h3 {
+            margin: 0 0 12px;
+            font-size: 15px;
+            color: #f8fafc;
+        }
+        .drawer-major-title {
+            margin: 14px 0 8px;
+            font-size: 12px;
+            color: #94a3b8;
+            letter-spacing: 0.3px;
+            font-weight: 800;
+        }
+        .drawer-major-title:first-of-type {
+            margin-top: 4px;
+        }
+        .drawer-item {
+            width: 100%;
+            text-align: left;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(30, 41, 59, 0.78);
+            color: #e2e8f0;
+            padding: 11px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .drawer-group {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.42);
+            margin-bottom: 8px;
+        }
+        .drawer-group > summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 10px 11px;
+            font-size: 14px;
+            font-weight: 800;
+            color: #cbd5e1;
+            user-select: none;
+        }
+        .drawer-group > summary::-webkit-details-marker { display: none; }
+        .drawer-sublist {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            padding: 0 10px 10px;
+        }
+        .drawer-subitem {
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: rgba(30, 41, 59, 0.85);
+            color: #dbeafe;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 4px;
+            text-align: center;
+        }
+        .drawer-subitem.wide {
+            grid-column: 1 / -1;
+            text-align: left;
+            padding-left: 10px;
+        }
+        @media (max-width: 740px) {
+            .home-summary { grid-template-columns: 1fr; }
+            .home-actions { grid-template-columns: 1fr; }
+        }
         
         .controls { 
             margin-bottom: 10px; padding: 10px; background: #444;
@@ -551,7 +947,7 @@
         }
 </style>
 </head>
-<body>
+<body class="prelaunch">
 
     <div id="infoModal" class="modal-overlay">
         <div class="modal-content">
@@ -772,9 +1168,83 @@
         </div>
     </div>
 
-    <h2>전기기능사 마스터</h2>
+    <section id="heroScreen" class="hero-shell">
+        <div class="hero-logo">🔌</div>
+        <h1 class="hero-title">전기기능사<br>마스터</h1>
+        <p class="hero-subtitle">결선과 넘버링을 한 번에 연습하세요</p>
+
+        <div class="hero-features">
+            <div class="hero-feature">
+                <div class="icon" style="background:#dbeafe; color:#2563eb;">⚡</div>
+                <div class="label">실전 결선</div>
+            </div>
+            <div class="hero-feature">
+                <div class="icon" style="background:#dcfce7; color:#16a34a;">#</div>
+                <div class="label">넘버링 학습</div>
+            </div>
+            <div class="hero-feature">
+                <div class="icon" style="background:#f3e8ff; color:#9333ea;">✓</div>
+                <div class="label">즉시 채점</div>
+            </div>
+        </div>
+
+        <div class="hero-card">
+            <h3>다시 오신 것을 환영합니다</h3>
+            <button class="hero-login-btn" type="button" onclick="continueWithProvider('google')">Google에서 계속 진행</button>
+            <button class="hero-login-btn" type="button" onclick="continueWithProvider('apple')">Apple에서 계속 진행</button>
+            <div class="hero-divider">또는</div>
+            <div class="hero-field-label">이메일 또는 전화</div>
+            <input id="heroUserId" class="hero-input" type="text" placeholder="이메일 주소를 입력하세요">
+            <div class="hero-field-label">비밀번호</div>
+            <input id="heroPassword" class="hero-input" type="password" placeholder="비밀번호를 입력하세요">
+            <button class="hero-start" type="button" onclick="startAppFromHero()">시작하기</button>
+            <div class="hero-links">
+                비밀번호를 잊으셨나요? <a href="#" onclick="event.preventDefault(); alert('현재는 로컬 학습 모드입니다.');">도움말</a>
+            </div>
+        </div>
+        <p class="hero-policy">계속 진행하면 이용약관 및 개인정보처리방침에 동의한 것으로 간주됩니다.</p>
+    </section>
+
+    <section id="homeScreen" class="home-shell">
+        <div class="home-top">
+            <button id="homeMenuToggle" class="hamburger-btn" type="button" onclick="toggleHomeDrawer(true)"><span></span></button>
+            <div class="home-brand">학습 대시보드</div>
+            <div style="width:42px;"></div>
+        </div>
+
+        <div class="home-summary">
+            <article class="progress-card">
+                <h4>결선 진행률</h4>
+                <div class="ring-wrap">
+                    <div id="wiringProgressRing" class="ring" style="--ring-color:#0ea5e9; --value:42;"><b id="wiringProgressText">42%</b></div>
+                    <div class="ring-meta">최근 기록: 공개도면 1번<br>오늘 목표까지 3단계 남음</div>
+                </div>
+            </article>
+            <article class="progress-card">
+                <h4>넘버링 진행률</h4>
+                <div class="ring-wrap">
+                    <div id="numberingProgressRing" class="ring" style="--ring-color:#a21caf; --value:28;"><b id="numberingProgressText">28%</b></div>
+                    <div class="ring-meta">최근 기록: EOCR, FR 복습 중<br>역순 입력 정확도 상승</div>
+                </div>
+            </article>
+        </div>
+
+        <div class="home-actions">
+            <button class="home-continue-btn wiring" type="button" onclick="continueLearning('wiring')">결선 이어하기</button>
+            <button class="home-continue-btn numbering" type="button" onclick="continueLearning('numbering')">넘버링 이어하기</button>
+        </div>
+    </section>
+
+    <div id="homeDrawerBackdrop" class="home-drawer-backdrop" onclick="toggleHomeDrawer(false)"></div>
+    <aside id="homeDrawer" class="home-drawer" aria-hidden="true">
+        <h3>학습 카테고리</h3>
+        <div id="homeDrawerMenu"></div>
+    </aside>
+    <button id="appMenuFab" class="app-menu-fab" type="button" aria-label="메뉴 열기" onclick="toggleHomeDrawer(true)"><span></span></button>
+
+    <h2 class="app-core">전기기능사 마스터</h2>
     
-    <div class="controls">
+    <div class="controls app-core">
         <select id="layoutCategorySelect" onchange="onLayoutCategoryChange()"></select>
         <select id="layoutSelect" onchange="changeLayout()"></select>
         <button class="btn-info" onclick="openModal()">📖 설명</button>
@@ -786,7 +1256,7 @@
         <button class="btn-admin" onclick="toggleAdminMode()">🔧 관리자</button>
     </div>
 
-    <div id="adminInfo">
+    <div id="adminInfo" class="app-core">
         <div class="info-header">
             <span style="color:#00ffff;"><b>[관리자: <span id="currentLayoutNum">1</span>번]</b></span>
             <div>
@@ -842,15 +1312,15 @@
         <div id="saveStatus" style="color: yellow; margin-top: 5px; height: 20px;"></div>
     </div>
 
-    <div class="legend">
+    <div class="legend app-core">
         <span><i class="dot" style="background:#e6b800"></i>작업선</span>
         <span><i class="dot" style="background:#28a745"></i>정답</span>
         <span><i class="dot" style="background:#dc3545"></i>오답</span>
     </div>
-    <span id="statusMsg">대기 중</span>
+    <span id="statusMsg" class="app-core">대기 중</span>
     
-    <canvas id="simCanvas" width="700" height="720"></canvas>
-    <div id="playbackControls">
+    <canvas id="simCanvas" class="app-core" width="700" height="720"></canvas>
+    <div id="playbackControls" class="app-core">
         <div class="row">
             <button onclick="pauseTutorialFlowPlayback()">일시정지</button>
             <button onclick="resumeTutorialFlowPlayback()">재개</button>
@@ -859,6 +1329,142 @@
             <span id="playbackProgress" style="font-size:12px; color:#93c5fd;">재생 대기</span>
         </div>
     </div>
+
+<script>
+    function renderHomeDrawerMenu() {
+        const host = document.getElementById('homeDrawerMenu');
+        if (!host) return;
+
+        const buildSubButtons = (prefix) => {
+            let out = '';
+            for (let i = 1; i <= 18; i += 1) {
+                out += `<button class="drawer-subitem" type="button" onclick="openCategoryFromDrawer('${prefix}_${i}')">${i}</button>`;
+            }
+            return out;
+        };
+
+        host.innerHTML = `
+            <div class="drawer-major-title">대분류: 결선</div>
+            <details class="drawer-group" open>
+                <summary>공개도면</summary>
+                <div class="drawer-sublist">
+                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('practice_all')">전체 도면 보기</button>
+                    ${buildSubButtons('practice')}
+                </div>
+            </details>
+            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('main_wiring')">주결선</button>
+            <details class="drawer-group">
+                <summary>보조결선</summary>
+                <div class="drawer-sublist">
+                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('public_all')">전체 튜토리얼 보기</button>
+                    ${buildSubButtons('public')}
+                </div>
+            </details>
+            <div class="drawer-major-title">대분류: 넘버링</div>
+            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('numbering')">넘버링 학습</button>
+        `;
+    }
+
+    function applyLayoutCategoryFromDrawer(categoryId) {
+        if (!categoryId) return;
+        if (typeof ensureLayoutCategoryOptions === 'function') ensureLayoutCategoryOptions(categoryId);
+        if (typeof layoutCategorySelect !== 'undefined' && layoutCategorySelect) {
+            layoutCategorySelect.value = categoryId;
+        } else {
+            const categorySelect = document.getElementById('layoutCategorySelect');
+            if (categorySelect) categorySelect.value = categoryId;
+        }
+        if (typeof onLayoutCategoryChange === 'function') onLayoutCategoryChange();
+        if (typeof syncWiringCategoryPresetButtons === 'function') syncWiringCategoryPresetButtons();
+    }
+
+    function setProgressRing(id, textId, value) {
+        const safe = Math.max(0, Math.min(100, Number(value) || 0));
+        const ring = document.getElementById(id);
+        const text = document.getElementById(textId);
+        if (ring) ring.style.setProperty('--value', String(safe));
+        if (text) text.textContent = `${safe}%`;
+    }
+
+    function showHomeScreen() {
+        document.body.classList.remove('prelaunch');
+        document.body.classList.add('home-mode');
+        const hero = document.getElementById('heroScreen');
+        if (hero) hero.style.display = 'none';
+        const home = document.getElementById('homeScreen');
+        if (home) home.style.display = 'block';
+        setProgressRing('wiringProgressRing', 'wiringProgressText', 42);
+        setProgressRing('numberingProgressRing', 'numberingProgressText', 28);
+    }
+
+    function revealAppCore() {
+        document.body.classList.remove('prelaunch');
+        document.body.classList.remove('home-mode');
+        const hero = document.getElementById('heroScreen');
+        if (hero) hero.style.display = 'none';
+        const home = document.getElementById('homeScreen');
+        if (home) home.style.display = 'none';
+        toggleHomeDrawer(false);
+    }
+
+    function startAppFromHero() {
+        showHomeScreen();
+    }
+
+    function continueWithProvider(name) {
+        const provider = String(name || '').toLowerCase();
+        if (provider === 'google') alert('Google 로그인은 준비 중입니다. 대시보드로 이동합니다.');
+        else if (provider === 'apple') alert('Apple 로그인은 준비 중입니다. 대시보드로 이동합니다.');
+        showHomeScreen();
+    }
+
+    function continueLearning(mode) {
+        revealAppCore();
+        if (String(mode) === 'numbering') {
+            if (typeof setPrimaryMode === 'function') setPrimaryMode('numbering');
+            else if (typeof toggleNumberingMode === 'function') toggleNumberingMode();
+            return;
+        }
+        if (typeof setPrimaryMode === 'function') setPrimaryMode('wiring');
+    }
+
+    function openCategoryFromDrawer(target) {
+        const key = String(target || '').trim();
+        if (key === 'numbering') {
+            continueLearning('numbering');
+            return;
+        }
+        revealAppCore();
+        if (typeof setPrimaryMode === 'function') setPrimaryMode('wiring');
+        if (key === 'public_exam' || key === 'main' || key === 'aux') {
+            if (typeof setWiringCategoryPreset === 'function') setWiringCategoryPreset(key);
+            return;
+        }
+        if (key === 'main_wiring' || key === 'practice_all' || key === 'public_all' || /^practice_\d+$/.test(key) || /^public_\d+$/.test(key)) {
+            applyLayoutCategoryFromDrawer(key);
+            return;
+        }
+        if (typeof setWiringCategoryPreset === 'function') setWiringCategoryPreset('public_exam');
+    }
+
+    function toggleHomeDrawer(open) {
+        const drawer = document.getElementById('homeDrawer');
+        const backdrop = document.getElementById('homeDrawerBackdrop');
+        const on = !!open;
+        if (drawer) {
+            if (on) drawer.classList.add('open');
+            else drawer.classList.remove('open');
+            drawer.setAttribute('aria-hidden', on ? 'false' : 'true');
+        }
+        if (backdrop) backdrop.style.display = on ? 'block' : 'none';
+    }
+
+    (function initHeroScreen() {
+        renderHomeDrawerMenu();
+        document.body.classList.add('prelaunch');
+        document.body.classList.remove('home-mode');
+    })();
+</script>
 
 <script src="./src/data/local-overrides.js"></script>
 <script src="./src/data/repository.js"></script>
