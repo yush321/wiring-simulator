@@ -620,10 +620,6 @@
         wiringControls.id = 'wiringControls';
         wiringControls.className = 'toolbar-row toolbar-subcategory';
         layoutCategorySelect.classList.add('hidden-native');
-        const subLabel = document.createElement('span');
-        subLabel.className = 'subcategory-label';
-        subLabel.textContent = '하위 카테고리';
-        wiringControls.appendChild(subLabel);
         wiringControls.appendChild(layoutCategorySelect);
         wiringControls.appendChild(layoutSelect);
 
