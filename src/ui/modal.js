@@ -616,32 +616,41 @@
         root.classList.add('app-toolbar');
         root.innerHTML = '';
 
-        const primaryTabs = document.createElement('div');
-        primaryTabs.className = 'primary-tabs';
-        primaryTabs.innerHTML = `
-            <button id="btnPrimaryWiring" class="tab-btn active" onclick="setPrimaryMode('wiring')">결선</button>
-            <button id="btnPrimaryNumbering" class="tab-btn numbering" onclick="setPrimaryMode('numbering')">넘버링</button>
-        `;
-
         const wiringControls = document.createElement('div');
         wiringControls.id = 'wiringControls';
-        wiringControls.className = 'toolbar-row';
-        wiringControls.innerHTML = `
-            <div class="wiring-segmented">
-                <button id="btnWiringPublic" class="seg-btn" onclick="setWiringCategoryPreset('public_exam')">공개도면</button>
-                <button id="btnWiringMain" class="seg-btn active" onclick="setWiringCategoryPreset('main')">주결선</button>
-                <button id="btnWiringAux" class="seg-btn" onclick="setWiringCategoryPreset('aux')">보조결선</button>
-            </div>
-        `;
+        wiringControls.className = 'toolbar-row toolbar-subcategory';
         layoutCategorySelect.classList.add('hidden-native');
+        const subLabel = document.createElement('span');
+        subLabel.className = 'subcategory-label';
+        subLabel.textContent = '하위 카테고리';
+        wiringControls.appendChild(subLabel);
         wiringControls.appendChild(layoutCategorySelect);
         wiringControls.appendChild(layoutSelect);
+
+        const actionRow = document.createElement('div');
+        actionRow.className = 'toolbar-row toolbar-actions';
         infoBtn.textContent = '설명';
-        undoBtn.textContent = '되돌리기';
-        wiringControls.appendChild(infoBtn);
-        wiringControls.appendChild(undoBtn);
-        wiringControls.appendChild(resetBtn);
-        wiringControls.appendChild(checkBtn);
+        infoBtn.classList.add('action-pill', 'info');
+        undoBtn.textContent = '↺';
+        undoBtn.title = '되돌리기 (Ctrl+Z)';
+        undoBtn.setAttribute('aria-label', '되돌리기');
+        undoBtn.classList.add('action-icon-btn', 'undo');
+        resetBtn.innerHTML = `
+            <svg class="reset-svg" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M24 8a16 16 0 1 1-12.4 5.9"></path>
+                <polyline points="9,8 9,18 19,18"></polyline>
+            </svg>
+            <span class="reset-letter" aria-hidden="true">R</span>
+        `;
+        resetBtn.title = '초기화';
+        resetBtn.setAttribute('aria-label', '초기화');
+        resetBtn.classList.add('action-icon-btn', 'reset');
+        checkBtn.innerHTML = '<span>✓</span><span>채점하기</span>';
+        checkBtn.classList.add('action-pill', 'grade');
+        actionRow.appendChild(infoBtn);
+        actionRow.appendChild(undoBtn);
+        actionRow.appendChild(resetBtn);
+        actionRow.appendChild(checkBtn);
 
         const numberingControls = document.createElement('div');
         numberingControls.id = 'numberingControls';
@@ -659,8 +668,8 @@
         adminBtn.textContent = '관리자';
         adminRow.appendChild(adminBtn);
 
-        root.appendChild(primaryTabs);
         root.appendChild(wiringControls);
+        root.appendChild(actionRow);
         root.appendChild(numberingControls);
         root.appendChild(adminRow);
         root.dataset.uiEnhanced = '1';

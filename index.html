@@ -480,6 +480,99 @@
             background: #1f2937;
             border: 1px solid #4b5563;
         }
+        .toolbar-subcategory {
+            justify-content: flex-start;
+            padding: 4px 2px;
+        }
+        .subcategory-label {
+            color: #dbeafe;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            min-width: 88px;
+        }
+        .toolbar-actions {
+            justify-content: flex-start;
+            gap: 10px;
+        }
+        .action-pill {
+            min-width: 84px;
+            border-radius: 999px;
+            border: 1px solid #475569;
+            background: linear-gradient(180deg, #334155, #1e293b);
+            color: #e2e8f0;
+            font-weight: 800;
+            padding: 9px 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .action-icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid #475569;
+            background: linear-gradient(180deg, #334155, #1e293b);
+            color: #e2e8f0;
+            font-size: 18px;
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .action-icon-btn.reset {
+            color: #fbbf24;
+            border-color: #854d0e;
+            background: linear-gradient(180deg, #422006, #292524);
+            position: relative;
+            overflow: hidden;
+        }
+        .action-icon-btn.reset .reset-svg {
+            width: 28px;
+            height: 28px;
+            display: block;
+        }
+        .action-icon-btn.reset .reset-svg path,
+        .action-icon-btn.reset .reset-svg polyline {
+            stroke: #fbbf24;
+            stroke-width: 4.2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .action-icon-btn.reset .reset-letter {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -44%);
+            font-size: 11px;
+            font-weight: 900;
+            color: #fde68a;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .action-icon-btn.undo {
+            color: #38bdf8;
+            border-color: #0c4a6e;
+            background: linear-gradient(180deg, #082f49, #0f172a);
+        }
+        .action-pill.info {
+            color: #67e8f9;
+            border-color: #0e7490;
+            background: linear-gradient(180deg, #164e63, #0f172a);
+        }
+        .action-pill.grade {
+            color: #bbf7d0;
+            border-color: #166534;
+            background: linear-gradient(180deg, #14532d, #0f172a);
+        }
+        .action-pill.grade.active {
+            color: #fecaca;
+            border-color: #991b1b;
+            background: linear-gradient(180deg, #7f1d1d, #0f172a);
+        }
         .hidden-native { display: none; }
         select { padding: 8px; font-weight: bold; border-radius: 4px; border: none; }
         button { 
