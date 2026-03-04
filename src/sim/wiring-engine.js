@@ -643,11 +643,28 @@
         if(isAdminMode) { alert("관리자 모드를 끄세요."); return; }
         if(wires.length === 0) { alert("결선 내용 없음"); return; }
         isGradingMode = !isGradingMode;
-        if(isGradingMode) { calculateGrading(); statusMsg.textContent = "채점 완료"; btnCheck.textContent = "편집"; btnCheck.classList.add('active'); } 
+        if(isGradingMode) {
+            calculateGrading();
+            statusMsg.textContent = "채점 완료";
+            btnCheck.classList.add('active');
+            if (btnCheck.classList.contains('image-only')) {
+                btnCheck.innerHTML = '<img class="action-tile-image" alt="" loading="lazy" src="./images/ui-actions/check.png">';
+            } else {
+                btnCheck.textContent = "편집";
+            }
+        }
         else { updateUI(); }
         draw();
     }
-    function updateUI() { btnCheck.classList.remove('active'); statusMsg.textContent = "대기 중"; btnCheck.textContent = "채점 하기"; }
+    function updateUI() {
+        btnCheck.classList.remove('active');
+        statusMsg.textContent = "대기 중";
+        if (btnCheck.classList.contains('image-only')) {
+            btnCheck.innerHTML = '<img class="action-tile-image" alt="" loading="lazy" src="./images/ui-actions/check.png">';
+        } else {
+            btnCheck.textContent = "채점 하기";
+        }
+    }
     function clearCurrentLayoutData() {
         if(confirm("현재 도면 정답 삭제?")) {
             ensureLayoutAnswer(currentLayoutId);

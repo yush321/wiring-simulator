@@ -629,24 +629,32 @@
 
         const actionRow = document.createElement('div');
         actionRow.className = 'toolbar-row toolbar-actions';
-        infoBtn.textContent = '설명';
-        infoBtn.classList.add('action-pill', 'info');
-        undoBtn.textContent = '↺';
+        const setActionTileImage = (btn, cfg) => {
+            if (!btn || !cfg) return;
+            const img = document.createElement('img');
+            img.className = 'action-tile-image';
+            img.alt = '';
+            img.loading = 'lazy';
+            img.src = cfg.src;
+            return img.outerHTML;
+        };
+
+        const infoFrame = setActionTileImage(infoBtn, { src: './images/ui-actions/info.png' }) || '';
+        infoBtn.innerHTML = `${infoFrame}`;
+        infoBtn.classList.add('action-pill', 'action-tile', 'info', 'image-only');
+        const undoFrame = setActionTileImage(undoBtn, { src: './images/ui-actions/undo.png' }) || '';
+        undoBtn.innerHTML = `${undoFrame}`;
         undoBtn.title = '되돌리기 (Ctrl+Z)';
         undoBtn.setAttribute('aria-label', '되돌리기');
-        undoBtn.classList.add('action-icon-btn', 'undo');
-        resetBtn.innerHTML = `
-            <svg class="reset-svg" viewBox="0 0 48 48" aria-hidden="true">
-                <path d="M24 8a16 16 0 1 1-12.4 5.9"></path>
-                <polyline points="9,8 9,18 19,18"></polyline>
-            </svg>
-            <span class="reset-letter" aria-hidden="true">R</span>
-        `;
+        undoBtn.classList.add('action-icon-btn', 'action-tile', 'undo', 'image-only');
+        const resetFrame = setActionTileImage(resetBtn, { src: './images/ui-actions/reset.png' }) || '';
+        resetBtn.innerHTML = `${resetFrame}`;
         resetBtn.title = '초기화';
         resetBtn.setAttribute('aria-label', '초기화');
-        resetBtn.classList.add('action-icon-btn', 'reset');
-        checkBtn.innerHTML = '<span>✓</span><span>채점하기</span>';
-        checkBtn.classList.add('action-pill', 'grade');
+        resetBtn.classList.add('action-icon-btn', 'action-tile', 'reset', 'image-only');
+        const gradeFrame = setActionTileImage(checkBtn, { src: './images/ui-actions/check.png' }) || '';
+        checkBtn.innerHTML = `${gradeFrame}`;
+        checkBtn.classList.add('action-pill', 'action-tile', 'grade', 'image-only');
         actionRow.appendChild(infoBtn);
         actionRow.appendChild(undoBtn);
         actionRow.appendChild(resetBtn);
