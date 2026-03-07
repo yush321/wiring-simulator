@@ -1114,7 +1114,10 @@
             <p style="margin:0; color:#444; text-align:left;">도면 이미지에서 영역을 드래그한 뒤 단계/문항을 저장하면 학습 모드에 바로 반영됩니다.</p>
 
             <div class="editor-grid">
-                <input id="editorImageUrl" class="editor-wide" placeholder="도면 이미지 경로 (예: ./images/images1.png)">
+                <select id="editorNumberingLayoutId" title="넘버링 도면 선택" onchange="onEditorNumberingLayoutChange()">
+                    <option value="1">넘버링 도면 1번</option>
+                </select>
+                <input id="editorImageUrl" class="editor-wide" placeholder="도면 이미지 경로 (예: ./images/images1.png)" onchange="onEditorImageUrlChange(true)">
                 <select id="editorStageSelect" onchange="onEditorStageSelectChange()"></select>
                 <input id="editorStageTitle" placeholder="단계 제목 (예: MC1 보조접점)">
                 <input id="editorComponentId" placeholder="부품 ID (예: MC1)">
@@ -1124,10 +1127,12 @@
                     <option value="FUSE_4">4핀 퓨즈 (상+,상-,하+,하-)</option>
                     <option value="RL_2">2핀 RL (+,-)</option>
                     <option value="WL_2">2핀 WL (+,-)</option>
+                    <option value="YL_2">2핀 YL (+,-)</option>
                     <option value="GL_2">2핀 GL (+,-)</option>
                     <option value="BZ_2">2핀 BZ (+,-)</option>
                     <option value="PB0_2">2핀 PB0 (C,N)</option>
                     <option value="PB1_2">2핀 PB1 (O,N)</option>
+                    <option value="PB2_2">2핀 PB2 (O,N)</option>
                     <option value="SS_3">3핀 SS (M,N,A)</option>
                     <option value="T_8">8핀 타이머(T)</option>
                     <option value="FR_8">8핀 플리커(FR)</option>
@@ -1252,6 +1257,47 @@
                 <button style="background:#6c757d;" onclick="closeTutorialEditorModal()">닫기</button>
             </div>
             <textarea id="wiringEditorJson" style="width:100%; height:120px; margin-top:8px; font-family:monospace; font-size:12px;"></textarea>
+        </div>
+    </div>
+
+    <div id="guideEditorModal" class="modal-overlay">
+        <div class="modal-content" style="max-width:860px;">
+            <span class="close-btn" onclick="closeGuideEditorModal()">&times;</span>
+            <div class="modal-header">앱 가이드 편집기 (관리자)</div>
+            <p style="margin:0; color:#444; text-align:left;">앱 사용법과 부품 이해 페이지를 편집합니다. 이미지는 선택사항이며 설명은 HTML을 지원합니다.</p>
+
+            <div class="editor-grid">
+                <select id="guideEditorKey" onchange="onGuideEditorKeyChange()">
+                    <option value="usage_tips">1. 효과적인 앱사용 방법</option>
+                    <option value="parts_intro">2. 부품 이해</option>
+                </select>
+                <input id="guideEditorTitle" class="editor-wide" placeholder="콘텐츠 제목">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input id="guideEditorPageCount" type="number" min="1" max="100" value="1" style="width:90px;">
+                    <button style="background:#0d6efd;" onclick="applyGuidePageCount()">페이지 수 적용</button>
+                </div>
+                <div style="text-align:left; color:#475569; font-size:12px;">페이지마다 이미지와 설명을 각각 넣을 수 있습니다.</div>
+            </div>
+
+            <div id="guideEditorPageTabs" class="tutorial-page-tabs"></div>
+            <div class="tutorial-page-item">
+                <h4 id="guideEditorActivePageLabel">페이지 1</h4>
+                <input id="guideEditorPageImage" style="width:100%; margin-bottom:8px;" placeholder="이미지 경로 (예: ./images/guide-1.png)">
+                <textarea id="guideEditorPageText" placeholder="설명(HTML 가능): 줄바꿈(<br>), 굵게(<b>), 색상(<span style='color:#...'>)"></textarea>
+            </div>
+            <div class="tutorial-page-item">
+                <h4>페이지 미리보기</h4>
+                <div id="guideEditorPreview" class="tutorial-preview-box"></div>
+            </div>
+            <div id="guideEditorStatus" class="tutorial-editor-status"></div>
+
+            <div class="editor-actions">
+                <button style="background:#17a2b8;" onclick="saveGuideEditor()">저장</button>
+                <button style="background:#0d6efd;" onclick="previewGuideEditor()">미리보기</button>
+                <button style="background:#495057;" onclick="addGuideEditorPage()">새 페이지</button>
+                <button style="background:#dc3545;" onclick="resetGuideContentLocalStorage()">로컬저장 초기화</button>
+                <button style="background:#6c757d;" onclick="closeGuideEditorModal()">닫기</button>
+            </div>
         </div>
     </div>
 
@@ -1384,6 +1430,10 @@
             <select id="practiceFlowTargetSelect" style="flex:1; padding:6px; border-radius:6px; border:1px solid #475569; background:#111827; color:#e2e8f0;"></select>
         </div>
         <div style="margin-top: 8px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button style="background:#14b8a6;" onclick="openGuideEditorModal('usage_tips')">앱사용 방법 편집</button>
+            <button style="background:#0f766e;" onclick="openGuideEditorModal('parts_intro')">부품 이해 편집</button>
+        </div>
+        <div style="margin-top: 8px; display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <button style="background:#6f42c1;" onclick="openNumberingEditorModal()">넘버링 편집기</button>
             <button style="background:#0ea5e9;" onclick="openTutorialEditorModal()">결선 튜토리얼 편집기</button>
         </div>
@@ -1429,26 +1479,39 @@
             }
             return out;
         };
+        const buildNumberingButtons = () => {
+            let out = '';
+            for (let i = 1; i <= 18; i += 1) {
+                out += `<button class="drawer-subitem" type="button" onclick="openCategoryFromDrawer('numbering_${i}')">${i}</button>`;
+            }
+            return out;
+        };
 
         host.innerHTML = `
-            <div class="drawer-major-title">대분류: 결선</div>
+            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('usage_tips')">1. 효과적인 앱사용 방법</button>
+            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('parts_intro')">2. 부품 이해</button>
             <details class="drawer-group" open>
-                <summary>공개도면</summary>
+                <summary>3. 핀 번호 학습(넘버링)</summary>
                 <div class="drawer-sublist">
-                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('practice_all')">전체 도면 보기</button>
-                    ${buildSubButtons('practice')}
+                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('numbering')">최근 도면 이어하기</button>
+                    ${buildNumberingButtons()}
                 </div>
             </details>
-            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('main_wiring')">주결선</button>
+            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('main_wiring')">4. 배선 연습(주회로)</button>
             <details class="drawer-group">
-                <summary>보조결선</summary>
+                <summary>5. 배선 연습(보조회로)</summary>
                 <div class="drawer-sublist">
                     <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('public_all')">전체 튜토리얼 보기</button>
                     ${buildSubButtons('public')}
                 </div>
             </details>
-            <div class="drawer-major-title">대분류: 넘버링</div>
-            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('numbering')">넘버링 학습</button>
+            <details class="drawer-group">
+                <summary>6. 공개도면</summary>
+                <div class="drawer-sublist">
+                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('practice_all')">전체 도면 보기</button>
+                    ${buildSubButtons('practice')}
+                </div>
+            </details>
         `;
     }
 
@@ -1517,6 +1580,23 @@
 
     function openCategoryFromDrawer(target) {
         const key = String(target || '').trim();
+        if (key === 'usage_tips' || key === 'parts_intro') {
+            if (typeof openGuideContentModal === 'function') openGuideContentModal(key);
+            toggleHomeDrawer(false);
+            return;
+        }
+        const numberingMatch = key.match(/^numbering_(\d+)$/);
+        if (numberingMatch) {
+            const picked = numberingMatch[1];
+            if (typeof rememberNumberingLayoutId === 'function') rememberNumberingLayoutId(picked);
+            if (typeof isNumberingMode !== 'undefined' && isNumberingMode && typeof openNumberingModal === 'function') {
+                openNumberingModal();
+                toggleHomeDrawer(false);
+                return;
+            }
+            continueLearning('numbering');
+            return;
+        }
         if (key === 'numbering') {
             continueLearning('numbering');
             return;

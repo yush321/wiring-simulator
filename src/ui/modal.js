@@ -9,7 +9,9 @@
         MC1: 'MC1은 12핀 접촉기로 상단/하단 번호 대응을 먼저 잡고 들어가세요.',
         MC2: 'MC2는 MC1과 같은 구조이므로 비교 학습하면 빠르게 익힐 수 있습니다.',
         FR: 'FR은 공통(C)과 A/B접점을 먼저 찾은 뒤 번호를 맞추는 방식이 좋습니다.',
-        FUSE: '퓨즈는 +1/-1, +2/-2 단자를 방향성으로 기억하면 실수를 줄일 수 있습니다.'
+        FUSE: '퓨즈는 +1/-1, +2/-2 단자를 방향성으로 기억하면 실수를 줄일 수 있습니다.',
+        YL: 'YL 램프는 2핀 구조로 +,- 극성을 구분해서 보면 됩니다.',
+        PB2: 'PB2는 2핀 A접점(NO)으로 O,N 단자 방향을 먼저 확인하세요.'
     };
 
     const NUMBERING_CANDIDATES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '+1', '-1', '+2', '-2'];
@@ -23,10 +25,12 @@
         },
         RL_2: { componentId: 'RL', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
         WL_2: { componentId: 'WL', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
+        YL_2: { componentId: 'YL', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
         GL_2: { componentId: 'GL', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
         BZ_2: { componentId: 'BZ', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
         PB0_2: { componentId: 'PB0', rows: [[{ value: 'C', label: '단자', sub: '' }, { value: 'N', label: '단자', sub: '' }]] },
         PB1_2: { componentId: 'PB1', rows: [[{ value: 'O', label: '단자', sub: '' }, { value: 'N', label: '단자', sub: '' }]] },
+        PB2_2: { componentId: 'PB2', rows: [[{ value: 'O', label: '단자', sub: '' }, { value: 'N', label: '단자', sub: '' }]] },
         SS_3: { componentId: 'SS', rows: [[{ value: 'M', label: '단자', sub: '' }, { value: 'N', label: '단자', sub: '' }, { value: 'A', label: '단자', sub: '' }]] },
         T_8: { componentId: 'T' },
         FR_8: { componentId: 'FR' },
@@ -39,6 +43,7 @@
 
     function persistNumberingScenarios() {
         try {
+            migrateNumberingScenarioKeys();
             const key = (typeof NUMBERING_STORAGE_KEY === 'string' && NUMBERING_STORAGE_KEY) || 'numbering_scenarios_v2';
             localStorage.setItem(key, JSON.stringify(NUMBERING_SCENARIOS));
         } catch (e) {
@@ -61,6 +66,34 @@
         stepMs: 1100,
         timer: null
     };
+    const GUIDE_CONTENT_STORAGE_KEY = 'guide_content_v1';
+    const GUIDE_CONTENT_DEFAULT = {
+        usage_tips: {
+            title: '효과적인 앱사용 방법',
+            pages: [
+                {
+                    image: '',
+                    body: '<p><b>추천 순서:</b> 사용법 확인 → 부품 이해 → 넘버링 → 배선 연습 순서로 진행하세요.</p><p>처음에는 채점보다 설명과 되돌리기를 자주 쓰는 편이 효율적입니다.</p>'
+                }
+            ]
+        },
+        parts_intro: {
+            title: '부품 이해',
+            pages: [
+                {
+                    image: '',
+                    body: '<p>자주 나오는 부품의 역할과 접점 구조를 먼저 익혀두면 넘버링과 배선 속도가 같이 올라갑니다.</p><p>이미지와 설명을 관리자 모드에서 페이지별로 정리해 둘 수 있습니다.</p>'
+                }
+            ]
+        }
+    };
+    const guideEditorState = {
+        key: 'usage_tips',
+        pages: [],
+        activePage: 0
+    };
+    let GUIDE_CONTENT = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
+    let infoModalState = null;
 
     function parseAssignmentObject(rawText, varName) {
         const text = String(rawText || '').trim();
@@ -94,8 +127,23 @@
             temp.remove();
             return !!ok;
         } catch (e) {
-            return false;
+        return false;
+    }
+
+    try {
+        const savedGuide = localStorage.getItem(GUIDE_CONTENT_STORAGE_KEY);
+        if (savedGuide) {
+            const parsedGuide = JSON.parse(savedGuide);
+            if (parsedGuide && typeof parsedGuide === 'object' && !Array.isArray(parsedGuide)) {
+                GUIDE_CONTENT = {
+                    ...GUIDE_CONTENT,
+                    ...parsedGuide
+                };
+            }
         }
+    } catch (e) {
+        GUIDE_CONTENT = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
+    }
     }
 
     function buildExportStamp(date = new Date()) {
@@ -1133,6 +1181,183 @@
         setTutorialEditorStatus('튜토리얼 로컬 저장 초기화 완료');
     }
 
+    function persistGuideContent() {
+        try {
+            localStorage.setItem(GUIDE_CONTENT_STORAGE_KEY, JSON.stringify(GUIDE_CONTENT));
+        } catch (e) {
+            // ignore storage errors
+        }
+    }
+
+    function cloneGuideEntry(key) {
+        const raw = GUIDE_CONTENT[key] || GUIDE_CONTENT_DEFAULT[key] || { title: key, pages: [{ image: '', body: '' }] };
+        const pages = Array.isArray(raw.pages) && raw.pages.length
+            ? raw.pages.map(page => ({
+                image: String(page?.image || ''),
+                body: String(page?.body || '')
+            }))
+            : [{ image: '', body: '' }];
+        return {
+            title: String(raw.title || key),
+            pages
+        };
+    }
+
+    function setGuideEditorStatus(text) {
+        if (guideEditorStatus) guideEditorStatus.textContent = String(text || '');
+    }
+
+    function syncGuideEditorDraft() {
+        if (!guideEditorState.pages.length) return;
+        const idx = Number.isInteger(guideEditorState.activePage) ? guideEditorState.activePage : 0;
+        if (!guideEditorState.pages[idx]) guideEditorState.pages[idx] = { image: '', body: '' };
+        guideEditorState.pages[idx].image = String(guideEditorPageImage?.value || '').trim();
+        guideEditorState.pages[idx].body = String(guideEditorPageText?.value || '');
+    }
+
+    function renderGuideEditorPreview() {
+        if (!guideEditorPreview) return;
+        syncGuideEditorDraft();
+        const idx = Number.isInteger(guideEditorState.activePage) ? guideEditorState.activePage : 0;
+        const page = guideEditorState.pages[idx] || { image: '', body: '' };
+        const imageBlock = page.image
+            ? `<img src="${String(page.image).replace(/\\/g, '/')}" alt="가이드 이미지" style="max-width:100%; height:auto; border:1px solid #ccc; margin:10px 0; border-radius:5px;">`
+            : '';
+        guideEditorPreview.innerHTML = `${imageBlock}${String(page.body || '')}`;
+    }
+
+    function renderGuideEditorPages(count, pages) {
+        guideEditorState.pages = Array.from({ length: Math.max(1, count) }, (_, idx) => ({
+            image: String(pages?.[idx]?.image || ''),
+            body: String(pages?.[idx]?.body || '')
+        }));
+        if (guideEditorState.activePage >= guideEditorState.pages.length) {
+            guideEditorState.activePage = guideEditorState.pages.length - 1;
+        }
+        if (guideEditorPageTabs) {
+            guideEditorPageTabs.innerHTML = '';
+            guideEditorState.pages.forEach((page, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = `페이지 ${idx + 1}`;
+                if (idx === guideEditorState.activePage) btn.classList.add('active');
+                btn.onclick = () => {
+                    syncGuideEditorDraft();
+                    guideEditorState.activePage = idx;
+                    renderGuideEditorPages(guideEditorState.pages.length, guideEditorState.pages);
+                };
+                guideEditorPageTabs.appendChild(btn);
+            });
+        }
+        const active = guideEditorState.pages[guideEditorState.activePage] || { image: '', body: '' };
+        if (guideEditorActivePageLabel) guideEditorActivePageLabel.textContent = `페이지 ${guideEditorState.activePage + 1}`;
+        if (guideEditorPageImage) guideEditorPageImage.value = active.image || '';
+        if (guideEditorPageText) guideEditorPageText.value = active.body || '';
+        if (guideEditorPageCount) guideEditorPageCount.value = String(guideEditorState.pages.length);
+        renderGuideEditorPreview();
+    }
+
+    function loadGuideEditorEntry(key) {
+        const normalized = key === 'parts_intro' ? 'parts_intro' : 'usage_tips';
+        guideEditorState.key = normalized;
+        const entry = cloneGuideEntry(normalized);
+        if (guideEditorKey) guideEditorKey.value = normalized;
+        if (guideEditorTitle) guideEditorTitle.value = entry.title;
+        guideEditorState.activePage = 0;
+        renderGuideEditorPages(entry.pages.length || 1, entry.pages);
+        setGuideEditorStatus('');
+    }
+
+    function onGuideEditorKeyChange() {
+        syncGuideEditorDraft();
+        loadGuideEditorEntry(guideEditorKey?.value || 'usage_tips');
+    }
+
+    function applyGuidePageCount() {
+        syncGuideEditorDraft();
+        const count = Math.max(1, Math.min(100, parseInt(guideEditorPageCount?.value || '1', 10) || 1));
+        renderGuideEditorPages(count, guideEditorState.pages);
+        setGuideEditorStatus(`페이지 수를 ${count}개로 적용했습니다.`);
+    }
+
+    function addGuideEditorPage() {
+        syncGuideEditorDraft();
+        guideEditorState.pages.push({ image: '', body: '' });
+        guideEditorState.activePage = guideEditorState.pages.length - 1;
+        renderGuideEditorPages(guideEditorState.pages.length, guideEditorState.pages);
+        setGuideEditorStatus('새 페이지를 추가했습니다.');
+    }
+
+    function saveGuideEditor() {
+        syncGuideEditorDraft();
+        const key = guideEditorState.key || 'usage_tips';
+        GUIDE_CONTENT[key] = {
+            title: String(guideEditorTitle?.value || '').trim() || cloneGuideEntry(key).title,
+            pages: guideEditorState.pages.map(page => ({
+                image: String(page?.image || '').trim(),
+                body: String(page?.body || '')
+            }))
+        };
+        persistGuideContent();
+        setGuideEditorStatus(`${GUIDE_CONTENT[key].title} 저장 완료`);
+    }
+
+    function closeGuideEditorModal() {
+        if (guideEditorModal) guideEditorModal.style.display = 'none';
+    }
+
+    function openGuideEditorModal(key = 'usage_tips') {
+        if (!isAdminMode) {
+            alert('관리자 모드에서만 편집기를 열 수 있어.');
+            return;
+        }
+        loadGuideEditorEntry(key);
+        if (guideEditorPageText && guideEditorPageText.dataset.boundInput !== '1') {
+            guideEditorPageText.addEventListener('input', renderGuideEditorPreview);
+            guideEditorPageText.dataset.boundInput = '1';
+        }
+        if (guideEditorPageImage && guideEditorPageImage.dataset.boundInput !== '1') {
+            guideEditorPageImage.addEventListener('input', renderGuideEditorPreview);
+            guideEditorPageImage.dataset.boundInput = '1';
+        }
+        if (guideEditorModal) guideEditorModal.style.display = 'flex';
+    }
+
+    function previewGuideEditor() {
+        saveGuideEditor();
+        closeGuideEditorModal();
+        openGuideContentModal(guideEditorState.key || 'usage_tips');
+    }
+
+    function resetGuideContentLocalStorage() {
+        const ok = confirm('앱 가이드 로컬 저장 데이터를 초기화하고 기본값으로 되돌릴까?');
+        if (!ok) return;
+        try {
+            localStorage.removeItem(GUIDE_CONTENT_STORAGE_KEY);
+        } catch (e) {
+            // ignore storage errors
+        }
+        GUIDE_CONTENT = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
+        loadGuideEditorEntry(guideEditorState.key || 'usage_tips');
+        setGuideEditorStatus('앱 가이드 로컬 저장 초기화 완료');
+    }
+
+    function buildGuideModalPageHtml(entry, page) {
+        const image = String(page?.image || '').trim();
+        const body = String(page?.body || '');
+        const imageBlock = image
+            ? `<img src="${image.replace(/\\/g, '/')}" alt="${entry.title}" style="max-width:100%; height:auto; border:1px solid #ccc; margin:10px 0; border-radius:5px;">`
+            : '';
+        return `${imageBlock}${body}`;
+    }
+
+    function openGuideContentModal(key = 'usage_tips') {
+        currentModalPage = 0;
+        infoModalState = { type: 'guide', key: key === 'parts_intro' ? 'parts_intro' : 'usage_tips' };
+        updateModalContent();
+        if (infoModal) infoModal.style.display = 'flex';
+    }
+
     function buildTutorialModalPageHtml(data, pageHtml) {
         const body = String(pageHtml ?? '');
         const hasInlineImage = /<img\b/i.test(body);
@@ -1144,13 +1369,51 @@
     }
 
     function updateModalContent() {
+        const indicator = document.getElementById('pageIndicator');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const startBtn = document.getElementById('startBtn');
+        const playBtn = document.getElementById('playBtn');
+        const playSpeedSelect = document.getElementById('playSpeedSelect');
+
+        if (infoModalState?.type === 'guide') {
+            const entry = cloneGuideEntry(infoModalState.key);
+            const pages = entry.pages;
+            const page = pages[currentModalPage] || pages[0] || { image: '', body: '' };
+            modalBody.innerHTML = buildGuideModalPageHtml(entry, page);
+            if (pages.length > 1) {
+                modalTitle.innerText = `${entry.title} (${currentModalPage + 1}/${pages.length})`;
+                indicator.innerText = `${currentModalPage + 1} / ${pages.length}`;
+                indicator.style.display = 'inline-block';
+            } else {
+                modalTitle.innerText = entry.title;
+                indicator.style.display = 'none';
+            }
+            if (playBtn) playBtn.style.display = 'none';
+            if (playSpeedSelect) playSpeedSelect.style.display = 'none';
+            if (pages.length <= 1) {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                startBtn.style.display = 'inline-block';
+                return;
+            }
+            prevBtn.style.display = currentModalPage === 0 ? 'none' : 'inline-block';
+            prevBtn.disabled = currentModalPage === 0;
+            if (currentModalPage === pages.length - 1) {
+                nextBtn.style.display = 'none';
+                startBtn.style.display = 'inline-block';
+            } else {
+                nextBtn.style.display = 'inline-block';
+                startBtn.style.display = 'none';
+            }
+            return;
+        }
+
         const data = TUTORIAL_CONFIG[currentLayoutId];
         if (!data) return;
 
         const pages = Array.isArray(data.desc) ? data.desc : [data.desc];
         modalBody.innerHTML = buildTutorialModalPageHtml(data, pages[currentModalPage]);
-
-        const indicator = document.getElementById('pageIndicator');
         if (pages.length > 1) {
             modalTitle.innerText = `${data.title} (${currentModalPage + 1}/${pages.length})`;
             indicator.innerText = `${currentModalPage + 1} / ${pages.length}`;
@@ -1159,12 +1422,6 @@
             modalTitle.innerText = data.title;
             indicator.style.display = 'none';
         }
-
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const startBtn = document.getElementById('startBtn');
-        const playBtn = document.getElementById('playBtn');
-        const playSpeedSelect = document.getElementById('playSpeedSelect');
         if (playBtn) {
             const canPlay = hasTutorialPlayableFlow(currentLayoutId);
             playBtn.style.display = 'inline-block';
@@ -1195,8 +1452,13 @@
     }
 
     function changePage(direction) {
-        const data = TUTORIAL_CONFIG[currentLayoutId];
-        const pages = Array.isArray(data.desc) ? data.desc : [data.desc];
+        let pages = [];
+        if (infoModalState?.type === 'guide') {
+            pages = cloneGuideEntry(infoModalState.key).pages;
+        } else {
+            const data = TUTORIAL_CONFIG[currentLayoutId];
+            pages = Array.isArray(data?.desc) ? data.desc : [data?.desc];
+        }
 
         currentModalPage += direction;
         if (currentModalPage < 0) currentModalPage = 0;
@@ -1210,6 +1472,7 @@
         if (document?.body?.classList?.contains('home-mode')) return;
         currentLayoutId = document.getElementById('layoutSelect')?.value || currentLayoutId;
         currentModalPage = 0;
+        infoModalState = { type: 'tutorial', layoutId: currentLayoutId };
 
         const data = TUTORIAL_CONFIG[currentLayoutId];
         if (data) {
@@ -1233,6 +1496,7 @@
     }
 
     function closeModal(id) {
+        if (id === 'infoModal') infoModalState = null;
         document.getElementById(id).style.display = 'none';
     }
 
@@ -1504,6 +1768,83 @@
 
     const DEFAULT_NUMBERING_IMAGE = './images/images1.png';
     const NUMBERING_TUTORIAL_LAYOUT_KEY = 'numbering_tutorial_layout_v1';
+    const NUMBERING_EDITOR_LAYOUT_KEY = 'numbering_editor_layout_v1';
+
+    function normalizeNumberingLayoutId(rawLayoutId) {
+        const raw = String(rawLayoutId || '').trim();
+        if (!raw) return '';
+        const numericPatterns = [
+            /^t(\d+)$/i,
+            /^practice_(\d+)$/i,
+            /^public_(\d+)$/i,
+            /^numbering_(\d+)$/i
+        ];
+        for (const re of numericPatterns) {
+            const m = raw.match(re);
+            if (!m) continue;
+            const n = parseInt(m[1], 10);
+            if (Number.isFinite(n) && n > 0) return String(n);
+        }
+        if (/^\d+$/.test(raw)) {
+            const n = parseInt(raw, 10);
+            if (Number.isFinite(n) && n > 0) return String(n);
+        }
+        return raw;
+    }
+
+    function cloneNumberingScenario(rawScenario) {
+        const src = (rawScenario && typeof rawScenario === 'object') ? rawScenario : {};
+        try {
+            return JSON.parse(JSON.stringify(src));
+        } catch (e) {
+            return { image: DEFAULT_NUMBERING_IMAGE, stages: [] };
+        }
+    }
+
+    function getNumberingScenarioQuestionCount(rawScenario) {
+        const stages = Array.isArray(rawScenario?.stages) ? rawScenario.stages : [];
+        return stages.reduce((sum, stage) => {
+            const count = Array.isArray(stage?.questions) ? stage.questions.length : 0;
+            return sum + count;
+        }, 0);
+    }
+
+    function normalizeNumberingScenarioMap(source) {
+        const out = {};
+        Object.keys(source || {}).forEach(rawKey => {
+            const key = normalizeNumberingLayoutId(rawKey);
+            if (!key) return;
+            const incoming = cloneNumberingScenario(source[rawKey]);
+            const current = out[key];
+            if (!current) {
+                out[key] = incoming;
+                return;
+            }
+            const incomingCount = getNumberingScenarioQuestionCount(incoming);
+            const currentCount = getNumberingScenarioQuestionCount(current);
+            if (incomingCount > currentCount) {
+                out[key] = {
+                    ...current,
+                    ...incoming,
+                    stages: Array.isArray(incoming.stages) ? incoming.stages : (current.stages || [])
+                };
+                return;
+            }
+            out[key] = {
+                ...incoming,
+                ...current,
+                stages: Array.isArray(current.stages) ? current.stages : (incoming.stages || [])
+            };
+        });
+        return out;
+    }
+
+    function migrateNumberingScenarioKeys() {
+        const nextDefault = normalizeNumberingScenarioMap(NUMBERING_SCENARIOS_DEFAULT || {});
+        const nextCurrent = normalizeNumberingScenarioMap(NUMBERING_SCENARIOS || {});
+        NUMBERING_SCENARIOS_DEFAULT = nextDefault;
+        NUMBERING_SCENARIOS = nextCurrent;
+    }
 
     function getNumberingScenarioKeys() {
         return Object.keys(NUMBERING_SCENARIOS || {})
@@ -1511,25 +1852,32 @@
                 const s = NUMBERING_SCENARIOS[key];
                 return !!(s && Array.isArray(s.stages) && s.stages.length > 0);
             })
-            .sort((a, b) => String(a).localeCompare(String(b), 'ko'));
+            .sort((a, b) => {
+                const na = /^\d+$/.test(String(a)) ? parseInt(String(a), 10) : NaN;
+                const nb = /^\d+$/.test(String(b)) ? parseInt(String(b), 10) : NaN;
+                if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+                return String(a).localeCompare(String(b), 'ko');
+            });
     }
 
-    function resolveNumberingLayoutId() {
-        const keys = getNumberingScenarioKeys();
-        if (!keys.length) return '';
+    function resolveNumberingLayoutId(preferredLayoutId = '') {
+        const preferred = normalizeNumberingLayoutId(preferredLayoutId);
+        if (preferred) return preferred;
         let saved = '';
         try {
-            saved = String(localStorage.getItem(NUMBERING_TUTORIAL_LAYOUT_KEY) || '').trim();
+            saved = normalizeNumberingLayoutId(localStorage.getItem(NUMBERING_TUTORIAL_LAYOUT_KEY));
         } catch (e) {
             saved = '';
         }
-        if (saved && keys.includes(saved)) return saved;
-        if (keys.includes('t1')) return 't1';
+        if (saved) return saved;
+        const keys = getNumberingScenarioKeys();
+        if (!keys.length) return normalizeNumberingLayoutId(currentLayoutId) || '1';
+        if (keys.includes('1')) return '1';
         return keys[0];
     }
 
     function rememberNumberingLayoutId(layoutId) {
-        const key = String(layoutId || '').trim();
+        const key = normalizeNumberingLayoutId(layoutId);
         if (!key) return;
         try {
             localStorage.setItem(NUMBERING_TUTORIAL_LAYOUT_KEY, key);
@@ -1539,16 +1887,26 @@
     }
 
     function getNumberingBaseImage(layoutId) {
-        const key = String(layoutId || '').trim();
-        const candidate = String(NUMBERING_SCENARIOS?.[key]?.image || '').trim();
+        const key = normalizeNumberingLayoutId(layoutId);
+        const legacyKey = /^\d+$/.test(key) ? `t${key}` : key;
+        const candidate = String(NUMBERING_SCENARIOS?.[key]?.image || NUMBERING_SCENARIOS?.[legacyKey]?.image || '').trim();
         return candidate || DEFAULT_NUMBERING_IMAGE;
     }
 
     function getScenarioForLayout(layoutId) {
-        const s = NUMBERING_SCENARIOS[layoutId];
+        const key = normalizeNumberingLayoutId(layoutId);
+        const legacyKey = /^\d+$/.test(key) ? `t${key}` : key;
+        const s = NUMBERING_SCENARIOS[key] || NUMBERING_SCENARIOS[legacyKey];
         if (!s || !Array.isArray(s.stages)) return null;
         return s;
     }
+
+    (function initNumberingScenarioKeyMigration() {
+        const before = Object.keys(NUMBERING_SCENARIOS || {}).sort().join('|');
+        migrateNumberingScenarioKeys();
+        const after = Object.keys(NUMBERING_SCENARIOS || {}).sort().join('|');
+        if (before !== after) persistNumberingScenarios();
+    })();
 
     function createFallbackStages() {
         const pinList = getTutorialPinList();
@@ -1592,8 +1950,21 @@
             return text.split(',').map(v => v.trim()).filter(Boolean);
         };
 
+        const dedupeQuestions = items => {
+            const seen = new Set();
+            return (Array.isArray(items) ? items : []).filter(q => {
+                const label = String(q?.label || '').trim();
+                const answer = String(q?.answer || '').trim();
+                const key = `${label}__${answer}`;
+                if (!label && !answer) return false;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        };
+
         return stages.map((stage, stageIndex) => {
-            const questions = (stage.questions || []).flatMap((q, qIdx) => {
+            const questions = dedupeQuestions(stage.questions).flatMap((q, qIdx) => {
                 const tokens = splitAnswerTokens(q.answer);
                 if (!tokens.length) return [];
                 if (tokens.length === 1) {
@@ -2485,17 +2856,103 @@
         }
     }
 
-    function ensureEditorScenario() {
-        if (!NUMBERING_SCENARIOS[currentLayoutId]) {
-            NUMBERING_SCENARIOS[currentLayoutId] = {
-                image: getNumberingBaseImage(currentLayoutId),
+    function getNumberingLayoutOptionList() {
+        const set = new Set();
+        for (let i = 1; i <= 18; i += 1) set.add(String(i));
+        Object.keys(NUMBERING_SCENARIOS || {}).forEach(key => {
+            const normalized = normalizeNumberingLayoutId(key);
+            if (normalized) set.add(normalized);
+        });
+        return Array.from(set).sort((a, b) => {
+            const na = /^\d+$/.test(a) ? parseInt(a, 10) : NaN;
+            const nb = /^\d+$/.test(b) ? parseInt(b, 10) : NaN;
+            if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+            return String(a).localeCompare(String(b), 'ko');
+        });
+    }
+
+    function refreshNumberingEditorLayoutOptions(preferredLayoutId = '') {
+        if (!editorNumberingLayoutId) return;
+        const options = getNumberingLayoutOptionList();
+        editorNumberingLayoutId.innerHTML = options
+            .map(key => {
+                const label = /^\d+$/.test(key) ? `넘버링 도면 ${key}번` : `넘버링 ${key}`;
+                return `<option value="${key}">${label}</option>`;
+            })
+            .join('');
+        const preferred = normalizeNumberingLayoutId(preferredLayoutId);
+        if (preferred && options.includes(preferred)) {
+            editorNumberingLayoutId.value = preferred;
+        } else if (options.length) {
+            editorNumberingLayoutId.value = options[0];
+        }
+    }
+
+    function getNumberingEditorLayoutId() {
+        const fromSelect = normalizeNumberingLayoutId(editorNumberingLayoutId?.value);
+        if (fromSelect) return fromSelect;
+        let saved = '';
+        try {
+            saved = normalizeNumberingLayoutId(localStorage.getItem(NUMBERING_EDITOR_LAYOUT_KEY));
+        } catch (e) {
+            saved = '';
+        }
+        if (saved) return saved;
+        return resolveNumberingLayoutId(normalizeNumberingLayoutId(currentLayoutId));
+    }
+
+    function setNumberingEditorLayoutId(layoutId, options = {}) {
+        const {
+            rememberEditor = true,
+            rememberTutorial = true,
+            refreshOptions = true
+        } = options || {};
+        const key = normalizeNumberingLayoutId(layoutId);
+        if (!key) return '';
+        if (refreshOptions) refreshNumberingEditorLayoutOptions(key);
+        if (editorNumberingLayoutId) editorNumberingLayoutId.value = key;
+        if (rememberEditor) {
+            try {
+                localStorage.setItem(NUMBERING_EDITOR_LAYOUT_KEY, key);
+            } catch (e) {
+                // ignore storage errors
+            }
+        }
+        if (rememberTutorial) rememberNumberingLayoutId(key);
+        return key;
+    }
+
+    function onEditorNumberingLayoutChange() {
+        syncEditorQuestionDraft({ persist: true });
+        const picked = setNumberingEditorLayoutId(editorNumberingLayoutId?.value, {
+            rememberEditor: true,
+            rememberTutorial: true,
+            refreshOptions: false
+        });
+        const scenario = ensureEditorScenario(picked);
+        numberingEditorState.stageIndex = scenario.stages.length ? 0 : -1;
+        numberingEditorState.questionIndex = -1;
+        numberingEditorState.currentRect = null;
+        renderEditorStageSelect();
+        loadEditorStageToForm();
+        if (editorRectInfo) editorRectInfo.textContent = `${picked}번 넘버링 도면 편집 중`;
+    }
+
+    function ensureEditorScenario(layoutId = getNumberingEditorLayoutId()) {
+        const key = normalizeNumberingLayoutId(layoutId);
+        if (!key) {
+            return { image: DEFAULT_NUMBERING_IMAGE, stages: [] };
+        }
+        if (!NUMBERING_SCENARIOS[key]) {
+            NUMBERING_SCENARIOS[key] = {
+                image: getNumberingBaseImage(key),
                 stages: []
             };
         }
-        if (!Array.isArray(NUMBERING_SCENARIOS[currentLayoutId].stages)) {
-            NUMBERING_SCENARIOS[currentLayoutId].stages = [];
+        if (!Array.isArray(NUMBERING_SCENARIOS[key].stages)) {
+            NUMBERING_SCENARIOS[key].stages = [];
         }
-        return NUMBERING_SCENARIOS[currentLayoutId];
+        return NUMBERING_SCENARIOS[key];
     }
 
     function getEditorCurrentStage() {
@@ -2609,15 +3066,84 @@
         if (editorQuestionChoices) editorQuestionChoices.value = Array.isArray(q.choices) ? q.choices.join(',') : '';
     }
 
+    function syncEditorQuestionDraft(options = {}) {
+        const { persist = false } = options || {};
+        const stage = getEditorCurrentStage();
+        if (!stage) return false;
+
+        const label = String(editorQuestionLabel?.value || '').trim();
+        const answer = String(editorQuestionAnswer?.value || '').trim();
+        const choices = String(editorQuestionChoices?.value || '')
+            .split(',')
+            .map(v => v.trim())
+            .filter(Boolean);
+        const hasDraft = !!label || !!answer || choices.length > 0;
+        if (!hasDraft || !label || !answer) return false;
+
+        if (!Array.isArray(stage.questions)) stage.questions = [];
+
+        const idx = Number.isInteger(numberingEditorState.questionIndex) ? numberingEditorState.questionIndex : -1;
+        let changed = false;
+        if (idx >= 0 && idx < stage.questions.length) {
+            const target = stage.questions[idx] || {};
+            const nextInputMode = editorInputMode?.value || target.inputMode || stage.inputMode || 'choice';
+            const prevChoices = Array.isArray(target.choices) ? target.choices.join(',') : '';
+            const nextChoices = choices.join(',');
+            changed = (target.label || '') !== label
+                || (target.answer || '') !== answer
+                || prevChoices !== nextChoices
+                || (target.inputMode || '') !== nextInputMode;
+            if (changed) {
+                target.pinId = target.pinId || `${stage.componentId || 'Q'}_${Date.now()}`;
+                target.label = label;
+                target.answer = answer;
+                target.choices = choices;
+                target.inputMode = nextInputMode;
+                stage.questions[idx] = target;
+            }
+        } else {
+            stage.questions.push({
+                pinId: `${stage.componentId || 'Q'}_${Date.now()}`,
+                label,
+                answer,
+                choices,
+                inputMode: editorInputMode?.value || stage.inputMode || 'choice'
+            });
+            numberingEditorState.questionIndex = stage.questions.length - 1;
+            changed = true;
+        }
+
+        if (changed && persist) persistNumberingScenarios();
+        return changed;
+    }
+
     function onEditorQuestionSelectChange() {
+        syncEditorQuestionDraft({ persist: true });
         numberingEditorState.questionIndex = parseInt(editorQuestionSelect?.value || '-1', 10);
         loadEditorQuestionToForm();
+    }
+
+    function onEditorImageUrlChange(persist = false) {
+        const key = getNumberingEditorLayoutId();
+        const scenario = ensureEditorScenario(key);
+        const typed = String(editorImageUrl?.value || '').trim();
+        const nextImage = typed || String(scenario.image || getNumberingBaseImage(key));
+
+        if (numberingEditorImage) numberingEditorImage.src = nextImage;
+        if (editorImageUrl && editorImageUrl.value !== nextImage) editorImageUrl.value = nextImage;
+
+        if (persist) {
+            scenario.image = nextImage;
+            persistNumberingScenarios();
+            if (editorRectInfo) editorRectInfo.textContent = `도면 이미지 적용 완료 (${key}번)`;
+        }
+        updateEditorRectOverlay(numberingEditorState.currentRect || null);
     }
 
     function loadEditorStageToForm() {
         const scenario = ensureEditorScenario();
         editorImageUrl.value = scenario.image || './images/images1.png';
-        numberingEditorImage.src = editorImageUrl.value;
+        onEditorImageUrlChange(false);
 
         const stage = getEditorCurrentStage();
         if (!stage) {
@@ -2653,6 +3179,7 @@
     }
 
     function onEditorStageSelectChange() {
+        syncEditorQuestionDraft({ persist: true });
         numberingEditorState.stageIndex = parseInt(editorStageSelect.value || '-1', 10);
         numberingEditorState.questionIndex = -1;
         loadEditorStageToForm();
@@ -2840,6 +3367,8 @@
             numberingEditorState.stageIndex = scenario.stages.length - 1;
         }
 
+        syncEditorQuestionDraft({ persist: false });
+
         stage.title = (editorStageTitle.value || '').trim() || stage.title;
         stage.componentId = (editorComponentId.value || '').trim() || stage.componentId;
         stage.pinPreset = (editorPinPreset.value || '').trim();
@@ -2889,8 +3418,9 @@
     }
 
     function createScenarioTemplate() {
+        const editorLayoutId = getNumberingEditorLayoutId();
         return {
-            image: (editorImageUrl?.value || '').trim() || getNumberingBaseImage(currentLayoutId),
+            image: (editorImageUrl?.value || '').trim() || getNumberingBaseImage(editorLayoutId),
             stages: [
                 {
                     title: '예시 단계 1',
@@ -2915,11 +3445,12 @@
     }
 
     async function exportNumberingScenario() {
+        const editorLayoutId = getNumberingEditorLayoutId();
         saveEditorStage();
-        let scenario = ensureEditorScenario();
+        let scenario = ensureEditorScenario(editorLayoutId);
         if (!Array.isArray(scenario.stages) || scenario.stages.length === 0) {
             scenario = createScenarioTemplate();
-            NUMBERING_SCENARIOS[currentLayoutId] = scenario;
+            NUMBERING_SCENARIOS[editorLayoutId] = scenario;
             persistNumberingScenarios();
             numberingEditorState.stageIndex = 0;
             renderEditorStageSelect();
@@ -2927,9 +3458,9 @@
             editorRectInfo.textContent = '비어 있어서 템플릿 1단계를 자동 생성했어.';
         }
         // Export as layout-keyed object so it can be pasted directly into repository defaults.
-        const keyed = { [currentLayoutId]: scenario };
+        const keyed = { [editorLayoutId]: scenario };
         const out = JSON.stringify(keyed, null, 2);
-        const fileName = buildExportFileName('numbering', currentLayoutId || 'layout');
+        const fileName = buildExportFileName('numbering', editorLayoutId || 'layout');
         numberingEditorJson.value = out;
         numberingEditorJson.select();
         downloadJsonTextFile(fileName, out);
@@ -2942,6 +3473,7 @@
     }
 
     function importNumberingScenario() {
+        const editorLayoutId = getNumberingEditorLayoutId();
         const text = (numberingEditorJson.value || '').trim();
         if (!text) return;
 
@@ -2955,8 +3487,15 @@
             }
 
             // Format B: { "t1": { "image": "...", "stages": [...] } }
-            if (!scenario && data && data[currentLayoutId] && Array.isArray(data[currentLayoutId].stages)) {
-                scenario = data[currentLayoutId];
+            if (!scenario && data && data[editorLayoutId] && Array.isArray(data[editorLayoutId].stages)) {
+                scenario = data[editorLayoutId];
+            }
+            if (!scenario && data && typeof data === 'object' && !Array.isArray(data)) {
+                const matchedKey = Object.keys(data).find(key =>
+                    normalizeNumberingLayoutId(key) === editorLayoutId
+                    && Array.isArray(data[key]?.stages)
+                );
+                if (matchedKey) scenario = data[matchedKey];
             }
 
             if (!scenario) {
@@ -2964,7 +3503,7 @@
                 return;
             }
 
-            NUMBERING_SCENARIOS[currentLayoutId] = scenario;
+            NUMBERING_SCENARIOS[editorLayoutId] = scenario;
             persistNumberingScenarios();
             numberingEditorState.stageIndex = scenario.stages.length ? 0 : -1;
             renderEditorStageSelect();
@@ -2977,6 +3516,7 @@
 
     function refreshNumberingFromEditor() {
         saveEditorStage();
+        rememberNumberingLayoutId(getNumberingEditorLayoutId());
         if (isNumberingMode) {
             openNumberingModal();
         }
@@ -3001,7 +3541,7 @@
         numberingSession = null;
         numberingAnswers = {};
 
-        const scenario = ensureEditorScenario();
+        const scenario = ensureEditorScenario(getNumberingEditorLayoutId());
         numberingEditorState.stageIndex = scenario.stages.length ? 0 : -1;
         renderEditorStageSelect();
         loadEditorStageToForm();
@@ -3072,11 +3612,16 @@
             alert('관리자 모드에서만 편집기를 열 수 있어.');
             return;
         }
-
-        const scenario = ensureEditorScenario();
-        if (numberingEditorState.stageIndex < 0) {
-            numberingEditorState.stageIndex = scenario.stages.length ? 0 : -1;
-        }
+        const preferred = normalizeNumberingLayoutId(currentLayoutId) || resolveNumberingLayoutId();
+        const picked = setNumberingEditorLayoutId(preferred, {
+            rememberEditor: true,
+            rememberTutorial: false,
+            refreshOptions: true
+        });
+        const scenario = ensureEditorScenario(picked);
+        numberingEditorState.stageIndex = scenario.stages.length ? 0 : -1;
+        numberingEditorState.questionIndex = -1;
+        numberingEditorState.currentRect = null;
 
         bindEditorPointerEvents();
         renderEditorStageSelect();
