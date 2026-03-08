@@ -1,3 +1,3 @@
 git add .
-git commit -m "gpt UI 수정6"
+git commit -m "gpt 메뉴추가 "
 git push -f origin main

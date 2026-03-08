@@ -66,34 +66,6 @@
         stepMs: 1100,
         timer: null
     };
-    const GUIDE_CONTENT_STORAGE_KEY = 'guide_content_v1';
-    const GUIDE_CONTENT_DEFAULT = {
-        usage_tips: {
-            title: '효과적인 앱사용 방법',
-            pages: [
-                {
-                    image: '',
-                    body: '<p><b>추천 순서:</b> 사용법 확인 → 부품 이해 → 넘버링 → 배선 연습 순서로 진행하세요.</p><p>처음에는 채점보다 설명과 되돌리기를 자주 쓰는 편이 효율적입니다.</p>'
-                }
-            ]
-        },
-        parts_intro: {
-            title: '부품 이해',
-            pages: [
-                {
-                    image: '',
-                    body: '<p>자주 나오는 부품의 역할과 접점 구조를 먼저 익혀두면 넘버링과 배선 속도가 같이 올라갑니다.</p><p>이미지와 설명을 관리자 모드에서 페이지별로 정리해 둘 수 있습니다.</p>'
-                }
-            ]
-        }
-    };
-    const guideEditorState = {
-        key: 'usage_tips',
-        pages: [],
-        activePage: 0
-    };
-    let GUIDE_CONTENT = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
-    let infoModalState = null;
 
     function parseAssignmentObject(rawText, varName) {
         const text = String(rawText || '').trim();
@@ -127,23 +99,8 @@
             temp.remove();
             return !!ok;
         } catch (e) {
-        return false;
-    }
-
-    try {
-        const savedGuide = localStorage.getItem(GUIDE_CONTENT_STORAGE_KEY);
-        if (savedGuide) {
-            const parsedGuide = JSON.parse(savedGuide);
-            if (parsedGuide && typeof parsedGuide === 'object' && !Array.isArray(parsedGuide)) {
-                GUIDE_CONTENT = {
-                    ...GUIDE_CONTENT,
-                    ...parsedGuide
-                };
-            }
+            return false;
         }
-    } catch (e) {
-        GUIDE_CONTENT = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
-    }
     }
 
     function buildExportStamp(date = new Date()) {
@@ -1181,183 +1138,6 @@
         setTutorialEditorStatus('튜토리얼 로컬 저장 초기화 완료');
     }
 
-    function persistGuideContent() {
-        try {
-            localStorage.setItem(GUIDE_CONTENT_STORAGE_KEY, JSON.stringify(GUIDE_CONTENT));
-        } catch (e) {
-            // ignore storage errors
-        }
-    }
-
-    function cloneGuideEntry(key) {
-        const raw = GUIDE_CONTENT[key] || GUIDE_CONTENT_DEFAULT[key] || { title: key, pages: [{ image: '', body: '' }] };
-        const pages = Array.isArray(raw.pages) && raw.pages.length
-            ? raw.pages.map(page => ({
-                image: String(page?.image || ''),
-                body: String(page?.body || '')
-            }))
-            : [{ image: '', body: '' }];
-        return {
-            title: String(raw.title || key),
-            pages
-        };
-    }
-
-    function setGuideEditorStatus(text) {
-        if (guideEditorStatus) guideEditorStatus.textContent = String(text || '');
-    }
-
-    function syncGuideEditorDraft() {
-        if (!guideEditorState.pages.length) return;
-        const idx = Number.isInteger(guideEditorState.activePage) ? guideEditorState.activePage : 0;
-        if (!guideEditorState.pages[idx]) guideEditorState.pages[idx] = { image: '', body: '' };
-        guideEditorState.pages[idx].image = String(guideEditorPageImage?.value || '').trim();
-        guideEditorState.pages[idx].body = String(guideEditorPageText?.value || '');
-    }
-
-    function renderGuideEditorPreview() {
-        if (!guideEditorPreview) return;
-        syncGuideEditorDraft();
-        const idx = Number.isInteger(guideEditorState.activePage) ? guideEditorState.activePage : 0;
-        const page = guideEditorState.pages[idx] || { image: '', body: '' };
-        const imageBlock = page.image
-            ? `<img src="${String(page.image).replace(/\\/g, '/')}" alt="가이드 이미지" style="max-width:100%; height:auto; border:1px solid #ccc; margin:10px 0; border-radius:5px;">`
-            : '';
-        guideEditorPreview.innerHTML = `${imageBlock}${String(page.body || '')}`;
-    }
-
-    function renderGuideEditorPages(count, pages) {
-        guideEditorState.pages = Array.from({ length: Math.max(1, count) }, (_, idx) => ({
-            image: String(pages?.[idx]?.image || ''),
-            body: String(pages?.[idx]?.body || '')
-        }));
-        if (guideEditorState.activePage >= guideEditorState.pages.length) {
-            guideEditorState.activePage = guideEditorState.pages.length - 1;
-        }
-        if (guideEditorPageTabs) {
-            guideEditorPageTabs.innerHTML = '';
-            guideEditorState.pages.forEach((page, idx) => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.textContent = `페이지 ${idx + 1}`;
-                if (idx === guideEditorState.activePage) btn.classList.add('active');
-                btn.onclick = () => {
-                    syncGuideEditorDraft();
-                    guideEditorState.activePage = idx;
-                    renderGuideEditorPages(guideEditorState.pages.length, guideEditorState.pages);
-                };
-                guideEditorPageTabs.appendChild(btn);
-            });
-        }
-        const active = guideEditorState.pages[guideEditorState.activePage] || { image: '', body: '' };
-        if (guideEditorActivePageLabel) guideEditorActivePageLabel.textContent = `페이지 ${guideEditorState.activePage + 1}`;
-        if (guideEditorPageImage) guideEditorPageImage.value = active.image || '';
-        if (guideEditorPageText) guideEditorPageText.value = active.body || '';
-        if (guideEditorPageCount) guideEditorPageCount.value = String(guideEditorState.pages.length);
-        renderGuideEditorPreview();
-    }
-
-    function loadGuideEditorEntry(key) {
-        const normalized = key === 'parts_intro' ? 'parts_intro' : 'usage_tips';
-        guideEditorState.key = normalized;
-        const entry = cloneGuideEntry(normalized);
-        if (guideEditorKey) guideEditorKey.value = normalized;
-        if (guideEditorTitle) guideEditorTitle.value = entry.title;
-        guideEditorState.activePage = 0;
-        renderGuideEditorPages(entry.pages.length || 1, entry.pages);
-        setGuideEditorStatus('');
-    }
-
-    function onGuideEditorKeyChange() {
-        syncGuideEditorDraft();
-        loadGuideEditorEntry(guideEditorKey?.value || 'usage_tips');
-    }
-
-    function applyGuidePageCount() {
-        syncGuideEditorDraft();
-        const count = Math.max(1, Math.min(100, parseInt(guideEditorPageCount?.value || '1', 10) || 1));
-        renderGuideEditorPages(count, guideEditorState.pages);
-        setGuideEditorStatus(`페이지 수를 ${count}개로 적용했습니다.`);
-    }
-
-    function addGuideEditorPage() {
-        syncGuideEditorDraft();
-        guideEditorState.pages.push({ image: '', body: '' });
-        guideEditorState.activePage = guideEditorState.pages.length - 1;
-        renderGuideEditorPages(guideEditorState.pages.length, guideEditorState.pages);
-        setGuideEditorStatus('새 페이지를 추가했습니다.');
-    }
-
-    function saveGuideEditor() {
-        syncGuideEditorDraft();
-        const key = guideEditorState.key || 'usage_tips';
-        GUIDE_CONTENT[key] = {
-            title: String(guideEditorTitle?.value || '').trim() || cloneGuideEntry(key).title,
-            pages: guideEditorState.pages.map(page => ({
-                image: String(page?.image || '').trim(),
-                body: String(page?.body || '')
-            }))
-        };
-        persistGuideContent();
-        setGuideEditorStatus(`${GUIDE_CONTENT[key].title} 저장 완료`);
-    }
-
-    function closeGuideEditorModal() {
-        if (guideEditorModal) guideEditorModal.style.display = 'none';
-    }
-
-    function openGuideEditorModal(key = 'usage_tips') {
-        if (!isAdminMode) {
-            alert('관리자 모드에서만 편집기를 열 수 있어.');
-            return;
-        }
-        loadGuideEditorEntry(key);
-        if (guideEditorPageText && guideEditorPageText.dataset.boundInput !== '1') {
-            guideEditorPageText.addEventListener('input', renderGuideEditorPreview);
-            guideEditorPageText.dataset.boundInput = '1';
-        }
-        if (guideEditorPageImage && guideEditorPageImage.dataset.boundInput !== '1') {
-            guideEditorPageImage.addEventListener('input', renderGuideEditorPreview);
-            guideEditorPageImage.dataset.boundInput = '1';
-        }
-        if (guideEditorModal) guideEditorModal.style.display = 'flex';
-    }
-
-    function previewGuideEditor() {
-        saveGuideEditor();
-        closeGuideEditorModal();
-        openGuideContentModal(guideEditorState.key || 'usage_tips');
-    }
-
-    function resetGuideContentLocalStorage() {
-        const ok = confirm('앱 가이드 로컬 저장 데이터를 초기화하고 기본값으로 되돌릴까?');
-        if (!ok) return;
-        try {
-            localStorage.removeItem(GUIDE_CONTENT_STORAGE_KEY);
-        } catch (e) {
-            // ignore storage errors
-        }
-        GUIDE_CONTENT = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
-        loadGuideEditorEntry(guideEditorState.key || 'usage_tips');
-        setGuideEditorStatus('앱 가이드 로컬 저장 초기화 완료');
-    }
-
-    function buildGuideModalPageHtml(entry, page) {
-        const image = String(page?.image || '').trim();
-        const body = String(page?.body || '');
-        const imageBlock = image
-            ? `<img src="${image.replace(/\\/g, '/')}" alt="${entry.title}" style="max-width:100%; height:auto; border:1px solid #ccc; margin:10px 0; border-radius:5px;">`
-            : '';
-        return `${imageBlock}${body}`;
-    }
-
-    function openGuideContentModal(key = 'usage_tips') {
-        currentModalPage = 0;
-        infoModalState = { type: 'guide', key: key === 'parts_intro' ? 'parts_intro' : 'usage_tips' };
-        updateModalContent();
-        if (infoModal) infoModal.style.display = 'flex';
-    }
-
     function buildTutorialModalPageHtml(data, pageHtml) {
         const body = String(pageHtml ?? '');
         const hasInlineImage = /<img\b/i.test(body);
@@ -1376,36 +1156,7 @@
         const playBtn = document.getElementById('playBtn');
         const playSpeedSelect = document.getElementById('playSpeedSelect');
 
-        if (infoModalState?.type === 'guide') {
-            const entry = cloneGuideEntry(infoModalState.key);
-            const pages = entry.pages;
-            const page = pages[currentModalPage] || pages[0] || { image: '', body: '' };
-            modalBody.innerHTML = buildGuideModalPageHtml(entry, page);
-            if (pages.length > 1) {
-                modalTitle.innerText = `${entry.title} (${currentModalPage + 1}/${pages.length})`;
-                indicator.innerText = `${currentModalPage + 1} / ${pages.length}`;
-                indicator.style.display = 'inline-block';
-            } else {
-                modalTitle.innerText = entry.title;
-                indicator.style.display = 'none';
-            }
-            if (playBtn) playBtn.style.display = 'none';
-            if (playSpeedSelect) playSpeedSelect.style.display = 'none';
-            if (pages.length <= 1) {
-                prevBtn.style.display = 'none';
-                nextBtn.style.display = 'none';
-                startBtn.style.display = 'inline-block';
-                return;
-            }
-            prevBtn.style.display = currentModalPage === 0 ? 'none' : 'inline-block';
-            prevBtn.disabled = currentModalPage === 0;
-            if (currentModalPage === pages.length - 1) {
-                nextBtn.style.display = 'none';
-                startBtn.style.display = 'inline-block';
-            } else {
-                nextBtn.style.display = 'inline-block';
-                startBtn.style.display = 'none';
-            }
+        if (typeof renderGuideModalContent === 'function' && renderGuideModalContent(currentModalPage)) {
             return;
         }
 
@@ -1453,8 +1204,9 @@
 
     function changePage(direction) {
         let pages = [];
-        if (infoModalState?.type === 'guide') {
-            pages = cloneGuideEntry(infoModalState.key).pages;
+        if (typeof isGuideModalActive === 'function' && isGuideModalActive()) {
+            const count = typeof getGuideModalPageCount === 'function' ? getGuideModalPageCount() : 0;
+            pages = Array.from({ length: Math.max(1, count) });
         } else {
             const data = TUTORIAL_CONFIG[currentLayoutId];
             pages = Array.isArray(data?.desc) ? data.desc : [data?.desc];
@@ -1472,7 +1224,7 @@
         if (document?.body?.classList?.contains('home-mode')) return;
         currentLayoutId = document.getElementById('layoutSelect')?.value || currentLayoutId;
         currentModalPage = 0;
-        infoModalState = { type: 'tutorial', layoutId: currentLayoutId };
+        if (typeof clearGuideModalState === 'function') clearGuideModalState();
 
         const data = TUTORIAL_CONFIG[currentLayoutId];
         if (data) {
@@ -1496,7 +1248,7 @@
     }
 
     function closeModal(id) {
-        if (id === 'infoModal') infoModalState = null;
+        if (id === 'infoModal' && typeof clearGuideModalState === 'function') clearGuideModalState();
         document.getElementById(id).style.display = 'none';
     }
 
