@@ -81,3 +81,65 @@
 - 지금은 “아이디어 검증 단계”를 넘어 “운영 가능한 제품 구조”로 넘어가야 할 시점입니다.
 - 핵심은 **도면 확장 가능한 데이터 구조 + 모바일 최적화 + 초보 학습 UX + 최소 수익화 동선**입니다.
 - 위 순서로 가면 18개 도면 확장과 상용화 가능성이 동시에 올라갑니다.
+
+
+
+결선 정답 데이터
+파일: answers-data.js
+객체: window.APP_DB_ANSWERS_DEFAULT
+넣는 형태:
+window.APP_DB_ANSWERS_DEFAULT = {
+  "1": { "targets": [], "commons": [] },
+  "2": { "targets": [], "commons": [] },
+  "3": { "targets": [], "commons": [] }
+};
+새 도면을 넣을 때는 마지막 도면 뒤에 , 찍고 같은 레벨로 "4": {...} 추가
+넘버링 데이터
+파일: numbering-data.js
+객체: window.APP_NUMBERING_SCENARIOS_DEFAULT
+넣는 형태:
+window.APP_NUMBERING_SCENARIOS_DEFAULT = {
+  "1": {
+    "image": "./images/open1.png",
+    "stages": [ ... ]
+  },
+  "2": {
+    "image": "./images/num2.png",
+    "stages": [ ... ]
+  }
+};
+새 도면은 "1" 안에 넣는 게 아니라 "1"과 같은 레벨에 "2", "3"으로 추가
+stages 안의 각 단계는 questions가 비어 있으면 실습에서 안 보일 수 있음
+튜토리얼 설명 데이터
+파일: tutorial-config-data.js
+객체: window.APP_TUTORIAL_CONFIG_DEFAULT
+넣는 형태:
+window.APP_TUTORIAL_CONFIG_DEFAULT = {
+  "1": {
+    "title": "...",
+    "desc": ["..."],
+    "img": "./images/...",
+    "targetIds": [ ... ]
+  },
+  "t2": {
+    "title": "...",
+    "desc": ["..."],
+    "img": "./images/...",
+    "targetIds": [ ... ]
+  }
+};
+기존 키 규칙에 맞춰 같은 레벨로 추가
+붙이면 안 되는 곳:
+
+repository.js
+src/data/dropin/*.json
+IDE 탭에 남아 있는 예전 경로 src/data/numbering-data.js, app-static-data.js
+가장 안전한 추가 방법:
+
+맞는 파일을 연다
+마지막 도면 블록 끝에 ,를 붙인다
+새 도면 키를 같은 레벨로 추가한다
+맨 마지막 };는 그대로 둔다
+원하면 다음 답변에서 결선용, 넘버링용, 튜토리얼용 복붙 템플릿 3개를 바로 쓸 수 있게 만들어드리겠습니다.
+
+

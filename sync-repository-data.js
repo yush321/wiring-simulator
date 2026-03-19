@@ -39,7 +39,9 @@ function detectEol(text) {
 
 function parseArgs(argv) {
   const args = {
-    repo: "src/data/repository.js",
+    tutorialRepo: "src/data/tutorial/tutorial-config-data.js",
+    numberingRepo: "src/data/numbering/numbering-data.js",
+    answersRepo: "src/data/answers/answers-data.js",
     layout: null,
     tutorial: null,
     numbering: null,
@@ -50,8 +52,7 @@ function parseArgs(argv) {
 
   for (let i = 0; i < argv.length; i += 1) {
     const t = argv[i];
-    if (t === "--repo") args.repo = argv[++i];
-    else if (t === "--layout") args.layout = argv[++i];
+    if (t === "--layout") args.layout = argv[++i];
     else if (t === "--tutorial") args.tutorial = argv[++i];
     else if (t === "--numbering") args.numbering = argv[++i];
     else if (t === "--answers") args.answers = argv[++i];
@@ -79,7 +80,6 @@ function printHelp() {
       "  node sync-repository-data.js [options]",
       "",
       "Options:",
-      "  --repo <path>         repository.js path (default: src/data/repository.js)",
       "  --tutorial <path>     tutorial JSON or let TUTORIAL_CONFIG = ...;",
       "  --numbering <path>    numbering JSON or let NUMBERING_SCENARIOS_DEFAULT = ...;",
       "  --answers <path>      answers JSON or let DB_ANSWERS = ...;",
@@ -190,9 +190,9 @@ function scanBalancedObject(text, openIndex) {
 }
 
 function findAssignmentRange(source, varName) {
-  const re = new RegExp(`\\b(?:let|const|var)\\s+${varName}\\s*=`, "m");
+  const re = new RegExp(`(?:\\b(?:let|const|var)\\s+${varName}|window\\.${varName})\\s*=`, "m");
   const m = re.exec(source);
-  if (!m) fail(`Variable not found in repository.js: ${varName}`);
+  if (!m) fail(`Variable not found in data file: ${varName}`);
 
   const eqIndex = source.indexOf("=", m.index);
   if (eqIndex < 0) fail(`Invalid assignment for ${varName}`);
@@ -220,7 +220,7 @@ function readAssignmentObject(source, varName) {
     try {
       return vm.runInNewContext(`(${raw})`, {}, { timeout: 500 });
     } catch (e) {
-      fail(`Failed to parse ${varName} from repository.js: ${e.message}`);
+      fail(`Failed to parse ${varName}: ${e.message}`);
     }
   }
 }
@@ -264,38 +264,50 @@ function toNumberingPatch(payload, layoutId) {
 
 function run() {
   const args = parseArgs(process.argv.slice(2));
-  const repoPath = path.resolve(args.repo);
-  if (!fs.existsSync(repoPath)) fail(`File not found: ${repoPath}`);
-
-  let source = readText(repoPath);
   const summary = [];
+  const updates = [];
 
   if (args.tutorial) {
+    const repoPath = path.resolve(args.tutorialRepo);
+    if (!fs.existsSync(repoPath)) fail(`File not found: ${repoPath}`);
+    let source = readText(repoPath);
+
     const payload = parseInputPayload(readText(path.resolve(args.tutorial)));
     const patch = toTutorialPatch(payload, args.layout);
-    const base = readAssignmentObject(source, "TUTORIAL_CONFIG");
+    const base = readAssignmentObject(source, "APP_TUTORIAL_CONFIG_DEFAULT");
     const next = { ...base, ...patch };
-    source = replaceAssignmentObject(source, "TUTORIAL_CONFIG", next);
+    source = replaceAssignmentObject(source, "APP_TUTORIAL_CONFIG_DEFAULT", next);
     summary.push(`TUTORIAL_CONFIG keys: ${Object.keys(next).length}`);
+    updates.push({ path: repoPath, source });
   }
 
   if (args.numbering) {
+    const repoPath = path.resolve(args.numberingRepo);
+    if (!fs.existsSync(repoPath)) fail(`File not found: ${repoPath}`);
+    let source = readText(repoPath);
+
     const payload = parseInputPayload(readText(path.resolve(args.numbering)));
     const patch = toNumberingPatch(payload, args.layout);
-    const base = readAssignmentObject(source, "NUMBERING_SCENARIOS_DEFAULT");
+    const base = readAssignmentObject(source, "APP_NUMBERING_SCENARIOS_DEFAULT");
     const next = { ...base, ...patch };
-    source = replaceAssignmentObject(source, "NUMBERING_SCENARIOS_DEFAULT", next);
+    source = replaceAssignmentObject(source, "APP_NUMBERING_SCENARIOS_DEFAULT", next);
     summary.push(`NUMBERING_SCENARIOS_DEFAULT keys: ${Object.keys(next).length}`);
+    updates.push({ path: repoPath, source });
   }
 
   if (args.answers) {
+    const repoPath = path.resolve(args.answersRepo);
+    if (!fs.existsSync(repoPath)) fail(`File not found: ${repoPath}`);
+    let source = readText(repoPath);
+
     const payload = parseInputPayload(readText(path.resolve(args.answers)));
     if (!isPlainObject(payload)) fail("DB_ANSWERS payload must be an object.");
     const next = args.mergeAnswers
-      ? { ...readAssignmentObject(source, "DB_ANSWERS"), ...payload }
+      ? { ...readAssignmentObject(source, "APP_DB_ANSWERS_DEFAULT"), ...payload }
       : payload;
-    source = replaceAssignmentObject(source, "DB_ANSWERS", next);
+    source = replaceAssignmentObject(source, "APP_DB_ANSWERS_DEFAULT", next);
     summary.push(`DB_ANSWERS keys: ${Object.keys(next).length}${args.mergeAnswers ? " (merged)" : ""}`);
+    updates.push({ path: repoPath, source });
   }
 
   if (args.dryRun) {
@@ -304,8 +316,10 @@ function run() {
     return;
   }
 
-  writeText(repoPath, source);
-  console.log("[sync-repository-data] Updated repository.js");
+  updates.forEach(({ path: p, source }) => {
+    writeText(p, source);
+  });
+  console.log("[sync-repository-data] Updated split data files successfully.");
   summary.forEach((line) => console.log(`- ${line}`));
 }
 
