@@ -1,0 +1,6 @@
+{
+  "appId": "com.gisigi.electricianmaster",
+  "appName": "전기기능사 마스터",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

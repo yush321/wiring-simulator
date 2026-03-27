@@ -10,6 +10,7 @@
             }
             return out;
         };
+
         const buildNumberingButtons = () => {
             let out = '';
             for (let i = 1; i <= 18; i += 1) {
@@ -19,12 +20,12 @@
         };
 
         host.innerHTML = `
-            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('usage_tips')">1. 효과적인 앱사용 방법</button>
+            <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('usage_tips')">1. 효과적인 학습 방법</button>
             <button class="drawer-item" type="button" onclick="openCategoryFromDrawer('parts_intro')">2. 부품 이해</button>
             <details class="drawer-group" open>
-                <summary>3. 핀 번호 학습(넘버링)</summary>
+                <summary>3. 선 번호 학습(서버 예정)</summary>
                 <div class="drawer-sublist">
-                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('numbering')">최근 도면 이어하기</button>
+                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('numbering')">최근 화면 이어하기</button>
                     ${buildNumberingButtons()}
                 </div>
             </details>
@@ -39,7 +40,7 @@
             <details class="drawer-group">
                 <summary>6. 공개도면</summary>
                 <div class="drawer-sublist">
-                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('practice_all')">전체 도면 보기</button>
+                    <button class="drawer-subitem wide" type="button" onclick="openCategoryFromDrawer('practice_all')">전체 화면 보기</button>
                     ${buildSubButtons('practice')}
                 </div>
             </details>
@@ -67,6 +68,48 @@
         if (text) text.textContent = `${safe}%`;
     }
 
+    function getAuthApi() {
+        return (typeof window !== 'undefined' && window.APP_AUTH) ? window.APP_AUTH : null;
+    }
+
+    function getAuthState() {
+        const auth = getAuthApi();
+        return auth?.getState
+            ? auth.getState()
+            : {
+                configured: false,
+                authenticated: false,
+                guestEnabled: true,
+                displayName: '게스트',
+                sessionStatus: 'idle',
+                lastErrorMessage: null
+            };
+    }
+
+    function renderAuthUi(snapshot) {
+        const state = snapshot || getAuthState();
+        const chip = document.getElementById('homeUserChip');
+        const actionBtn = document.getElementById('homeAuthActionBtn');
+        const heroStatus = document.getElementById('heroAuthStatus');
+
+        if (chip) chip.textContent = state.authenticated ? state.displayName : '게스트';
+        if (actionBtn) actionBtn.textContent = state.authenticated ? '로그아웃' : '로그인';
+
+        if (heroStatus) {
+            if (!state.configured) {
+                heroStatus.textContent = 'Supabase 설정이 비어 있습니다. 지금은 무료 체험 모드로 앱을 둘러볼 수 있습니다.';
+            } else if (state.lastErrorMessage) {
+                heroStatus.textContent = state.lastErrorMessage;
+            } else if (state.authenticated && state.sessionStatus === 'syncing') {
+                heroStatus.textContent = '계정과 기기 상태를 확인하는 중입니다.';
+            } else if (state.authenticated) {
+                heroStatus.textContent = `${state.displayName} 계정으로 로그인되어 있습니다. 진도와 유료 잠금이 계정에 연결됩니다.`;
+            } else {
+                heroStatus.textContent = '카카오 로그인으로 학습 기록과 유료 기능 잠금을 계정에 연결합니다.';
+            }
+        }
+    }
+
     function showHomeScreen() {
         document.body.classList.remove('prelaunch');
         document.body.classList.add('home-mode');
@@ -76,6 +119,7 @@
         if (home) home.style.display = 'block';
         setProgressRing('wiringProgressRing', 'wiringProgressText', 42);
         setProgressRing('numberingProgressRing', 'numberingProgressText', 28);
+        renderAuthUi();
     }
 
     function toggleHomeDrawer(open) {
@@ -104,11 +148,47 @@
         showHomeScreen();
     }
 
-    function continueWithProvider(name) {
+    async function continueWithProvider(name) {
         const provider = String(name || '').toLowerCase();
-        if (provider === 'google') alert('Google 로그인은 준비 중입니다. 대시보드로 이동합니다.');
-        else if (provider === 'apple') alert('Apple 로그인은 준비 중입니다. 대시보드로 이동합니다.');
-        showHomeScreen();
+        if (provider !== 'kakao') {
+            alert('현재는 카카오 로그인만 우선 연결합니다.');
+            return;
+        }
+
+        const auth = getAuthApi();
+        if (!auth) {
+            alert('인증 모듈이 아직 준비되지 않았습니다.');
+            return;
+        }
+
+        const result = await auth.signInWithKakao();
+        if (!result?.ok) {
+            alert(result?.error || '카카오 로그인을 시작하지 못했습니다.');
+        }
+    }
+
+    async function handleHomeAuthAction() {
+        const auth = getAuthApi();
+        if (!auth) {
+            alert('인증 모듈이 아직 준비되지 않았습니다.');
+            return;
+        }
+
+        const state = getAuthState();
+        if (state.authenticated) {
+            const result = await auth.signOut();
+            if (!result?.ok) {
+                alert(result?.error || '로그아웃에 실패했습니다.');
+                return;
+            }
+            renderAuthUi(auth.getState?.());
+            return;
+        }
+
+        const result = await auth.signInWithKakao();
+        if (!result?.ok) {
+            alert(result?.error || '카카오 로그인을 시작하지 못했습니다.');
+        }
     }
 
     function continueLearning(mode) {
@@ -165,10 +245,20 @@
     window.revealAppCore = revealAppCore;
     window.startAppFromHero = startAppFromHero;
     window.continueWithProvider = continueWithProvider;
+    window.handleHomeAuthAction = handleHomeAuthAction;
     window.continueLearning = continueLearning;
     window.openCategoryFromDrawer = openCategoryFromDrawer;
 
     renderHomeDrawerMenu();
+    renderAuthUi();
     document.body.classList.add('prelaunch');
     document.body.classList.remove('home-mode');
+
+    const auth = getAuthApi();
+    if (auth?.addListener) {
+        auth.addListener(snapshot => {
+            renderAuthUi(snapshot);
+            if (snapshot?.authenticated) showHomeScreen();
+        });
+    }
 })();

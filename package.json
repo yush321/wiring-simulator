@@ -1,0 +1,28 @@
+{
+  "name": "electrician-master-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Capacitor shell for the electrical practical exam training app.",
+  "scripts": {
+    "clean": "node ./scripts/stage-web.mjs --clean",
+    "build:web": "node ./scripts/stage-web.mjs",
+    "preview:web": "npm run build:web && node ./scripts/preview-web.mjs",
+    "cap:copy": "npm run build:web && npx cap copy",
+    "cap:patch:android-java": "node ./scripts/patch-android-java.mjs",
+    "cap:sync": "npm run build:web && npx cap sync && npm run cap:patch:android-java",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.6.1",
+    "@capacitor/app": "7.1.2",
+    "@capacitor/browser": "7.0.5",
+    "@capacitor/core": "7.6.1",
+    "@capacitor/ios": "7.6.1",
+    "@supabase/supabase-js": "2.100.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.6.1",
+    "esbuild": "0.27.4"
+  }
+}

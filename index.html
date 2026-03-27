@@ -114,6 +114,15 @@
             font-weight: 700;
             box-sizing: border-box;
         }
+        .hero-login-btn.kakao {
+            background: #fee500;
+            border-color: #e9d600;
+            color: #191919;
+        }
+        .hero-login-btn.secondary {
+            background: #f8fafc;
+            color: #334155;
+        }
         .hero-divider {
             display: flex;
             align-items: center;
@@ -164,6 +173,16 @@
             color: #64748b;
         }
         .hero-links a { color: #b45309; text-decoration: none; font-weight: 700; }
+        .hero-auth-status {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.5;
+        }
         .hero-policy {
             color: #64748b;
             font-size: 11px;
@@ -188,11 +207,38 @@
             justify-content: space-between;
             margin-bottom: 10px;
         }
+        .home-auth-area {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .home-brand {
             font-size: 15px;
             font-weight: 800;
             color: #f8fafc;
             letter-spacing: 0.2px;
+        }
+        .home-user-chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 32px;
+            padding: 0 12px;
+            border-radius: 999px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #e2e8f0;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .home-auth-btn {
+            min-height: 32px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: #fee500;
+            color: #191919;
+            font-size: 12px;
+            font-weight: 800;
         }
         .hamburger-btn {
             width: 42px;
@@ -1322,17 +1368,12 @@
         </div>
 
         <div class="hero-card">
-            <h3>다시 오신 것을 환영합니다</h3>
-            <button class="hero-login-btn" type="button" onclick="continueWithProvider('google')">Google에서 계속 진행</button>
-            <button class="hero-login-btn" type="button" onclick="continueWithProvider('apple')">Apple에서 계속 진행</button>
-            <div class="hero-divider">또는</div>
-            <div class="hero-field-label">이메일 또는 전화</div>
-            <input id="heroUserId" class="hero-input" type="text" placeholder="이메일 주소를 입력하세요">
-            <div class="hero-field-label">비밀번호</div>
-            <input id="heroPassword" class="hero-input" type="password" placeholder="비밀번호를 입력하세요">
-            <button class="hero-start" type="button" onclick="startAppFromHero()">시작하기</button>
+            <h3>계정으로 시작하기</h3>
+            <div id="heroAuthStatus" class="hero-auth-status">카카오 로그인 준비 중입니다. 설정 전에는 무료 체험 모드로도 들어갈 수 있습니다.</div>
+            <button class="hero-login-btn kakao" type="button" onclick="continueWithProvider('kakao')">카카오로 계속 진행</button>
+            <button class="hero-login-btn secondary" type="button" onclick="startAppFromHero()">로그인 없이 무료 체험</button>
             <div class="hero-links">
-                비밀번호를 잊으셨나요? <a href="#" onclick="event.preventDefault(); alert('현재는 로컬 학습 모드입니다.');">도움말</a>
+                로그인 시 학습 기록 동기화와 유료 기능 해금이 계정에 연결됩니다.
             </div>
         </div>
         <p class="hero-policy">계속 진행하면 이용약관 및 개인정보처리방침에 동의한 것으로 간주됩니다.</p>
@@ -1342,7 +1383,10 @@
         <div class="home-top">
             <button id="homeMenuToggle" class="hamburger-btn" type="button" onclick="toggleHomeDrawer(true)"><span></span></button>
             <div class="home-brand">학습 대시보드</div>
-            <div style="width:42px;"></div>
+            <div class="home-auth-area">
+                <span id="homeUserChip" class="home-user-chip">게스트</span>
+                <button id="homeAuthActionBtn" class="home-auth-btn" type="button" onclick="handleHomeAuthAction()">로그인</button>
+            </div>
         </div>
 
         <div class="home-summary">
