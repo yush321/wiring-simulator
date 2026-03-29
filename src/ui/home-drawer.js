@@ -86,28 +86,40 @@
             };
     }
 
+    function setHeroStatus(message) {
+        const heroStatus = document.getElementById('heroAuthStatus');
+        if (heroStatus) heroStatus.textContent = String(message || '');
+    }
+
     function renderAuthUi(snapshot) {
         const state = snapshot || getAuthState();
         const chip = document.getElementById('homeUserChip');
         const actionBtn = document.getElementById('homeAuthActionBtn');
-        const heroStatus = document.getElementById('heroAuthStatus');
 
         if (chip) chip.textContent = state.authenticated ? state.displayName : '게스트';
         if (actionBtn) actionBtn.textContent = state.authenticated ? '로그아웃' : '로그인';
 
-        if (heroStatus) {
-            if (!state.configured) {
-                heroStatus.textContent = 'Supabase 설정이 비어 있습니다. 지금은 무료 체험 모드로 앱을 둘러볼 수 있습니다.';
-            } else if (state.lastErrorMessage) {
-                heroStatus.textContent = state.lastErrorMessage;
-            } else if (state.authenticated && state.sessionStatus === 'syncing') {
-                heroStatus.textContent = '계정과 기기 상태를 확인하는 중입니다.';
-            } else if (state.authenticated) {
-                heroStatus.textContent = `${state.displayName} 계정으로 로그인되어 있습니다. 진도와 유료 잠금이 계정에 연결됩니다.`;
-            } else {
-                heroStatus.textContent = '카카오 로그인으로 학습 기록과 유료 기능 잠금을 계정에 연결합니다.';
-            }
+        if (!state.configured) {
+            setHeroStatus('Supabase 설정이 비어 있습니다. 지금은 무료 체험 모드로 앱을 둘러볼 수 있습니다.');
+            return;
         }
+
+        if (state.lastErrorMessage) {
+            setHeroStatus(state.lastErrorMessage);
+            return;
+        }
+
+        if (state.authenticated && state.sessionStatus === 'syncing') {
+            setHeroStatus('계정과 기기 상태를 확인하는 중입니다.');
+            return;
+        }
+
+        if (state.authenticated) {
+            setHeroStatus(`${state.displayName} 계정으로 로그인되어 있습니다. 진도와 유료 잠금이 계정에 연결됩니다.`);
+            return;
+        }
+
+        setHeroStatus('개발 단계에서는 이메일 로그인으로 기기 제한과 동시 접속 차단을 먼저 테스트합니다.');
     }
 
     function showHomeScreen() {
@@ -119,6 +131,17 @@
         if (home) home.style.display = 'block';
         setProgressRing('wiringProgressRing', 'wiringProgressText', 42);
         setProgressRing('numberingProgressRing', 'numberingProgressText', 28);
+        renderAuthUi();
+    }
+
+    function showAuthScreen() {
+        document.body.classList.add('prelaunch');
+        document.body.classList.remove('home-mode');
+        const hero = document.getElementById('heroScreen');
+        if (hero) hero.style.display = 'grid';
+        const home = document.getElementById('homeScreen');
+        if (home) home.style.display = 'none';
+        toggleHomeDrawer(false);
         renderAuthUi();
     }
 
@@ -148,10 +171,19 @@
         showHomeScreen();
     }
 
+    function readEmailAuthFields() {
+        const emailInput = document.getElementById('heroEmailInput');
+        const passwordInput = document.getElementById('heroPasswordInput');
+        return {
+            email: String(emailInput?.value || '').trim(),
+            password: String(passwordInput?.value || '')
+        };
+    }
+
     async function continueWithProvider(name) {
         const provider = String(name || '').toLowerCase();
-        if (provider !== 'kakao') {
-            alert('현재는 카카오 로그인만 우선 연결합니다.');
+        if (provider === 'kakao') {
+            alert('카카오 로그인은 Biz App 준비 후 다시 연결할 예정입니다.');
             return;
         }
 
@@ -161,9 +193,41 @@
             return;
         }
 
-        const result = await auth.signInWithKakao();
+        const result = await auth.signInWithProvider(provider);
         if (!result?.ok) {
-            alert(result?.error || '카카오 로그인을 시작하지 못했습니다.');
+            alert(result?.error || '소셜 로그인을 시작하지 못했습니다.');
+        }
+    }
+
+    async function submitEmailAuth(mode) {
+        const auth = getAuthApi();
+        if (!auth) {
+            alert('인증 모듈이 아직 준비되지 않았습니다.');
+            return;
+        }
+
+        const { email, password } = readEmailAuthFields();
+        if (!email) {
+            setHeroStatus('이메일을 입력해 주세요.');
+            return;
+        }
+        if (!password) {
+            setHeroStatus('비밀번호를 입력해 주세요.');
+            return;
+        }
+
+        setHeroStatus(mode === 'signUp' ? '테스트 계정을 만드는 중입니다.' : '이메일 로그인을 진행하는 중입니다.');
+        const result = mode === 'signUp'
+            ? await auth.signUpWithEmail(email, password)
+            : await auth.signInWithPassword(email, password);
+
+        if (!result?.ok) {
+            setHeroStatus(result?.error || '이메일 인증에 실패했습니다.');
+            return;
+        }
+
+        if (result?.message) {
+            setHeroStatus(result.message);
         }
     }
 
@@ -185,10 +249,7 @@
             return;
         }
 
-        const result = await auth.signInWithKakao();
-        if (!result?.ok) {
-            alert(result?.error || '카카오 로그인을 시작하지 못했습니다.');
-        }
+        showAuthScreen();
     }
 
     function continueLearning(mode) {
@@ -241,10 +302,12 @@
     window.applyLayoutCategoryFromDrawer = applyLayoutCategoryFromDrawer;
     window.setProgressRing = setProgressRing;
     window.showHomeScreen = showHomeScreen;
+    window.showAuthScreen = showAuthScreen;
     window.toggleHomeDrawer = toggleHomeDrawer;
     window.revealAppCore = revealAppCore;
     window.startAppFromHero = startAppFromHero;
     window.continueWithProvider = continueWithProvider;
+    window.submitEmailAuth = submitEmailAuth;
     window.handleHomeAuthAction = handleHomeAuthAction;
     window.continueLearning = continueLearning;
     window.openCategoryFromDrawer = openCategoryFromDrawer;
@@ -255,10 +318,23 @@
     document.body.classList.remove('home-mode');
 
     const auth = getAuthApi();
+    let lastAuthenticated = !!getAuthState().authenticated;
     if (auth?.addListener) {
         auth.addListener(snapshot => {
+            const isAuthenticated = !!snapshot?.authenticated;
+            const wasAuthenticated = lastAuthenticated;
+            const isLandingVisible = document.body.classList.contains('prelaunch') || document.body.classList.contains('home-mode');
+            lastAuthenticated = isAuthenticated;
+
             renderAuthUi(snapshot);
-            if (snapshot?.authenticated) showHomeScreen();
+            if (isAuthenticated) {
+                if (isLandingVisible) showHomeScreen();
+                return;
+            }
+
+            if (wasAuthenticated) {
+                showAuthScreen();
+            }
         });
     }
 })();

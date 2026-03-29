@@ -32,7 +32,10 @@ const state = {
   sessionEstablishedForUserId: null,
   authLifecyclePromise: null,
   verifyTimerId: null,
-  lastError: null
+  lastError: null,
+  webListenersRegistered: false,
+  verifyInFlight: null,
+  lastVerifyAt: 0
 };
 
 function getConfig() {
@@ -84,6 +87,16 @@ function createUuid() {
     const value = token === 'x' ? random : ((random & 0x3) | 0x8);
     return value.toString(16);
   });
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function inferDisplayNameFromEmail(email) {
+  const normalized = normalizeEmail(email);
+  const localPart = normalized.split('@')[0] || '';
+  return localPart || '사용자';
 }
 
 function isNativePlatform() {
@@ -168,6 +181,8 @@ function clearSessionGuardState() {
   state.sessionNonce = null;
   state.sessionStatus = 'idle';
   state.sessionEstablishedForUserId = null;
+  state.verifyInFlight = null;
+  state.lastVerifyAt = 0;
   removeStoredValue(STORAGE_KEYS.sessionNonce);
 }
 
@@ -222,6 +237,12 @@ function getMessageForCode(code) {
       return '세션 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.';
     case 'SUPABASE_NOT_CONFIGURED':
       return 'Supabase 설정값이 비어 있습니다.';
+    case 'EMAIL_REQUIRED':
+      return '이메일을 입력해 주세요.';
+    case 'PASSWORD_REQUIRED':
+      return '비밀번호를 입력해 주세요.';
+    case 'PASSWORD_TOO_SHORT':
+      return '비밀번호는 6자 이상으로 입력해 주세요.';
     default:
       return '인증 중 문제가 발생했습니다.';
   }
@@ -243,6 +264,12 @@ function shouldForceLogout(code) {
   return ['DEVICE_LIMIT_REACHED', 'DEVICE_NOT_REGISTERED', 'SESSION_NOT_FOUND', 'SESSION_REVOKED'].includes(
     String(code || '').trim()
   );
+}
+
+function applyAuthSession(data) {
+  state.session = data?.session || null;
+  state.user = data?.session?.user || null;
+  emitState();
 }
 
 async function ensureClient() {
@@ -280,7 +307,28 @@ async function ensureClient() {
     state.appListenersRegistered = true;
   }
 
+  if (!isNativePlatform() && !state.webListenersRegistered) {
+    registerWebSessionListeners();
+    state.webListenersRegistered = true;
+  }
+
   return state.client;
+}
+
+function registerWebSessionListeners() {
+  const triggerVerify = () => {
+    if (!state.user || !state.sessionNonce) return;
+    void requestSessionVerification({ minIntervalMs: 1500 });
+  };
+
+  window.addEventListener('focus', triggerVerify);
+  window.addEventListener('pageshow', triggerVerify);
+  window.addEventListener('online', triggerVerify);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') triggerVerify();
+  });
+  document.addEventListener('pointerdown', triggerVerify, true);
+  document.addEventListener('keydown', triggerVerify, true);
 }
 
 async function invokeRpc(name, params) {
@@ -324,7 +372,7 @@ async function handleAppUrlOpen(event) {
 
 async function handleAppStateChange(event) {
   if (!event?.isActive || !state.user || !state.sessionNonce) return;
-  await verifyCurrentDeviceSession();
+  await requestSessionVerification();
 }
 
 async function forceSignOut(code, message) {
@@ -346,11 +394,39 @@ async function forceSignOut(code, message) {
 
 function startVerifyTimer() {
   stopVerifyTimer();
-  const intervalMs = Math.max(15000, Number(getConfig().sessionVerifyIntervalMs) || DEFAULTS.sessionVerifyIntervalMs);
+  const intervalMs = Math.max(4000, Number(getConfig().sessionVerifyIntervalMs) || DEFAULTS.sessionVerifyIntervalMs);
   state.verifyTimerId = window.setInterval(() => {
     if (!state.user || !state.sessionNonce) return;
-    void verifyCurrentDeviceSession();
+    void requestSessionVerification({ minIntervalMs: Math.max(2500, Math.floor(intervalMs / 2)) });
   }, intervalMs);
+}
+
+function requestSessionVerification(options = {}) {
+  const { minIntervalMs = 0, suppressSignOut = false } = options;
+  if (!state.user || !state.sessionNonce) {
+    return Promise.resolve({
+      ok: false,
+      code: 'AUTH_REQUIRED',
+      message: getMessageForCode('AUTH_REQUIRED')
+    });
+  }
+
+  const now = Date.now();
+  if (state.verifyInFlight) return state.verifyInFlight;
+  if (minIntervalMs > 0 && now - state.lastVerifyAt < minIntervalMs) {
+    return Promise.resolve({
+      ok: true,
+      code: 'VERIFY_SKIPPED'
+    });
+  }
+
+  state.verifyInFlight = verifyCurrentDeviceSession({ suppressSignOut })
+    .finally(() => {
+      state.lastVerifyAt = Date.now();
+      state.verifyInFlight = null;
+    });
+
+  return state.verifyInFlight;
 }
 
 async function verifyCurrentDeviceSession(options = {}) {
@@ -565,6 +641,84 @@ async function signInWithProvider(providerName) {
   return { ok: true };
 }
 
+async function signInWithPassword(email, password) {
+  const client = await ensureClient();
+  if (!client) {
+    return { ok: false, error: getMessageForCode('SUPABASE_NOT_CONFIGURED') };
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedPassword = String(password || '');
+  if (!normalizedEmail) return { ok: false, error: getMessageForCode('EMAIL_REQUIRED') };
+  if (!normalizedPassword) return { ok: false, error: getMessageForCode('PASSWORD_REQUIRED') };
+
+  setLastError(null, '');
+  const { data, error } = await client.auth.signInWithPassword({
+    email: normalizedEmail,
+    password: normalizedPassword
+  });
+
+  if (error) {
+    return { ok: false, error: error.message || '이메일 로그인에 실패했습니다.' };
+  }
+
+  applyAuthSession(data);
+  if (!state.user) {
+    return { ok: false, error: '로그인 세션을 확인하지 못했습니다.' };
+  }
+
+  const sessionResult = await ensureDeviceSession({ forceClaim: true });
+  if (!sessionResult?.ok) {
+    return { ok: false, error: sessionResult?.message || getMessageForCode('DEVICE_SESSION_SETUP_FAILED') };
+  }
+
+  return { ok: true };
+}
+
+async function signUpWithEmail(email, password) {
+  const client = await ensureClient();
+  if (!client) {
+    return { ok: false, error: getMessageForCode('SUPABASE_NOT_CONFIGURED') };
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedPassword = String(password || '');
+  if (!normalizedEmail) return { ok: false, error: getMessageForCode('EMAIL_REQUIRED') };
+  if (!normalizedPassword) return { ok: false, error: getMessageForCode('PASSWORD_REQUIRED') };
+  if (normalizedPassword.length < 6) return { ok: false, error: getMessageForCode('PASSWORD_TOO_SHORT') };
+
+  setLastError(null, '');
+  const displayName = inferDisplayNameFromEmail(normalizedEmail);
+  const { data, error } = await client.auth.signUp({
+    email: normalizedEmail,
+    password: normalizedPassword,
+    options: {
+      data: {
+        nickname: displayName,
+        name: displayName
+      }
+    }
+  });
+
+  if (error) {
+    return { ok: false, error: error.message || '계정 생성에 실패했습니다.' };
+  }
+
+  applyAuthSession(data);
+  if (state.user) {
+    const sessionResult = await ensureDeviceSession({ forceClaim: true });
+    if (!sessionResult?.ok) {
+      return { ok: false, error: sessionResult?.message || getMessageForCode('DEVICE_SESSION_SETUP_FAILED') };
+    }
+    return { ok: true, message: '테스트 계정이 만들어졌습니다.' };
+  }
+
+  return {
+    ok: true,
+    message: '계정이 만들어졌습니다. Supabase에서 Confirm email이 켜져 있으면 메일 확인 후 로그인해 주세요.'
+  };
+}
+
 async function signOut() {
   await init();
   setLastError(null, '');
@@ -607,6 +761,8 @@ window.APP_AUTH = {
   verifyCurrentDeviceSession,
   signInWithKakao: () => signInWithProvider('kakao'),
   signInWithProvider,
+  signInWithPassword,
+  signUpWithEmail,
   signOut,
   addListener
 };

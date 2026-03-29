@@ -8,7 +8,7 @@ window.APP_AUTH_CONFIG = Object.assign(
     redirectUrl: 'electricianmaster://auth/callback',
     webRedirectUrl: 'http://localhost:4173',
     enableGuestAccess: true,
-    sessionVerifyIntervalMs: 45000
+    sessionVerifyIntervalMs: 8000
   },
   window.APP_AUTH_CONFIG || {}
 );
