@@ -1321,7 +1321,7 @@
         <div class="modal-content" style="max-width:860px;">
             <span class="close-btn" onclick="closeGuideEditorModal()">&times;</span>
             <div class="modal-header">앱 가이드 편집기 (관리자)</div>
-            <p style="margin:0; color:#444; text-align:left;">앱 사용법과 부품 이해 페이지를 편집합니다. 이미지는 선택사항이며 설명은 HTML을 지원합니다.</p>
+            <p style="margin:0; color:#444; text-align:left;">앱 사용법과 부품 이해 페이지를 편집합니다. 이미지는 선택사항이며 설명은 HTML을 지원합니다. 기본 데이터 파일은 <code>src/data/guide/guide-content-data.js</code>입니다.</p>
 
             <div class="editor-grid">
                 <select id="guideEditorKey" onchange="onGuideEditorKeyChange()">
@@ -1352,9 +1352,12 @@
                 <button style="background:#17a2b8;" onclick="saveGuideEditor()">저장</button>
                 <button style="background:#0d6efd;" onclick="previewGuideEditor()">미리보기</button>
                 <button style="background:#495057;" onclick="addGuideEditorPage()">새 페이지</button>
+                <button style="background:#6f42c1;" onclick="exportGuideScenario()">JSON 내보내기</button>
+                <button style="background:#20c997;" onclick="importGuideScenario()">JSON 불러오기</button>
                 <button style="background:#dc3545;" onclick="resetGuideContentLocalStorage()">로컬저장 초기화</button>
                 <button style="background:#6c757d;" onclick="closeGuideEditorModal()">닫기</button>
             </div>
+            <textarea id="guideEditorJson" style="width:100%; height:120px; margin-top:8px; font-family:monospace; font-size:12px;" placeholder="여기에 가이드 JSON을 붙여넣거나, 내보낸 내용을 복사해 두세요."></textarea>
         </div>
     </div>
 
@@ -1537,6 +1540,7 @@
 <script src="./src/data/tutorial/tutorial-config-data.js"></script>
 <script src="./src/data/answers/answers-data.js"></script>
 <script src="./src/data/numbering/numbering-data.js"></script>
+<script src="./src/data/guide/guide-content-data.js"></script>
 <script src="./src/data/repository.js"></script>
 <script src="./src/ui/modal.js"></script>
 <script src="./src/ui/guide-content.js"></script>

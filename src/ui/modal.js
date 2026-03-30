@@ -52,6 +52,7 @@
     }
 
     const TUTORIAL_STORAGE_KEY = 'tutorial_config_v1';
+    const WIRING_SELECTION_STORAGE_KEY = 'app_wiring_selection_v1';
     const TUTORIAL_NEW_CATEGORY_VALUE = '__new_category__';
     const TUTORIAL_CONFIG_DEFAULT = JSON.parse(JSON.stringify(TUTORIAL_CONFIG || {}));
     const tutorialEditorState = {
@@ -66,6 +67,67 @@
         stepMs: 1100,
         timer: null
     };
+
+    function notifyProgressStorageSync(storageKey, value) {
+        try {
+            if (typeof window !== 'undefined' && window.APP_PROGRESS_SYNC && typeof window.APP_PROGRESS_SYNC.syncStorageKey === 'function') {
+                window.APP_PROGRESS_SYNC.syncStorageKey(storageKey, value);
+            }
+        } catch (e) {
+            // ignore sync bridge errors
+        }
+    }
+
+    function persistWiringSelectionState() {
+        try {
+            const payload = {
+                categoryId: String(layoutCategorySelect?.value || ''),
+                layoutId: String(layoutSelect?.value || currentLayoutId || ''),
+                updatedAt: new Date().toISOString()
+            };
+            if (!payload.layoutId) return false;
+            const serialized = JSON.stringify(payload);
+            localStorage.setItem(WIRING_SELECTION_STORAGE_KEY, serialized);
+            notifyProgressStorageSync(WIRING_SELECTION_STORAGE_KEY, serialized);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function readSavedWiringSelectionState() {
+        try {
+            const raw = String(localStorage.getItem(WIRING_SELECTION_STORAGE_KEY) || '').trim();
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return null;
+            const layoutId = String(parsed.layoutId || '').trim();
+            if (!layoutId) return null;
+            return {
+                categoryId: String(parsed.categoryId || '').trim(),
+                layoutId
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function applySavedWiringSelection() {
+        const saved = readSavedWiringSelectionState();
+        if (!saved || !saved.layoutId) return false;
+
+        const fallbackCategory = getLayoutCategoryByLayoutId(saved.layoutId) || 'practice_all';
+        const targetCategory = saved.categoryId || fallbackCategory;
+        ensureLayoutCategoryOptions(targetCategory);
+        if (layoutCategorySelect) {
+            const options = Array.from(layoutCategorySelect.options || []).map(opt => String(opt.value));
+            layoutCategorySelect.value = options.includes(targetCategory) ? targetCategory : fallbackCategory;
+        }
+        rebuildLayoutSelectOptions(saved.layoutId);
+        if (typeof syncWiringCategoryPresetButtons === 'function') syncWiringCategoryPresetButtons();
+        if (layoutSelect?.value && typeof changeLayout === 'function') changeLayout();
+        return true;
+    }
 
     function parseAssignmentObject(rawText, varName) {
         const text = String(rawText || '').trim();
@@ -274,6 +336,7 @@
         practiceFlowTargetSelect.value = selected;
         try {
             localStorage.setItem(storageKey, selected);
+            notifyProgressStorageSync(storageKey, selected);
         } catch (e) {
             // ignore storage errors
         }
@@ -283,6 +346,7 @@
                 if (!next) return;
                 try {
                     localStorage.setItem(storageKey, next);
+                    notifyProgressStorageSync(storageKey, next);
                 } catch (e) {
                     // ignore storage errors
                 }
@@ -299,6 +363,7 @@
         if (!/^public_\d+$/.test(major)) return;
         try {
             localStorage.setItem(`tutorial_flow_target_${major}`, key);
+            notifyProgressStorageSync(`tutorial_flow_target_${major}`, key);
         } catch (e) {
             // ignore storage errors
         }
@@ -1633,6 +1698,7 @@
         if (!key) return;
         try {
             localStorage.setItem(NUMBERING_TUTORIAL_LAYOUT_KEY, key);
+            notifyProgressStorageSync(NUMBERING_TUTORIAL_LAYOUT_KEY, key);
         } catch (e) {
             // ignore storage errors
         }

@@ -255,13 +255,19 @@
             handleInput(e.touches[0].clientX, e.touches[0].clientY);
         }, { passive: false });
         if (shouldLoadAnswerStorageOverride()) loadAnswerDataFromStorage();
-        changeLayout();
+        if (typeof applySavedWiringSelection === 'function') {
+            const restored = applySavedWiringSelection();
+            if (!restored) changeLayout();
+        } else {
+            changeLayout();
+        }
         if (typeof syncWiringCategoryPresetButtons === 'function') syncWiringCategoryPresetButtons();
     }
 
     function changeLayout() {
         if (typeof stopTutorialFlowPlayback === 'function') stopTutorialFlowPlayback();
         currentLayoutId = layoutSelect.value;
+        if (typeof persistWiringSelectionState === 'function') persistWiringSelectionState();
         if (typeof refreshPracticeFlowTargetOptions === 'function') refreshPracticeFlowTargetOptions(currentLayoutId);
         currentLayoutNumSpan.innerText = currentLayoutId;
         const answer = ensureLayoutAnswer(currentLayoutId);

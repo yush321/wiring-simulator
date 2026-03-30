@@ -756,6 +756,7 @@ window.APP_AUTH = {
   isAuthenticated: () => !!state.user,
   getUser: () => state.user,
   getDisplayName: () => getUserDisplayName(state.user),
+  getSupabaseClient: () => state.client,
   getDeviceFingerprint,
   ensureDeviceSession,
   verifyCurrentDeviceSession,

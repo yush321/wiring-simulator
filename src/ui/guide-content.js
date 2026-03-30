@@ -1,6 +1,8 @@
 (function () {
     const GUIDE_CONTENT_STORAGE_KEY = 'guide_content_v1';
-    const GUIDE_CONTENT_DEFAULT = {
+    const GUIDE_EXPORT_VAR_NAME = 'APP_GUIDE_CONTENT_DEFAULT';
+    const GUIDE_KEYS = ['usage_tips', 'parts_intro'];
+    const GUIDE_CONTENT_FALLBACK = {
         usage_tips: {
             title: '효과적인 앱사용 방법',
             pages: [
@@ -31,6 +33,7 @@
     const guideEditorPageText = document.getElementById('guideEditorPageText');
     const guideEditorPreview = document.getElementById('guideEditorPreview');
     const guideEditorStatus = document.getElementById('guideEditorStatus');
+    const guideEditorJson = document.getElementById('guideEditorJson');
 
     const guideEditorState = {
         key: 'usage_tips',
@@ -38,23 +41,70 @@
         activePage: 0
     };
 
-    let guideContent = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
     let guideModalState = null;
 
-    try {
-        const savedGuide = localStorage.getItem(GUIDE_CONTENT_STORAGE_KEY);
-        if (savedGuide) {
-            const parsedGuide = JSON.parse(savedGuide);
-            if (parsedGuide && typeof parsedGuide === 'object' && !Array.isArray(parsedGuide)) {
-                guideContent = {
-                    ...guideContent,
-                    ...parsedGuide
-                };
-            }
-        }
-    } catch (e) {
-        guideContent = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
+    function deepClone(value) {
+        return JSON.parse(JSON.stringify(value));
     }
+
+    function normalizeGuidePage(page) {
+        return {
+            image: String(page?.image || '').trim(),
+            body: String(page?.body || '')
+        };
+    }
+
+    function normalizeGuideEntry(entry, key) {
+        const source = entry && typeof entry === 'object' && !Array.isArray(entry) ? entry : {};
+        const rawPages = Array.isArray(source.pages) && source.pages.length ? source.pages : [{ image: '', body: '' }];
+        return {
+            title: String(source.title || GUIDE_CONTENT_FALLBACK[key]?.title || key),
+            pages: rawPages.map(normalizeGuidePage)
+        };
+    }
+
+    function normalizeGuideContentMap(raw, options = {}) {
+        const allowPartial = !!options.allowPartial;
+        const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+        const result = {};
+
+        GUIDE_KEYS.forEach(key => {
+            if (allowPartial && !(key in source)) return;
+            const entry = source[key];
+            if (allowPartial && (!entry || typeof entry !== 'object' || Array.isArray(entry))) return;
+            result[key] = normalizeGuideEntry(entry, key);
+        });
+
+        if (allowPartial) return result;
+
+        GUIDE_KEYS.forEach(key => {
+            if (!result[key]) {
+                result[key] = normalizeGuideEntry(GUIDE_CONTENT_FALLBACK[key], key);
+            }
+        });
+
+        return result;
+    }
+
+    const GUIDE_CONTENT_DEFAULT = normalizeGuideContentMap(window.APP_GUIDE_CONTENT_DEFAULT || GUIDE_CONTENT_FALLBACK);
+
+    function loadInitialGuideContent() {
+        const base = deepClone(GUIDE_CONTENT_DEFAULT);
+        try {
+            const savedGuide = localStorage.getItem(GUIDE_CONTENT_STORAGE_KEY);
+            if (!savedGuide) return base;
+            const parsedGuide = JSON.parse(savedGuide);
+            const overrides = normalizeGuideContentMap(parsedGuide, { allowPartial: true });
+            return normalizeGuideContentMap({
+                ...base,
+                ...overrides
+            });
+        } catch (e) {
+            return base;
+        }
+    }
+
+    let guideContent = loadInitialGuideContent();
 
     function persistGuideContent() {
         try {
@@ -65,17 +115,11 @@
     }
 
     function cloneGuideEntry(key) {
-        const raw = guideContent[key] || GUIDE_CONTENT_DEFAULT[key] || { title: key, pages: [{ image: '', body: '' }] };
-        const pages = Array.isArray(raw.pages) && raw.pages.length
-            ? raw.pages.map(page => ({
-                image: String(page?.image || ''),
-                body: String(page?.body || '')
-            }))
-            : [{ image: '', body: '' }];
-        return {
-            title: String(raw.title || key),
-            pages
-        };
+        return normalizeGuideEntry(guideContent[key] || GUIDE_CONTENT_DEFAULT[key], key);
+    }
+
+    function buildGuideExportPayload() {
+        return normalizeGuideContentMap(guideContent);
     }
 
     function setGuideEditorStatus(text) {
@@ -203,7 +247,7 @@
 
     function openGuideEditorModal(key = 'usage_tips') {
         if (!isAdminMode) {
-            alert('관리자 모드에서만 편집기를 열 수 있어.');
+            alert('관리자 모드에서만 편집기를 사용할 수 있어.');
             return;
         }
         loadGuideEditorEntry(key);
@@ -216,6 +260,60 @@
             guideEditorPageImage.dataset.boundInput = '1';
         }
         if (guideEditorModal) guideEditorModal.style.display = 'flex';
+    }
+
+    function parseGuideImportText(rawText) {
+        const text = String(rawText || '').trim();
+        if (!text) return null;
+
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            // continue below
+        }
+
+        if (typeof parseAssignmentObject === 'function') {
+            try {
+                return parseAssignmentObject(text, GUIDE_EXPORT_VAR_NAME);
+            } catch (e) {
+                // continue below
+            }
+        }
+
+        const assignmentPatterns = [
+            /(?:window\.)?APP_GUIDE_CONTENT_DEFAULT\s*=\s*([\s\S]*?)\s*;?\s*$/,
+            /(?:const|let|var)\s+APP_GUIDE_CONTENT_DEFAULT\s*=\s*([\s\S]*?)\s*;?\s*$/
+        ];
+        for (const pattern of assignmentPatterns) {
+            const match = text.match(pattern);
+            if (!match?.[1]) continue;
+            return JSON.parse(match[1]);
+        }
+
+        return JSON.parse(text);
+    }
+
+    function mergeGuideImportData(data) {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+
+        const currentKey = guideEditorState.key || 'usage_tips';
+        const looksLikeSingleEntry = Array.isArray(data.pages) || typeof data.title === 'string';
+        const nextContent = buildGuideExportPayload();
+
+        if (looksLikeSingleEntry) {
+            nextContent[currentKey] = normalizeGuideEntry(data, currentKey);
+        } else {
+            const partial = normalizeGuideContentMap(data, { allowPartial: true });
+            const importedKeys = Object.keys(partial);
+            if (!importedKeys.length) return false;
+            importedKeys.forEach(key => {
+                nextContent[key] = partial[key];
+            });
+        }
+
+        guideContent = normalizeGuideContentMap(nextContent);
+        persistGuideContent();
+        return true;
     }
 
     window.onGuideEditorKeyChange = function () {
@@ -243,13 +341,53 @@
         const key = guideEditorState.key || 'usage_tips';
         guideContent[key] = {
             title: String(guideEditorTitle?.value || '').trim() || cloneGuideEntry(key).title,
-            pages: guideEditorState.pages.map(page => ({
-                image: String(page?.image || '').trim(),
-                body: String(page?.body || '')
-            }))
+            pages: guideEditorState.pages.map(normalizeGuidePage)
         };
         persistGuideContent();
         setGuideEditorStatus(`${guideContent[key].title} 저장 완료`);
+    };
+
+    window.exportGuideScenario = async function () {
+        window.saveGuideEditor();
+        const payload = buildGuideExportPayload();
+        const out = JSON.stringify(payload, null, 2);
+        const fileName = typeof buildExportFileName === 'function'
+            ? buildExportFileName('guide', 'all')
+            : 'guide-content.json';
+
+        if (guideEditorJson) {
+            guideEditorJson.value = out;
+            guideEditorJson.select();
+        }
+        if (typeof downloadJsonTextFile === 'function') {
+            downloadJsonTextFile(fileName, out);
+        }
+        const copied = typeof copyTextToClipboard === 'function'
+            ? await copyTextToClipboard(out)
+            : false;
+        setGuideEditorStatus(
+            copied
+                ? `가이드 JSON 내보내기 완료 (${fileName}) + 자동 복사 완료`
+                : `가이드 JSON 내보내기 완료 (${fileName}, 기본 파일은 src/data/guide/guide-content-data.js)`
+        );
+    };
+
+    window.importGuideScenario = function () {
+        const text = String(guideEditorJson?.value || '').trim();
+        if (!text) return;
+
+        try {
+            const data = parseGuideImportText(text);
+            const ok = mergeGuideImportData(data);
+            if (!ok) {
+                alert('형식이 올바르지 않아. {usage_tips:{...}, parts_intro:{...}} 또는 {title,pages} 형태가 필요해.');
+                return;
+            }
+            loadGuideEditorEntry(guideEditorState.key || 'usage_tips');
+            setGuideEditorStatus('가이드 JSON 불러오기 완료');
+        } catch (e) {
+            alert(`가이드 JSON을 불러오지 못했어: ${e?.message || e}`);
+        }
     };
 
     window.closeGuideEditorModal = function () {
@@ -265,16 +403,16 @@
     };
 
     window.resetGuideContentLocalStorage = function () {
-        const ok = confirm('앱 가이드 로컬 저장 데이터를 초기화하고 기본값으로 되돌릴까?');
+        const ok = confirm('이 가이드 로컬 저장 데이터를 초기화하고 기본값으로 되돌릴까?');
         if (!ok) return;
         try {
             localStorage.removeItem(GUIDE_CONTENT_STORAGE_KEY);
         } catch (e) {
             // ignore storage errors
         }
-        guideContent = JSON.parse(JSON.stringify(GUIDE_CONTENT_DEFAULT));
+        guideContent = deepClone(GUIDE_CONTENT_DEFAULT);
         loadGuideEditorEntry(guideEditorState.key || 'usage_tips');
-        setGuideEditorStatus('앱 가이드 로컬 저장 초기화 완료');
+        setGuideEditorStatus('가이드 로컬 저장 초기화 완료');
     };
 
     window.openGuideContentModal = openGuideContentModal;

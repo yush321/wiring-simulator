@@ -55,6 +55,7 @@ async function injectAuthScripts() {
     [
       '<script src="./src/config/app-config.js"></script>',
       '<script src="./src/auth/runtime.bundle.js"></script>',
+      '<script src="./src/progress/runtime-sync.js"></script>',
       marker
     ].join('\n')
   );
