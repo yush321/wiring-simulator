@@ -2674,7 +2674,1344 @@ window.APP_NUMBERING_SCENARIOS_DEFAULT = {
         "pinDisplayCsv": ""
       }
     ]
+  },
+  
+  "5": {
+    "image": "./images/num5.png",
+    "stages": [
+      {
+        "title": "EOCR B접점",
+        "componentId": "EOCR",
+        "guide": "EOCR B접점입니다. EOCR A접점과 회로가 이어져 있어서 왼쪽은 10번으로 쓰고 아랫쪽 EOCR A접점과 공통으로 단자를 사용합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
+        "rect": {
+          "x": 0.10118343195266272,
+          "y": 0.010092618234407212,
+          "w": 0.05917159763313609,
+          "h": 0.04726299270746792
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444111475",
+            "label": "B접점",
+            "answer": "10,4",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "EOCR_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "EOCR A접점",
+        "componentId": "EOCR",
+        "guide": "EOCR A접점입니다. 상단의 EOCR B접점과 10번 단자를 공통으로 사용하여 윗쪽 핀번호는 10번이 됩니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.13550295857988165,
+          "y": 0.49256900212314225,
+          "w": 0.03313609467455622,
+          "h": 0.09846456814055815
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444167366",
+            "label": "A접점",
+            "answer": "10,5",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "EOCR_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "EOCR 전원부",
+        "componentId": "EOCR",
+        "guide": "EOCR에 전원을 넣어줍니다.(결선을 최단거리로 하기 위해 역순결선 하기도 합니다.)",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.05384615384615385,
+          "y": 0.7091910520323702,
+          "w": 0.04733727810650887,
+          "h": 0.13588110403397025
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444216049",
+            "label": "전원부",
+            "answer": "6,12",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "EOCR_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "YL 전원부",
+        "componentId": "YL",
+        "guide": "YL은 BZ와 -극을 공통으로 사용합니다. 부저와 공통 전원선(-)을 사용하여 결선하면 배관입선시 전선이 줄어 편해집니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.12248520710059171,
+          "y": 0.7091910520323702,
+          "w": 0.04970414201183432,
+          "h": 0.12997322994553684
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444333251",
+            "label": "전원부",
+            "answer": "+,-",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "YL_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "BZ(부저) 전원부",
+        "componentId": "BZ",
+        "guide": "YL와 -극을 공통으로 사용합니다. (결선시 10P 단자대에 YL,BZ 는 +,-,+ 3개로 표시하여 -는 공통단자로 사용합니다. 배관작업시 -극은 점프선으로 연결합니다)",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.19585798816568048,
+          "y": 0.7170682174836149,
+          "w": 0.05562130177514793,
+          "h": 0.13194252130834794
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444396825",
+            "label": "전원부",
+            "answer": "+,-",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "BZ_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "SS 셀렉트스위치 A(자동)",
+        "componentId": "SS",
+        "guide": "SS는 수동(M)과 자동(A)을 선택하는 스위치입니다. *배관작업시 스위치 내부 N단자 2개를 서로 점프 연결한 후, M과 A,N단자를 단자대에서 맞게 결선합니다. (주의: 스위치 위치 왼쪽 M, 오른쪽 A)",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.278698224852071,
+          "y": 0.06720206775593095,
+          "w": 0.036686390532544355,
+          "h": 0.11028031631742514
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444502167",
+            "label": "A 자동",
+            "answer": "N,A",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "SS_3",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "SS 셀렉트스위치 M(수동)",
+        "componentId": "SS",
+        "guide": "SS는 수동(M)과 자동(A)을 선택하는 스위치입니다. 공통단자 N을 사용합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.48698224852071004,
+          "y": 0.0809871072956091,
+          "w": 0.029585798816568087,
+          "h": 0.08074094587525771
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444574314",
+            "label": "SS M모드",
+            "answer": "N,M",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "SS_3",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FLS Floatless switch 수위(물,액체)감지용 부품 전원",
+        "componentId": "FLS",
+        "guide": "FLS 전원은 5,6번을 사용함을 유의하세요.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.2644970414201183,
+          "y": 0.7150989261208037,
+          "w": 0.05088757396449706,
+          "h": 0.12406535585710332
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444641833",
+            "label": "전원부",
+            "answer": "5,6",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FLS_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FLS E1,E2,E3",
+        "componentId": "FLS",
+        "guide": "E1·E2·E3는 FLS 7·8·1번 단자에 연결됩니다. (주의) E3에는 접지표시가 있습니다. 도면에서 접지 기호가 표시된 부분은 공통 접지로 결선합니다. 주결선에 접지와 모두 연결되게 결선하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
+        "rect": {
+          "x": 0.31420118343195264,
+          "y": 0.8844579833225638,
+          "w": 0.06745562130177518,
+          "h": 0.04923228407027913
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444901531",
+            "label": "E1,E2,E3",
+            "answer": "7,8,1",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FLS_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FLS A접점",
+        "componentId": "FLS",
+        "guide": "FLS A접점은 3,4번을 사용함을 유의하세요.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.414792899408284,
+          "y": 0.36850364626603893,
+          "w": 0.03905325443786983,
+          "h": 0.10437244222899167
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774444978529",
+            "label": "A접점",
+            "answer": "3,4",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FLS_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "X 전원부",
+        "componentId": "X",
+        "guide": "릴레이 전원부입니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4136094674556213,
+          "y": 0.7229760915720483,
+          "w": 0.046153846153846156,
+          "h": 0.1161881904058587
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774445344883",
+            "label": "전원부",
+            "answer": "2,7",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "X_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "T 전원부",
+        "componentId": "T",
+        "guide": "타이머 전원부입니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4834319526627219,
+          "y": 0.7288839656604819,
+          "w": 0.04615384615384621,
+          "h": 0.1161881904058586
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774445395155",
+            "label": "전원부",
+            "answer": "2,7",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "T_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "PB0 넘버링",
+        "componentId": "PB0",
+        "guide": "PB0는 B접점으로 평상시 도통, 누르면 개방됩니다. PB1과 공통단자(N)를 공유하므로 결선에 주의하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.48698224852071004,
+          "y": 0.1932367149758454,
+          "w": 0.029585798816568087,
+          "h": 0.10043385950336933
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774445548908",
+            "label": "B접점",
+            "answer": "C,N",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "PB0_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "PB1 넘버링",
+        "componentId": "PB1",
+        "guide": "PB1은 A접점으로 평상시 개방, 누르면 통전됩니다. PB0과 공통단자(N)를 공유하므로 결선에 주의하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4928994082840237,
+          "y": 0.36850364626603893,
+          "w": 0.03313609467455625,
+          "h": 0.0984645681405582
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774445641268",
+            "label": "A접점",
+            "answer": "N,O",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "PB1_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "X A접점",
+        "componentId": "X",
+        "guide": "릴레이 A접점입니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.5650887573964497,
+          "y": 0.3724422289916613,
+          "w": 0.028402366863905293,
+          "h": 0.10240315086618046
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774445855802",
+            "label": "A접점",
+            "answer": "1,3",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "X_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "타이머 한시동작순시복귀 B접점",
+        "componentId": "T",
+        "guide": "오른쪽 T A접점과 회로상 끊김없이 이어져있어 핀번호 8번을 공통으로 사용합니다. 윗쪽에 8번 아랫쪽에 5번이라 씁니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.5615384615384615,
+          "y": 0.5536170343702883,
+          "w": 0.026035502958579926,
+          "h": 0.08861811132650232
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446174814",
+            "label": "B접점",
+            "answer": "8,5",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "T_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "타이머 한시동작순시복귀 A접점",
+        "componentId": "T",
+        "guide": "B접점과 8번을 공통으로 쓰기 때문에 윗부분을 8번, 아랫부분은 6번이라 씁니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.7745562130177515,
+          "y": 0.5477091602818548,
+          "w": 0.03668639053254441,
+          "h": 0.09649527677774705
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446287514",
+            "label": "A접점",
+            "answer": "8,6",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "T_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FR B접점",
+        "componentId": "FR",
+        "guide": "FR의 B접점입니다. A접점과 공통단자(8번)를 공유하므로 단자 연결에 주의하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
+        "rect": {
+          "x": 0.6289940828402367,
+          "y": 0.5595249084587218,
+          "w": 0.02721893491124261,
+          "h": 0.0787716545124465
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446369261",
+            "label": "B접점",
+            "answer": "8,5",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FR_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FR A접점",
+        "componentId": "FR",
+        "guide": "FR의 A접점입니다. B접점과 공통단자(8번)를 공유합니다. 윗부분을 8번이라 씁니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.7011834319526628,
+          "y": 0.5477091602818548,
+          "w": 0.037869822485207094,
+          "h": 0.10043385950336936
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446462669",
+            "label": "A접점",
+            "answer": "8,6",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FR_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FR 전원부",
+        "componentId": "FR",
+        "guide": "FR 전원부입니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.5508875739644971,
+          "y": 0.7249453829348596,
+          "w": 0.047337278106508895,
+          "h": 0.12209606449429211
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446512641",
+            "label": "전원부",
+            "answer": "2,7",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FR_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "MC1 전원부",
+        "componentId": "MC1",
+        "guide": "MC1은 모터1 제어용 전자접촉기이며, 전원부는 6,12번을 사용합니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.6254437869822486,
+          "y": 0.7249453829348596,
+          "w": 0.04497041420118342,
+          "h": 0.1181574817686698
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446563782",
+            "label": "전원부",
+            "answer": "6,12",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "MC1_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "MC2 전원부",
+        "componentId": "MC2",
+        "guide": "MC2은 모터2 제어용 전자접촉기이며, 전원부는 단자 6,12번을 사용합니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.6976331360946746,
+          "y": 0.7288839656604819,
+          "w": 0.04497041420118342,
+          "h": 0.11224960768023629
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446613557",
+            "label": "전원부",
+            "answer": "6,12",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "MC2_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "MC1 A접점",
+        "componentId": "MC1",
+        "guide": "MC1 A접점으로 4,10번을 사용합니다",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.8467455621301775,
+          "y": 0.07901781593279793,
+          "w": 0.03313609467455625,
+          "h": 0.09452598541493586
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446667227",
+            "label": "A접점",
+            "answer": "4,10",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "MC1_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "MC2 A접점",
+        "componentId": "MC2",
+        "guide": "MC2 A접점으로 4,10번을 사용합니다",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.9189349112426035,
+          "y": 0.0750792332071756,
+          "w": 0.03431952662721893,
+          "h": 0.10043385950336933
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446716095",
+            "label": "A접점",
+            "answer": "4,10",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "MC2_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "RL 전원부",
+        "componentId": "RL",
+        "guide": "RL 램프는 모터1 동작 시 점등되며, GL과 공통(-)단자를 공유합니다.(배관작업시 전선 수가 줄어 편합니다)",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.8313609467455622,
+          "y": 0.7091910520323702,
+          "w": 0.0556213017751479,
+          "h": 0.12997322994553684
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446777057",
+            "label": "전원부",
+            "answer": "+,-",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "RL_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "GL 전원부",
+        "componentId": "GL",
+        "guide": "GL 램프는 모터2 동작 시 점등되며, RL과 공통(-)단자를 공유합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.9118343195266272,
+          "y": 0.7210068002092372,
+          "w": 0.04497041420118342,
+          "h": 0.10831102495461398
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774446820053",
+            "label": "전원부",
+            "answer": "+,-",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "GL_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "새 단계",
+        "componentId": "NEW",
+        "guide": "설명 문구를 입력하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
+        "rect": null,
+        "questions": [],
+        "pinPreset": "GL_2",
+        "pinDisplayCsv": ""
+      }
+    ]
+  },
+  
+  "6": {
+    "image": "./images/num6.png",
+    "stages": [
+      {
+        "title": "EOCR B접점",
+        "componentId": "EOCR",
+        "guide": "EOCR B접점입니다. EOCR A접점과 회로가 이어져 있어서 왼쪽은 10번으로 쓰고 아랫쪽 EOCR A접점과 공통으로 단자를 사용합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
+        "rect": {
+          "x": 0.11065088757396449,
+          "y": 0.061294193667497464,
+          "w": 0.05207100591715977,
+          "h": 0.059078740884334895
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774970882949",
+            "label": "B접점",
+            "answer": "10,4",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "EOCR_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "EOCR A접점",
+        "componentId": "EOCR",
+        "guide": "EOCR A접점입니다. 상단의 EOCR B접점과 10번 단자를 공통으로 사용하여 윗쪽 핀번호는 10번이 됩니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.1437869822485207,
+          "y": 0.47681467122065296,
+          "w": 0.02840236686390532,
+          "h": 0.10437244222899161
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774970944855",
+            "label": "A접점",
+            "answer": "10,5",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "EOCR_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "EOCR 전원부",
+        "componentId": "EOCR",
+        "guide": "EOCR에 전원을 넣어줍니다.(결선을 최단거리로 하기 위해 역순결선 하기도 합니다.)",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.058579881656804736,
+          "y": 0.7013138865811256,
+          "w": 0.04733727810650887,
+          "h": 0.1201267731314809
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971010298",
+            "label": "전원부",
+            "answer": "6,12",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "EOCR_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "YL 전원부",
+        "componentId": "YL",
+        "guide": "YL은 BZ와 -극을 공통으로 사용합니다. 부저와 공통 전원선(-)을 사용하여 결선하면 배관입선시 전선이 줄어 편해집니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.13076923076923078,
+          "y": 0.7131296347579925,
+          "w": 0.046153846153846156,
+          "h": 0.10634173359180288
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971075899",
+            "label": "전원부",
+            "answer": "+,-",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "YL_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "BZ 전원부",
+        "componentId": "BZ",
+        "guide": "YL와 -극을 공통으로 사용합니다. (결선시 10P 단자대에 YL,BZ 는 +,-,+ 3개로 표시하여 -는 공통단자로 사용합니다. 배관작업시 -극은 점프선으로 연결합니다)",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.19940828402366864,
+          "y": 0.7091910520323702,
+          "w": 0.05443786982248519,
+          "h": 0.1142188990430475
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971126680",
+            "label": "전원부",
+            "answer": "+,-",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "BZ_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "SS 셀렉트스위치 A(자동)",
+        "componentId": "SS",
+        "guide": "SS는 수동(M)과 자동(A)을 선택하는 스위치입니다. *배관작업시 스위치 내부 N단자 2개를 서로 점프 연결한 후, M과 A,N단자를 단자대에서 맞게 결선합니다. (주의: 스위치 위치 왼쪽 M, 오른쪽 A)",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.28579881656804734,
+          "y": 0.12825010000307702,
+          "w": 0.033136094674556194,
+          "h": 0.08467952860088002
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971218086",
+            "label": "A 자동",
+            "answer": "N,A",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "SS_3",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "SS 셀렉트스위치 M(수동)",
+        "componentId": "SS",
+        "guide": "SS는 수동(M)과 자동(A)을 선택하는 스위치입니다. 공통단자 N을 사용합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4928994082840237,
+          "y": 0.12037293455183236,
+          "w": 0.031952662721893454,
+          "h": 0.08664881996369118
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971297496",
+            "label": "M 수동 모드",
+            "answer": "N,M",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "SS_3",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FLS Floatless switch 수위(물,액체)감지용 부품 전원",
+        "componentId": "FLS",
+        "guide": "FLS 전원은 5,6번을 사용함을 유의하세요.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.2739644970414201,
+          "y": 0.7111603433951814,
+          "w": 0.043786982248520734,
+          "h": 0.11028031631742508
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971349324",
+            "label": "전원부",
+            "answer": "5,6",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FLS_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FLS E1,E2,E3",
+        "componentId": "FLS",
+        "guide": "E1·E2·E3는 FLS 7·8·1번 단자에 연결됩니다. (주의) E3에는 접지표시가 있습니다. 도면에서 접지 기호가 표시된 부분은 공통 접지로 결선합니다. 주결선에 접지와 모두 연결되게 결선하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
+        "rect": {
+          "x": 0.32366863905325444,
+          "y": 0.8687036524200744,
+          "w": 0.05917159763313612,
+          "h": 0.05514015815871265
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971427856",
+            "label": "E1,E2,E3",
+            "answer": "7,8,1",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FLS_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FLS A접점",
+        "componentId": "FLS",
+        "guide": "FLS A접점은 3,4번을 사용함을 유의하세요.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4242603550295858,
+          "y": 0.41182805624788454,
+          "w": 0.03076923076923077,
+          "h": 0.1161881904058586
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971480970",
+            "label": "A접점",
+            "answer": "3,4",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FLS_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "X 전원부",
+        "componentId": "X",
+        "guide": "릴레이 전원부입니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4171597633136095,
+          "y": 0.7013138865811256,
+          "w": 0.04378698224852068,
+          "h": 0.13194252130834794
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971534528",
+            "label": "전원부",
+            "answer": "2,7",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "X_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "PB0 넘버링",
+        "componentId": "PB0",
+        "guide": "PB0는 B접점으로 평상시 도통, 누르면 개방됩니다. PB1과 공통단자(N)를 공유하므로 결선에 주의하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4928994082840237,
+          "y": 0.2542847472229915,
+          "w": 0.026035502958579926,
+          "h": 0.0787716545124465
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971620999",
+            "label": "B접점",
+            "answer": "C,N",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "PB0_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "PB1 넘버링",
+        "componentId": "PB1",
+        "guide": "PB1은 A접점으로 평상시 개방, 누르면 통전됩니다. PB0과 공통단자(N)를 공유하므로 결선에 주의하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4940828402366864,
+          "y": 0.42167451306194037,
+          "w": 0.03550295857988167,
+          "h": 0.09452598541493584
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971675244",
+            "label": "A접점",
+            "answer": "N,O",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "PB1_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "T A접점",
+        "componentId": "T",
+        "guide": "타이머 A접점입니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.572189349112426,
+          "y": 0.4197052216991292,
+          "w": 0.02485207100591713,
+          "h": 0.09452598541493579
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774971769026",
+            "label": "A접점",
+            "answer": "1,3",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "T_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "X  릴레이 B접점",
+        "componentId": "X",
+        "guide": "릴레이 B접점입니다. 우측상단 릴레이와 회로가 끊기지 않고 이어지므로 넘버링은 윗쪽을 공통단자 1이라고 쓰고 단자를 공유합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4928994082840237,
+          "y": 0.6008800270777562,
+          "w": 0.028402366863905293,
+          "h": 0.09058740268931353
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972045274",
+            "label": "B접점",
+            "answer": "1,4",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "X_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "릴레이 A접점",
+        "componentId": "X",
+        "guide": "릴레이 A접점입니다. 좌측하단 릴레이와 회로가 끊기지 않고 이어지므로 넘버링은 아랫쪽을 1이라고 쓰고 단자를 공유합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.6313609467455621,
+          "y": 0.11643435182621004,
+          "w": 0.037869822485207094,
+          "h": 0.10437244222899167
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972134257",
+            "label": "A접점",
+            "answer": "3,1",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "X_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "T 전원부",
+        "componentId": "T",
+        "guide": "타이머 전원부입니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.4905325443786982,
+          "y": 0.7210068002092372,
+          "w": 0.04023668639053257,
+          "h": 0.10831102495461398
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972182646",
+            "label": "전원부",
+            "answer": "2,7",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "T_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "타이머 한시동작순시복귀 A접점",
+        "componentId": "T",
+        "guide": "B접점과 8번을 공통으로 쓰기 때문에 윗부분을 8번, 아랫부분은 6번이라 씁니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.636094674556213,
+          "y": 0.5989107357149451,
+          "w": 0.035502958579881616,
+          "h": 0.09255669405212463
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972296275",
+            "label": "A접점",
+            "answer": "8,6",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "T_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "타이머 한시동작순시복귀 B접점",
+        "componentId": "T",
+        "guide": "왼쪽 T A접점과 회로상 끊김없이 이어져있어 핀번호 8번을 공통으로 사용합니다. 윗쪽에 8번 아랫쪽에 5번이라 씁니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.8455621301775148,
+          "y": 0.42758238715037383,
+          "w": 0.029585798816568087,
+          "h": 0.07877165451244655
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972407660",
+            "label": "B접점",
+            "answer": "8,5",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "T_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FR 전원부",
+        "componentId": "FR",
+        "guide": "FR 전원부입니다.",
+        "inputMode": "choice",
+        "allowReverse": true,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.6289940828402367,
+          "y": 0.7170682174836149,
+          "w": 0.04378698224852062,
+          "h": 0.11028031631742508
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972471900",
+            "label": "전원부",
+            "answer": "2,7",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FR_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FR B접점",
+        "componentId": "FR",
+        "guide": "FR의 B접점입니다. A접점과 공통단자(8번)를 공유하므로 단자 연결에 주의하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.7023668639053254,
+          "y": 0.42167451306194037,
+          "w": 0.029585798816568087,
+          "h": 0.09649527677774705
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972545634",
+            "label": "B접점",
+            "answer": "8,5",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FR_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "FR A접점",
+        "componentId": "FR",
+        "guide": "FR의 A접점입니다. B접점과 공통단자(8번)를 공유합니다. 윗부분을 8번이라 씁니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.9201183431952663,
+          "y": 0.4315209698759962,
+          "w": 0.035502958579881616,
+          "h": 0.08074094587525771
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972616401",
+            "label": "A접점",
+            "answer": "8,6",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "FR_8",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "MC1 전원부",
+        "componentId": "MC1",
+        "guide": "MC1은 모터1 제어용 전자접촉기이며, 전원부는 6,12번을 사용합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.7047337278106509,
+          "y": 0.7091910520323702,
+          "w": 0.04023668639053257,
+          "h": 0.1181574817686698
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972681066",
+            "label": "전원부",
+            "answer": "6,12",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "MC1_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "RL 전원부",
+        "componentId": "RL",
+        "guide": "RL 램프는 모터1 동작 시 점등되며, GL과 공통(-)단자를 공유합니다.(배관작업시 전선 수가 줄어 편합니다)",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.7710059171597633,
+          "y": 0.7131296347579925,
+          "w": 0.04615384615384621,
+          "h": 0.10634173359180288
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972753109",
+            "label": "전원부",
+            "answer": "+,-",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "RL_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "GL 전원부",
+        "componentId": "GL",
+        "guide": "GL 램프는 모터2 동작 시 점등되며, RL과 공통(-)단자를 공유합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.8431952662721893,
+          "y": 0.7072217606695591,
+          "w": 0.04497041420118342,
+          "h": 0.11224960768023629
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972800844",
+            "label": "전원부",
+            "answer": "+,-",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "GL_2",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "MC2 전원부",
+        "componentId": "MC2",
+        "guide": "MC2은 모터2 제어용 전자접촉기이며, 전원부는 단자 6,12번을 사용합니다.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "vertical",
+        "rect": {
+          "x": 0.91301775147929,
+          "y": 0.7111603433951814,
+          "w": 0.04497041420118342,
+          "h": 0.1142188990430475
+        },
+        "questions": [
+          {
+            "pinId": "NEW_1774972852833",
+            "label": "전원부",
+            "answer": "6,12",
+            "choices": [],
+            "inputMode": "choice"
+          }
+        ],
+        "pinPreset": "MC2_12",
+        "pinDisplayCsv": ""
+      },
+      {
+        "title": "새 단계",
+        "componentId": "NEW",
+        "guide": "설명 문구를 입력하세요.",
+        "inputMode": "choice",
+        "allowReverse": false,
+        "orderMode": "horizontal",
+        "rect": null,
+        "questions": [],
+        "pinPreset": "MC2_12",
+        "pinDisplayCsv": ""
+      }
+    ]
   }
 }
+
 
 
