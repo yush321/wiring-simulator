@@ -11,6 +11,8 @@
         FR: 'FR은 공통(C)과 A/B접점을 먼저 찾은 뒤 번호를 맞추는 방식이 좋습니다.',
         FUSE: '퓨즈는 +1/-1, +2/-2 단자를 방향성으로 기억하면 실수를 줄일 수 있습니다.',
         YL: 'YL 램프는 2핀 구조로 +,- 극성을 구분해서 보면 됩니다.',
+        LS1: 'LS1은 2핀 구조로 RL, GL처럼 +,- 단자만 구분해서 보면 됩니다.',
+        LS2: 'LS2는 2핀 구조로 RL, GL처럼 +,- 단자만 구분해서 보면 됩니다.',
         PB2: 'PB2는 2핀 A접점(NO)으로 O,N 단자 방향을 먼저 확인하세요.'
     };
 
@@ -24,6 +26,8 @@
             ]
         },
         RL_2: { componentId: 'RL', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
+        LS1_2: { componentId: 'LS1', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
+        LS2_2: { componentId: 'LS2', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
         WL_2: { componentId: 'WL', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
         YL_2: { componentId: 'YL', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
         GL_2: { componentId: 'GL', rows: [[{ value: '+', label: '단자', sub: '' }, { value: '-', label: '단자', sub: '' }]] },
